@@ -2,7 +2,7 @@ import { Button, Card } from "antd";
 
 function App() {
   return (
-    <div className="w-screen h-screen flex items-center justify-center bg-gray-100">
+    <div className="w-screen h-screen flex items-center justify-center bg-red-400">
       <Card className="w-full max-w-md shadow-lg text-center">
         <h1 className="text-2xl font-bold mb-4">
           Vite + React + Tailwind + AntD
