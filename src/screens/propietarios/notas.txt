@@ -1,0 +1,8 @@
+Aqui van las vistas relacionadas a propietario
+
+Se crea su propia carpeta de la vista.
+
+dentro de propietarios
+
+dashboard_Admin/Students_Admin.jsx
+dashboard_Admin/modals/AddStudentModal_Admin.jsx

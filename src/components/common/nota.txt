@@ -1,0 +1,11 @@
+En esta carpeta van los componentes comunes que se reutilizaran en varias vistas, ejemplos:
+
+Botones
+Selects
+CheckBox
+RadioButtoms
+Inputs
+
+Se crea su propia carpeta del componente y se agregan los varios tipos que tiene ese componente
+
+buttons/ButtonCustom.jsx
