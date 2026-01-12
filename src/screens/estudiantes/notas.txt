@@ -1,0 +1,8 @@
+Aqui van las vistas relacionadas a estudiantes
+
+Se crea su propia carpeta de la vista.
+
+dentro de estudiantes
+
+dashboard_Admin/Students_Admin.jsx
+dashboard_Admin/modals/AddStudentModal_Admin.jsx
