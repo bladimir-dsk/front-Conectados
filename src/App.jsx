@@ -9,7 +9,7 @@ function App() {
         </h1>
 
         <Button type="primary" block>
-          Botón Ant Design
+          Botón Ant Design configurado
         </Button>
       </Card>
     </div>
