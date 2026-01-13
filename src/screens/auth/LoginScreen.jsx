@@ -1,210 +1,213 @@
-// src/screens/auth/LoginScreen.jsx
-import React, { useState } from 'react';
+import React, { useState } from "react";
+import { Form, Input, Button, Grid, Alert } from "antd";
+import { Mail, Lock, LogIn } from "lucide-react";
+
+const { useBreakpoint } = Grid;
 
 export default function LoginScreen() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const { md } = useBreakpoint();
+  const isMobile = !md;
+  const [showAlert, setShowAlert] = useState(false);
+  const [alertType, setAlertType] = useState("error");
+  const [alertMessage, setAlertMessage] = useState("");
+  const [alertDescription, setAlertDescription] = useState("");
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
+  const handleSubmit = async (values) => {
     setLoading(true);
-
-    if (!email || !password) {
-      setError('Por favor, completa todos los campos');
-      setLoading(false);
-      return;
-    }
+    setShowAlert(false);
 
     try {
-      const response = await fetch('http://localhost:3001/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
+      const response = await fetch("http://localhost:3001/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(values),
       });
 
       const data = await response.json();
 
       if (response.ok) {
-        localStorage.setItem('token', data.token);
-        window.location.href = '/dashboard';
+        localStorage.setItem("token", data.token);
+        setTimeout(() => {
+          window.location.href = "/dashboard";
+        }, 1000);
       } else {
-        setError(data.message || 'Error en el inicio de sesión');
+        setAlertType("error");
+        setAlertMessage("Error del servidor");
+        setAlertDescription(data.message || "No se pudo iniciar sesión");
+        setShowAlert(true);
       }
-    } catch (err) {
-      setError('Error de conexión con el servidor');
+    } catch {
+      setAlertType("warning");
+      setAlertMessage("Error de conexión");
+      setAlertDescription(
+        "No se pudo conectar con el servidor. Verifica tu conexión a internet."
+      );
+      setShowAlert(true);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex bg-white">
-      {/* Columna izquierda con imagen */}
-      <div className="hidden lg:flex lg:w-1/2 bg-lime-50 flex-col items-center justify-center p-12">
-        {/* Imagen decorativa */}
-        <div className="max-w-md">
-          <div className="mb-8">
-            <h2 className="text-3xl font-bold text-gray-800 mb-4">
-              Bienvenido de vuelta
-            </h2>
-            <p className="text-gray-600">
-              Accede a todas las funcionalidades de nuestra plataforma y gestiona tu cuenta de manera segura.
-            </p>
+    <div
+      style={{
+        minHeight: "100vh",
+        background: "#f7fee7",
+        padding: isMobile ? 16 : 24,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <div
+        style={{
+          width: "100%",
+          maxWidth: isMobile ? "100%" : 1000,
+          background: "white",
+          borderRadius: 20,
+          overflow: "hidden",
+          boxShadow: "0 10px 40px rgba(0,0,0,0.1)",
+          display: "flex",
+          flexDirection: isMobile ? "column" : "row",
+          minHeight: isMobile ? "auto" : 600,
+        }}
+      >
+        {md && (
+          <div
+            style={{
+              flex: 1.2,
+              position: "relative",
+              minHeight: isMobile ? 300 : "auto",
+            }}
+          >
+            <img
+              src="https://th.bing.com/th/id/OIG1.1S9SKh9A4xQsCUjoHW5M?pid=ImgDetMain&o=7&rm=3"
+              alt="Login visual"
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+              }}
+            />
           </div>
+        )}
 
-          {/* Imagen placeholder - reemplaza con tu imagen real */}
-          <div className="bg-gradient-to-br from-lime-100 to-green-100 rounded-2xl p-8 shadow-inner">
-            <div className="flex flex-col items-center justify-center">
-              <div className="w-64 h-64 bg-gradient-to-br from-lime-200 to-green-300 rounded-full flex items-center justify-center mb-6">
-                {/* Icono de login o imagen */}
-                <svg className="w-32 h-32 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
-                </svg>
-              </div>
-              <p className="text-gray-700 text-center">
-                Inicia sesión para acceder a tu panel de control personalizado
-              </p>
-            </div>
-          </div>
-
-          {/* Información adicional */}
-          <div className="mt-8 grid grid-cols-3 gap-4">
-            <div className="text-center">
-              <div className="text-lime-600 font-bold text-xl">100%</div>
-              <div className="text-gray-600 text-sm">Seguro</div>
-            </div>
-            <div className="text-center">
-              <div className="text-lime-600 font-bold text-xl">24/7</div>
-              <div className="text-gray-600 text-sm">Soporte</div>
-            </div>
-            <div className="text-center">
-              <div className="text-lime-600 font-bold text-xl">1000+</div>
-              <div className="text-gray-600 text-sm">Usuarios</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Columna derecha con formulario */}
-      <div className="w-full lg:w-1/2 flex flex-col items-center justify-center p-8">
-        <div className="w-full max-w-md">
-          {/* Logo o marca */}
-          <div className="text-center mb-10">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-lime-100 mb-4">
-              <svg className="w-8 h-8 text-lime-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
-              </svg>
-            </div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+        <div
+          style={{
+            flex: 1,
+            padding: isMobile ? 32 : 48,
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+          }}
+        >
+          <div style={{ textAlign: "center", marginBottom: 32 }}>
+            <h1
+              style={{
+                fontSize: isMobile ? 24 : 28,
+                fontWeight: "bold",
+                color: "#1a2e05",
+                marginBottom: 8,
+              }}
+            >
               Inicio de sesión
             </h1>
-            <p className="text-gray-500">
-              Inicia sesión para acceder a tu cuenta.
+            <p style={{ color: "#64748b" }}>
+              Ingresa tus credenciales para acceder
             </p>
           </div>
 
-          {/* Formulario */}
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {error && (
-              <div className="p-3 bg-red-50 border border-red-100 text-red-700 text-sm rounded-lg">
-                {error}
-              </div>
-            )}
+          {showAlert && (
+            <Alert
+              message={alertMessage}
+              description={alertDescription}
+              type={alertType}
+              showIcon
+              closable
+              onClose={() => setShowAlert(false)}
+              style={{ marginBottom: 24 }}
+            />
+          )}
 
-            {/* Campo de email */}
-            <div className="space-y-2">
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                Correo electrónico
-              </label>
-              <input
-                type="email"
-                id="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-lime-500 focus:border-lime-300 transition duration-200"
-                placeholder="john.doe@gmail.com"
-                required
-              />
-            </div>
-
-            {/* Campo de contraseña */}
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                  Contraseña
-                </label>
-                <a
-                  href="/forgot-password"
-                  className="text-sm text-lime-600 hover:text-lime-800 hover:underline font-medium"
-                >
-                  ¿Has olvidado tu contraseña?
-                </a>
-              </div>
-              <input
-                type="password"
-                id="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-lime-500 focus:border-lime-300 transition duration-200"
-                placeholder="••••••••"
-                required
-              />
-            </div>
-
-            {/* Botón de ingresar */}
-            <button
-              type="submit"
-              disabled={loading}
-              className={`w-full py-3 px-4 rounded-lg font-medium transition duration-200 mt-6 ${
-                loading
-                  ? 'bg-gray-300 cursor-not-allowed text-gray-700'
-                  : 'bg-lime-500 hover:bg-lime-600 text-white shadow-sm hover:shadow-md'
-              }`}
+          <Form onFinish={handleSubmit} layout="vertical">
+            <Form.Item
+              name="email"
+              label="Correo electrónico"
+              rules={[
+                { required: true, message: "Ingresa tu email" },
+                { type: "email", message: "Email no válido" },
+              ]}
             >
-              {loading ? 'Cargando...' : 'Ingresar'}
-            </button>
-          </form>
+              <Input
+                prefix={<Mail size={18} style={{ color: "#84cc16" }} />}
+                placeholder="john.doe@gmail.com"
+                size="large"
+              />
+            </Form.Item>
 
-          {/* Separador */}
-          <div className="flex items-center my-8">
-            <div className="flex-grow border-t border-gray-200"></div>
-            <span className="mx-4 text-gray-400 text-sm">o</span>
-            <div className="flex-grow border-t border-gray-200"></div>
-          </div>
+            <Form.Item
+              name="password"
+              label="Contraseña"
+              rules={[{ required: true, message: "Ingresa tu contraseña" }]}
+            >
+              <Input.Password
+                prefix={<Lock size={18} style={{ color: "#84cc16" }} />}
+                placeholder="••••••••"
+                size="large"
+              />
+            </Form.Item>
 
-          {/* Botones sociales (opcional) */}
-          <div className="grid grid-cols-2 gap-4 mb-8">
-            <button className="flex items-center justify-center py-3 px-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition">
-              <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                <path fillRule="evenodd" d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z" clipRule="evenodd" />
-              </svg>
-              Facebook
-            </button>
-            <button className="flex items-center justify-center py-3 px-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition">
-              <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z" />
-              </svg>
-              Google
-            </button>
-          </div>
-
-          {/* Enlace de registro */}
-          <div className="text-center pt-6 border-t border-gray-100">
-            <p className="text-gray-600">
-              ¿No tienes una cuenta?{' '}
+            <div style={{ textAlign: "right", marginBottom: 24 }}>
               <a
-                href="/register"
-                className="text-lime-600 font-medium hover:text-lime-800 hover:underline"
+                href="/forgot-password"
+                style={{ color: "#65a30d", fontWeight: 500 }}
               >
-                Regístrate
+                ¿Olvidaste tu contraseña?
               </a>
-            </p>
-          </div>
+            </div>
+
+            <Form.Item>
+              <Button
+                type="primary"
+                htmlType="submit"
+                loading={loading}
+                block
+                size="large"
+                icon={<LogIn size={18} />}
+                style={{
+                  background: "#84cc16",
+                  border: "none",
+                  height: 48,
+                  fontWeight: 600,
+                }}
+              >
+                Ingresar
+              </Button>
+            </Form.Item>
+
+            <div
+              style={{
+                textAlign: "center",
+                color: "#64748b",
+                paddingTop: 20,
+                borderTop: "1px solid #e2e8f0",
+              }}
+            >
+              <p style={{ margin: 0 }}>
+                ¿No tienes una cuenta?{" "}
+                <a
+                  href="/register"
+                  style={{ color: "#65a30d", fontWeight: 600 }}
+                >
+                  Regístrate
+                </a>
+              </p>
+            </div>
+          </Form>
         </div>
       </div>
     </div>
