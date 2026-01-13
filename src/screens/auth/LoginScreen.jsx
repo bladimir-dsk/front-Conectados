@@ -1,7 +1,8 @@
 import React, { useState } from "react";
-import { Form, Input, Button, Grid } from "antd";
+import { Form, Button, Grid } from "antd";
 import { Mail, Lock, LogIn } from "lucide-react";
 import { useNotification } from "../../components/notification/NotificationProvider";
+import FormInput from "../../components/inputs/FormInput";
 
 const { useBreakpoint } = Grid;
 
@@ -78,13 +79,7 @@ export default function LoginScreen() {
         }}
       >
         {md && (
-          <div
-            style={{
-              flex: 1.2,
-              position: "relative",
-              minHeight: isMobile ? 300 : "auto",
-            }}
-          >
+          <div style={{ flex: 1.2, position: "relative" }}>
             <img
               src="https://th.bing.com/th/id/OIG1.1S9SKh9A4xQsCUjoHW5M?pid=ImgDetMain&o=7&rm=3"
               alt="Login visual"
@@ -108,14 +103,7 @@ export default function LoginScreen() {
           }}
         >
           <div style={{ textAlign: "center", marginBottom: 32 }}>
-            <h1
-              style={{
-                fontSize: isMobile ? 24 : 28,
-                fontWeight: "bold",
-                color: "#1a2e05",
-                marginBottom: 8,
-              }}
-            >
+            <h1 style={{ fontSize: isMobile ? 24 : 28, fontWeight: "bold" }}>
               Inicio de sesión
             </h1>
             <p style={{ color: "#64748b" }}>
@@ -124,32 +112,31 @@ export default function LoginScreen() {
           </div>
 
           <Form onFinish={handleSubmit} layout="vertical">
-            <Form.Item
+            <FormInput
               name="email"
               label="Correo electrónico"
+              placeholder="john.doe@gmail.com"
               rules={[
                 { required: true, message: "Ingresa tu email" },
                 { type: "email", message: "Email no válido" },
               ]}
-            >
-              <Input
-                prefix={<Mail size={18} style={{ color: "#84cc16" }} />}
-                placeholder="john.doe@gmail.com"
-                size="large"
-              />
-            </Form.Item>
+              inputProps={{
+                size: "large",
+                prefix: <Mail size={18} style={{ color: "#84cc16" }} />,
+              }}
+            />
 
-            <Form.Item
+            <FormInput
               name="password"
               label="Contraseña"
+              placeholder="••••••••"
               rules={[{ required: true, message: "Ingresa tu contraseña" }]}
-            >
-              <Input.Password
-                prefix={<Lock size={18} style={{ color: "#84cc16" }} />}
-                placeholder="••••••••"
-                size="large"
-              />
-            </Form.Item>
+              inputProps={{
+                type: "password",
+                size: "large",
+                prefix: <Lock size={18} style={{ color: "#84cc16" }} />,
+              }}
+            />
 
             <div style={{ textAlign: "right", marginBottom: 24 }}>
               <a
@@ -160,24 +147,22 @@ export default function LoginScreen() {
               </a>
             </div>
 
-            <Form.Item>
-              <Button
-                type="primary"
-                htmlType="submit"
-                loading={loading}
-                block
-                size="large"
-                icon={<LogIn size={18} />}
-                style={{
-                  background: "#84cc16",
-                  border: "none",
-                  height: 48,
-                  fontWeight: 600,
-                }}
-              >
-                Ingresar
-              </Button>
-            </Form.Item>
+            <Button
+              type="primary"
+              htmlType="submit"
+              loading={loading}
+              block
+              size="large"
+              icon={<LogIn size={18} />}
+              style={{
+                background: "#84cc16",
+                border: "none",
+                height: 48,
+                fontWeight: 600,
+              }}
+            >
+              Ingresar
+            </Button>
 
             <div
               style={{

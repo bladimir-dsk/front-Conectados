@@ -12,6 +12,10 @@ const FormInput = ({
   formItemProps = {},
   inputProps = {},
 }) => {
+  const { type, ...restInputProps } = inputProps;
+
+  const InputComponent = type === "password" ? Input.Password : Input;
+
   return (
     <Form.Item
       name={name}
@@ -23,7 +27,7 @@ const FormInput = ({
       validateFirst={validateFirst}
       {...formItemProps}
     >
-      <Input placeholder={placeholder} {...inputProps} />
+      <InputComponent placeholder={placeholder} {...restInputProps} />
     </Form.Item>
   );
 };
