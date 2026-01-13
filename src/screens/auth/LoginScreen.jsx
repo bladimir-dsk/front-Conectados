@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { Form, Input, Button, Grid, Alert } from "antd";
+import { Form, Input, Button, Grid } from "antd";
 import { Mail, Lock, LogIn } from "lucide-react";
+import { useNotification } from "../../components/notification/NotificationProvider";
 
 const { useBreakpoint } = Grid;
 
@@ -8,14 +9,10 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const { md } = useBreakpoint();
   const isMobile = !md;
-  const [showAlert, setShowAlert] = useState(false);
-  const [alertType, setAlertType] = useState("error");
-  const [alertMessage, setAlertMessage] = useState("");
-  const [alertDescription, setAlertDescription] = useState("");
+  const { notify } = useNotification();
 
   const handleSubmit = async (values) => {
     setLoading(true);
-    setShowAlert(false);
 
     try {
       const response = await fetch("http://localhost:3001/api/auth/login", {
@@ -28,22 +25,29 @@ export default function LoginScreen() {
 
       if (response.ok) {
         localStorage.setItem("token", data.token);
+
+        notify({
+          type: "success",
+          title: "Inicio de sesión exitoso",
+          description: "Bienvenido, redirigiendo al dashboard...",
+        });
+
         setTimeout(() => {
           window.location.href = "/dashboard";
-        }, 1000);
+        }, 1200);
       } else {
-        setAlertType("error");
-        setAlertMessage("Error del servidor");
-        setAlertDescription(data.message || "No se pudo iniciar sesión");
-        setShowAlert(true);
+        notify({
+          type: "error",
+          title: "Error al iniciar sesión",
+          description: data.message || "Credenciales incorrectas",
+        });
       }
     } catch {
-      setAlertType("warning");
-      setAlertMessage("Error de conexión");
-      setAlertDescription(
-        "No se pudo conectar con el servidor. Verifica tu conexión a internet."
-      );
-      setShowAlert(true);
+      notify({
+        type: "warning",
+        title: "Error de conexión",
+        description: "No se pudo conectar con el servidor. Intenta nuevamente.",
+      });
     } finally {
       setLoading(false);
     }
@@ -86,8 +90,6 @@ export default function LoginScreen() {
               alt="Login visual"
               style={{
                 position: "absolute",
-                top: 0,
-                left: 0,
                 width: "100%",
                 height: "100%",
                 objectFit: "cover",
@@ -120,18 +122,6 @@ export default function LoginScreen() {
               Ingresa tus credenciales para acceder
             </p>
           </div>
-
-          {showAlert && (
-            <Alert
-              message={alertMessage}
-              description={alertDescription}
-              type={alertType}
-              showIcon
-              closable
-              onClose={() => setShowAlert(false)}
-              style={{ marginBottom: 24 }}
-            />
-          )}
 
           <Form onFinish={handleSubmit} layout="vertical">
             <Form.Item
