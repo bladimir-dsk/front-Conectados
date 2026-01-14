@@ -4,6 +4,7 @@ import { LogIn } from "lucide-react";
 import { useNotification } from "../../components/notification/NotificationProvider";
 import FormInput from "../../components/inputs/FormInput";
 import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 const { useBreakpoint } = Grid;
 
@@ -12,12 +13,13 @@ export default function LoginScreen() {
   const { md } = useBreakpoint();
   const isMobile = !md;
   const { notify } = useNotification();
+  const navigate = useNavigate();
 
   const handleSubmit = async (values) => {
     setLoading(true);
 
     try {
-      const response = await fetch("http://localhost:3001/api/auth/login", {
+      const response = await fetch("http://localhost:3000/api/v1/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(values),
@@ -34,9 +36,7 @@ export default function LoginScreen() {
           description: "Bienvenido, redirigiendo al dashboard...",
         });
 
-        setTimeout(() => {
-          window.location.href = "/dashboard";
-        }, 1200);
+        navigate("/dashboard");
       } else {
         notify({
           type: "error",
@@ -179,9 +179,12 @@ export default function LoginScreen() {
             </Form.Item>
             <p style={{ margin: 0 }}>
               ¿No tienes una cuenta?{" "}
-              <a href="/register" style={{ color: "#65a30d", fontWeight: 600 }}>
+              <Link
+                to="/register"
+                style={{ color: "#65a30d", fontWeight: 600 }}
+              >
                 Regístrate
-              </a>
+              </Link>
             </p>
           </Form>
         </div>

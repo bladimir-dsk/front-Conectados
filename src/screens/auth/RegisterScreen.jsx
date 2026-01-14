@@ -114,7 +114,7 @@ export default function RegisterScreen() {
           </div>
 
           <Form onFinish={handleSubmit} layout="vertical">
-            <div style={{ display: "flex", gap: 16, marginBottom: 16 }}>
+            <div style={{ display: "flex", gap: 16 }}>
               <div style={{ flex: 1 }}>
                 <FormInput
                   name="firstLastName"
@@ -169,7 +169,7 @@ export default function RegisterScreen() {
               }}
             />
 
-            <div style={{ display: "flex", gap: 16, marginBottom: 16 }}>
+            <div style={{ display: "flex", gap: 16 }}>
               <div style={{ flex: 1 }}>
                 <FormInput
                   name="email"
@@ -179,17 +179,6 @@ export default function RegisterScreen() {
                     { required: true, message: "Ingresa tu email" },
                     { type: "email", message: "Email no válido" },
                   ]}
-                  inputProps={{
-                    size: "large",
-                  }}
-                />
-              </div>
-              <div style={{ flex: 1 }}>
-                <FormInput
-                  name="code"
-                  label="Código"
-                  placeholder="ABC123"
-                  rules={[{ required: true, message: "Ingresa tu código" }]}
                   inputProps={{
                     size: "large",
                   }}
