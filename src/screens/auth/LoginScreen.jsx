@@ -1,8 +1,9 @@
 import React, { useState } from "react";
 import { Form, Button, Grid } from "antd";
-import { Mail, Lock, LogIn } from "lucide-react";
+import { LogIn } from "lucide-react";
 import { useNotification } from "../../components/notification/NotificationProvider";
 import FormInput from "../../components/inputs/FormInput";
+import { Link } from "react-router-dom";
 
 const { useBreakpoint } = Grid;
 
@@ -16,21 +17,29 @@ export default function LoginScreen() {
     setLoading(true);
 
     try {
-      const response = await fetch("http://localhost:3001/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(values),
-      });
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/auth/login`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          body: JSON.stringify(values),
+        }
+      );
 
       const data = await response.json();
 
       if (response.ok) {
         localStorage.setItem("token", data.token);
+        localStorage.setItem("user", JSON.stringify(data.user));
 
         notify({
           type: "success",
           title: "Inicio de sesión exitoso",
-          description: "Bienvenido, redirigiendo al dashboard...",
+          description:
+            data.message || "Bienvenido, redirigiendo al dashboard...",
         });
 
         setTimeout(() => {
@@ -79,7 +88,13 @@ export default function LoginScreen() {
         }}
       >
         {md && (
-          <div style={{ flex: 1.2, position: "relative" }}>
+          <div
+            style={{
+              flex: 1.2,
+              position: "relative",
+              minHeight: isMobile ? 300 : "auto",
+            }}
+          >
             <img
               src="https://th.bing.com/th/id/OIG1.1S9SKh9A4xQsCUjoHW5M?pid=ImgDetMain&o=7&rm=3"
               alt="Login visual"
@@ -103,7 +118,14 @@ export default function LoginScreen() {
           }}
         >
           <div style={{ textAlign: "center", marginBottom: 32 }}>
-            <h1 style={{ fontSize: isMobile ? 24 : 28, fontWeight: "bold" }}>
+            <h1
+              style={{
+                fontSize: isMobile ? 24 : 28,
+                fontWeight: "bold",
+                color: "#1a2e05",
+                marginBottom: 8,
+              }}
+            >
               Inicio de sesión
             </h1>
             <p style={{ color: "#64748b" }}>
@@ -122,22 +144,21 @@ export default function LoginScreen() {
               ]}
               inputProps={{
                 size: "large",
-                prefix: <Mail size={18} style={{ color: "#84cc16" }} />,
               }}
             />
-
             <FormInput
               name="password"
               label="Contraseña"
               placeholder="••••••••"
               rules={[{ required: true, message: "Ingresa tu contraseña" }]}
+              formItemProps={{
+                style: { marginBottom: 8 },
+              }}
               inputProps={{
                 type: "password",
                 size: "large",
-                prefix: <Lock size={18} style={{ color: "#84cc16" }} />,
               }}
             />
-
             <div style={{ textAlign: "right", marginBottom: 24 }}>
               <a
                 href="/forgot-password"
@@ -146,40 +167,33 @@ export default function LoginScreen() {
                 ¿Olvidaste tu contraseña?
               </a>
             </div>
-
-            <Button
-              type="primary"
-              htmlType="submit"
-              loading={loading}
-              block
-              size="large"
-              icon={<LogIn size={18} />}
-              style={{
-                background: "#84cc16",
-                border: "none",
-                height: 48,
-                fontWeight: 600,
-              }}
-            >
-              Ingresar
-            </Button>
-
-            <div
-              style={{
-                textAlign: "center",
-                color: "#64748b",
-                paddingTop: 20,
-                borderTop: "1px solid #e2e8f0",
-              }}
-            >
+            <Form.Item>
+              <Button
+                type="primary"
+                htmlType="submit"
+                loading={loading}
+                block
+                size="large"
+                icon={<LogIn size={18} />}
+                style={{
+                  background: "#84cc16",
+                  border: "none",
+                  height: 48,
+                  fontWeight: 600,
+                }}
+              >
+                Ingresar
+              </Button>
+            </Form.Item>
+            <div style={{ textAlign: "center", marginTop: 16 }}>
               <p style={{ margin: 0 }}>
                 ¿No tienes una cuenta?{" "}
-                <a
-                  href="/register"
+                <Link
+                  to="/register"
                   style={{ color: "#65a30d", fontWeight: 600 }}
                 >
                   Regístrate
-                </a>
+                </Link>
               </p>
             </div>
           </Form>
