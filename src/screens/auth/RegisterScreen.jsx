@@ -24,16 +24,30 @@ export default function RegisterScreen() {
       return;
     }
 
-    const { confirmPassword, ...userData } = values;
+    const userData = {
+      name: `${values.names} ${values.firstLastName}`,
+      firstName: values.firstLastName,
+      middleName: values.secondLastName || "",
+      email: values.email,
+      password: values.password,
+      code: values.code,
+      phone: values.phone,
+    };
 
     setLoading(true);
 
     try {
-      const response = await fetch("http://localhost:3001/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(userData),
-      });
+      const response = await fetch(
+        "http://localhost:3000/api/v1/auth/register",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          body: JSON.stringify(userData),
+        }
+      );
 
       const data = await response.json();
 
@@ -41,7 +55,7 @@ export default function RegisterScreen() {
         notify({
           type: "success",
           title: "Registro exitoso",
-          description: "Tu cuenta ha sido creada correctamente",
+          description: data.message || "Tu cuenta ha sido creada correctamente",
         });
         setTimeout(() => {
           navigate("/login");
@@ -50,14 +64,15 @@ export default function RegisterScreen() {
         notify({
           type: "error",
           title: "Error en el registro",
-          description: data.message || "Ha ocurrido un error al registrar",
+          description:
+            data.message || `Error ${response.status}: ${response.statusText}`,
         });
       }
     } catch (error) {
       notify({
         type: "warning",
         title: "Error de conexión",
-        description: "No se pudo conectar con el servidor. Intenta nuevamente.",
+        description: error.message || "No se pudo conectar con el servidor.",
       });
     } finally {
       setLoading(false);
@@ -97,7 +112,7 @@ export default function RegisterScreen() {
             justifyContent: "center",
           }}
         >
-          <div style={{ textAlign: "center", marginBottom: 32 }}>
+          <div style={{ textAlign: "center", marginBottom: 20 }}>
             <h1
               style={{
                 fontSize: isMobile ? 24 : 28,
@@ -114,7 +129,7 @@ export default function RegisterScreen() {
           </div>
 
           <Form onFinish={handleSubmit} layout="vertical">
-            <div style={{ display: "flex", gap: 16 }}>
+            <div style={{ display: "flex", gap: 16, marginBottom: 8 }}>
               <div style={{ flex: 1 }}>
                 <FormInput
                   name="firstLastName"
@@ -150,62 +165,83 @@ export default function RegisterScreen() {
               </div>
             </div>
 
-            <FormInput
-              name="names"
-              label="Nombres"
-              placeholder="Juan Carlos"
-              rules={[
-                { required: true, message: "Ingresa tus nombres" },
-                {
-                  pattern: /^[A-Za-zÁÉÍÓÚáéíóúñÑ\s]+$/,
-                  message: "Solo se permiten letras",
-                },
-              ]}
-              formItemProps={{
-                style: { marginBottom: 16 },
-              }}
-              inputProps={{
-                size: "large",
-              }}
-            />
+            <div style={{ marginBottom: 8 }}>
+              <FormInput
+                name="names"
+                label="Nombres"
+                placeholder="Juan Carlos"
+                rules={[
+                  { required: true, message: "Ingresa tus nombres" },
+                  {
+                    pattern: /^[A-Za-zÁÉÍÓÚáéíóúñÑ\s]+$/,
+                    message: "Solo se permiten letras",
+                  },
+                ]}
+                inputProps={{
+                  size: "large",
+                }}
+              />
+            </div>
 
-            <div style={{ display: "flex", gap: 16 }}>
+            <div style={{ marginBottom: 8 }}>
+              <FormInput
+                name="email"
+                label="Correo electrónico"
+                placeholder="juan.gonzalez@gmail.com"
+                rules={[
+                  { required: true, message: "Ingresa tu email" },
+                  { type: "email", message: "Email no válido" },
+                ]}
+                inputProps={{
+                  size: "large",
+                }}
+              />
+            </div>
+
+            <div style={{ display: "flex", gap: 16, marginBottom: 8 }}>
               <div style={{ flex: 1 }}>
                 <FormInput
-                  name="email"
-                  label="Correo electrónico"
-                  placeholder="juan.gonzalez@gmail.com"
+                  name="phone"
+                  label="Teléfono"
+                  placeholder="9991234567"
                   rules={[
-                    { required: true, message: "Ingresa tu email" },
-                    { type: "email", message: "Email no válido" },
+                    { required: true, message: "Ingresa tu teléfono" },
+                    {
+                      pattern: /^\d+$/,
+                      message: "Solo se permiten números",
+                    },
+                    {
+                      len: 10,
+                      message: "Debe tener exactamente 10 dígitos",
+                    },
                   ]}
                   inputProps={{
                     size: "large",
+                    maxLength: 10,
+                  }}
+                />
+              </div>
+              <div style={{ flex: 1 }}>
+                <FormInput
+                  name="code"
+                  label="Código"
+                  placeholder="99"
+                  rules={[
+                    { required: true, message: "Ingresa tu código" },
+                    {
+                      pattern: /^\d{2}$/,
+                      message: "Debe tener exactamente 2 dígitos",
+                    },
+                  ]}
+                  inputProps={{
+                    size: "large",
+                    maxLength: 2,
                   }}
                 />
               </div>
             </div>
 
-            <FormInput
-              name="phone"
-              label="Teléfono"
-              placeholder="+52 999 123 4567"
-              rules={[
-                { required: true, message: "Ingresa tu teléfono" },
-                {
-                  pattern: /^[\d\s\+\-\(\)]+$/,
-                  message: "Teléfono no válido",
-                },
-              ]}
-              formItemProps={{
-                style: { marginBottom: 16 },
-              }}
-              inputProps={{
-                size: "large",
-              }}
-            />
-
-            <div style={{ display: "flex", gap: 16, marginBottom: 24 }}>
+            <div style={{ display: "flex", gap: 16, marginBottom: 8 }}>
               <div style={{ flex: 1 }}>
                 <FormInput
                   name="password"
@@ -237,7 +273,7 @@ export default function RegisterScreen() {
               </div>
             </div>
 
-            <Form.Item>
+            <Form.Item style={{ marginTop: 16 }}>
               <Button
                 type="primary"
                 htmlType="submit"
@@ -262,6 +298,7 @@ export default function RegisterScreen() {
                 color: "#64748b",
                 paddingTop: 20,
                 borderTop: "1px solid #e2e8f0",
+                marginTop: 20,
               }}
             >
               <p style={{ margin: 0 }}>

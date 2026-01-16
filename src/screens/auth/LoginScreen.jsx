@@ -4,7 +4,6 @@ import { LogIn } from "lucide-react";
 import { useNotification } from "../../components/notification/NotificationProvider";
 import FormInput from "../../components/inputs/FormInput";
 import { Link } from "react-router-dom";
-import { useNavigate } from "react-router-dom";
 
 const { useBreakpoint } = Grid;
 
@@ -13,7 +12,6 @@ export default function LoginScreen() {
   const { md } = useBreakpoint();
   const isMobile = !md;
   const { notify } = useNotification();
-  const navigate = useNavigate();
 
   const handleSubmit = async (values) => {
     setLoading(true);
@@ -21,7 +19,10 @@ export default function LoginScreen() {
     try {
       const response = await fetch("http://localhost:3000/api/v1/auth/login", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
         body: JSON.stringify(values),
       });
 
@@ -29,14 +30,18 @@ export default function LoginScreen() {
 
       if (response.ok) {
         localStorage.setItem("token", data.token);
+        localStorage.setItem("user", JSON.stringify(data.user));
 
         notify({
           type: "success",
           title: "Inicio de sesión exitoso",
-          description: "Bienvenido, redirigiendo al dashboard...",
+          description:
+            data.message || "Bienvenido, redirigiendo al dashboard...",
         });
 
-        navigate("/dashboard");
+        setTimeout(() => {
+          window.location.href = "/dashboard";
+        }, 1200);
       } else {
         notify({
           type: "error",
@@ -177,15 +182,17 @@ export default function LoginScreen() {
                 Ingresar
               </Button>
             </Form.Item>
-            <p style={{ margin: 0 }}>
-              ¿No tienes una cuenta?{" "}
-              <Link
-                to="/register"
-                style={{ color: "#65a30d", fontWeight: 600 }}
-              >
-                Regístrate
-              </Link>
-            </p>
+            <div style={{ textAlign: "center", marginTop: 16 }}>
+              <p style={{ margin: 0 }}>
+                ¿No tienes una cuenta?{" "}
+                <Link
+                  to="/register"
+                  style={{ color: "#65a30d", fontWeight: 600 }}
+                >
+                  Regístrate
+                </Link>
+              </p>
+            </div>
           </Form>
         </div>
       </div>
