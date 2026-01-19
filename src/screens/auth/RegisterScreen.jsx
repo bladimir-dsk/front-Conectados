@@ -46,7 +46,7 @@ export default function RegisterScreen() {
             Accept: "application/json",
           },
           body: JSON.stringify(userData),
-        }
+        },
       );
 
       const data = await response.json();

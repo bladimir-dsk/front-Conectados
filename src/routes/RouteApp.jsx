@@ -5,6 +5,9 @@ import { Login, Register } from "./lazyRoutes";
 import { ProtectedRoute } from "./ProtectedRoute";
 import AdminLayout from "../components/layouts/AdminLayout";
 
+const Dashboard = () => <div>Dashboard</div>;
+const Reservas = () => <div>Reservas</div>;
+
 export default function RouteApp() {
   return (
     <Suspense fallback={<LoadingFallback />}>
@@ -15,14 +18,17 @@ export default function RouteApp() {
         <Route path="/register" element={<Register />} />
 
         {/* Rutas protegidas - Admin */}
-        {/* <Route
-          path="/admin/*"
+        <Route
+          path="/admin"
           element={
             <ProtectedRoute requiredRole="admin">
               <AdminLayout />
             </ProtectedRoute>
           }
-        /> */}
+        >
+          <Route path="dashboard" element={<Dashboard />} />
+          <Route path="reservas" element={<Reservas />} />
+        </Route>
 
         {/* Rutas protegidas - Propietario */}
         {/* <Route
