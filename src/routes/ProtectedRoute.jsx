@@ -1,35 +1,39 @@
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
+import { Spin } from "antd";
 
 export const ProtectedRoute = ({ children, requiredRole }) => {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, loading } = useAuth();
   const location = useLocation();
 
-  // Si no está autenticado, redirigir al login
-  if (!isAuthenticated) {
-    return <Navigate to="/" state={{ from: location }} replace />;
+  if (loading) {
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          background: "#f5f5f5",
+        }}
+      >
+        <Spin size="large" />
+      </div>
+    );
   }
 
-  // Si requiere un rol específico y el usuario no lo tiene
+  if (!isAuthenticated) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
   if (requiredRole && user?.role !== requiredRole) {
-    // Redirigir según el rol del usuario
-    let redirectPath;
+    const roleRoutes = {
+      admin: "/admin/dashboard",
+      propietario: "/propietario/dashboard",
+      estudiante: "/estudiante/dashboard",
+    };
 
-    switch (user?.role) {
-      case "admin":
-        redirectPath = "/admin/dashboard";
-        break;
-      case "propietario":
-        redirectPath = "/propietario/dashboard";
-        break;
-      case "estudiante":
-        redirectPath = "/estudiante/dashboard";
-        break;
-      default:
-        redirectPath = "/";
-    }
-
-    return <Navigate to={redirectPath} replace />;
+    return <Navigate to={roleRoutes[user?.role] || "/login"} replace />;
   }
 
   return children;

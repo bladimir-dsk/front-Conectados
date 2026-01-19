@@ -3,7 +3,9 @@ import { Form, Button, Grid } from "antd";
 import { LogIn } from "lucide-react";
 import { useNotification } from "../../components/notification/NotificationProvider";
 import FormInput from "../../components/inputs/FormInput";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../../hooks/useAuth";
+import { useApi } from "../../hooks/useApi";
 
 const { useBreakpoint } = Grid;
 
@@ -12,51 +14,51 @@ export default function LoginScreen() {
   const { md } = useBreakpoint();
   const isMobile = !md;
   const { notify } = useNotification();
+  const navigate = useNavigate();
+  const { login } = useAuth();
+  
+  // Hook useApi para el endpoint de login (sin autoFetch)
+  const { postData } = useApi("/auth/login", {}, false);
 
   const handleSubmit = async (values) => {
     setLoading(true);
 
     try {
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/auth/login`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json",
-          },
-          body: JSON.stringify(values),
-        },
-      );
+      const data = await postData(values);
 
-      const data = await response.json();
+      const userData = {
+        id: data.id,
+        name: data.name,
+        email: data.email,
+        role: data.role,
+        id_empresa: data.id_empresa,
+      };
 
-      if (response.ok) {
-        localStorage.setItem("token", data.token);
-        localStorage.setItem("user", JSON.stringify(data.user));
+      // Primero hacer login
+      login(userData, data.token);
 
-        notify({
-          type: "success",
-          title: "Inicio de sesión exitoso",
-          description:
-            data.message || "Bienvenido, redirigiendo al dashboard...",
-        });
-
-        setTimeout(() => {
-          window.location.href = "/dashboard";
-        }, 1200);
-      } else {
-        notify({
-          type: "error",
-          title: "Error al iniciar sesión",
-          description: data.message || "Credenciales incorrectas",
-        });
-      }
-    } catch {
       notify({
-        type: "warning",
-        title: "Error de conexión",
-        description: "No se pudo conectar con el servidor. Intenta nuevamente.",
+        type: "success",
+        title: "Inicio de sesión exitoso",
+        description: `Bienvenido ${userData.name}`,
+      });
+
+      // Luego redirigir según el rol
+      const roleRoutes = {
+        admin: "/admin/dashboard",
+        propietario: "/propietario/dashboard",
+        estudiante: "/estudiante/dashboard",
+      };
+
+      setTimeout(() => {
+        navigate(roleRoutes[userData.role] || "/login");
+      }, 800);
+    } catch (error) {
+      console.error("Error:", error);
+      notify({
+        type: "error",
+        title: "Error al iniciar sesión",
+        description: error.message || "Credenciales incorrectas",
       });
     } finally {
       setLoading(false);
@@ -160,12 +162,12 @@ export default function LoginScreen() {
               }}
             />
             <div style={{ textAlign: "right", marginBottom: 24 }}>
-              <a
-                href="/forgot-password"
+              <Link
+                to="/forgot-password"
                 style={{ color: "#65a30d", fontWeight: 500 }}
               >
                 ¿Olvidaste tu contraseña?
-              </a>
+              </Link>
             </div>
             <Form.Item>
               <Button
