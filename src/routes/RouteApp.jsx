@@ -62,7 +62,7 @@ export default function RouteApp() {
           {/* <Route path="buscar" element={<BuscarHabitaciones />} />
           <Route path="reservas" element={<MisReservas />} /> */}
 
-          <Route path="reservation" element={<ReservationStudent />} />
+          <Route path="reservas" element={<ReservationStudent />} />
         </Route>
 
         {/* Ruta raíz - redirige a login */}

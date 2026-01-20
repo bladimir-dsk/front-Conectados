@@ -27,10 +27,10 @@ export default function SidebarLayout() {
     }
 
     if (key === "dashboard") {
-      navigate("/dashboard");
+      navigate("estudiante/dashboard");
       setSelectedKeys(["dashboard"]);
     } else if (key === "reservas") {
-      navigate("/reservation");
+      navigate("estudiante/reservation");
       setSelectedKeys(["reservas"]);
     } else if (
       key.startsWith("p") ||
