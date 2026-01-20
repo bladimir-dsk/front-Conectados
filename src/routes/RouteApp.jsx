@@ -1,7 +1,12 @@
 import React, { Suspense } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import LoadingFallback from "../components/fallbacks/LoadingFallback";
-import { DashboardStudent, Login, Register } from "./lazyRoutes";
+import {
+  DashboardStudent,
+  ReservationStudent,
+  Login,
+  Register,
+} from "./lazyRoutes.js";
 import { ProtectedRoute } from "./ProtectedRoute";
 import AdminLayout from "../components/layouts/AdminLayout";
 import OwnerLayout from "../components/layouts/OwnerLayout";
@@ -56,6 +61,8 @@ export default function RouteApp() {
           <Route path="dashboard" element={<DashboardStudent />} />
           {/* <Route path="buscar" element={<BuscarHabitaciones />} />
           <Route path="reservas" element={<MisReservas />} /> */}
+
+          <Route path="reservation" element={<ReservationStudent />} />
         </Route>
 
         {/* Ruta raíz - redirige a login */}

@@ -30,7 +30,7 @@ export default function SidebarLayout() {
       navigate("/dashboard");
       setSelectedKeys(["dashboard"]);
     } else if (key === "reservas") {
-      navigate("/reservas");
+      navigate("/reservation");
       setSelectedKeys(["reservas"]);
     } else if (
       key.startsWith("p") ||
