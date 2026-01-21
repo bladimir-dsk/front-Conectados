@@ -123,10 +123,10 @@ export default function DashboardStudent_Screen() {
 
   return (
     <ConfigProvider locale={esES}>
-      <div style={styles.page}>
-        <div style={styles.container}>
-          <div style={styles.searchBar}>
-            <div style={styles.searchContent}>
+      <div className="min-h-screen w-full flex justify-center bg-gray-100">
+        <div className="w-full max-w-[1200px] px-2 py-6">
+          <div className="relative mx-auto mb-7 h-12 max-w-[520px] rounded-full bg-gray-200 flex items-center">
+            <div className="flex flex-1 items-center justify-center gap-4 text-sm">
               <Popover
                 trigger="click"
                 placement="bottom"
@@ -139,38 +139,38 @@ export default function DashboardStudent_Screen() {
                   />
                 }
               >
-                <div style={styles.searchItem}>
+                <div className="flex items-center gap-1 cursor-pointer">
                   <CalendarDays size={16} />
-                  {dateRange ? (
-                    <span style={styles.dateText}>
-                      {`${dayjs(dateRange[0]).format("DD MMM")} - ${dayjs(
-                        dateRange[1],
-                      ).format("DD MMM")}`}
-                    </span>
-                  ) : (
-                    <span>Fechas</span>
-                  )}
+                  <span className="font-medium lowercase">
+                    {dateRange
+                      ? `${dayjs(dateRange[0]).format("DD MMM")} - ${dayjs(
+                          dateRange[1],
+                        ).format("DD MMM")}`
+                      : "Fechas"}
+                  </span>
                 </div>
               </Popover>
 
-              <div style={styles.divider} />
+              <div className="h-5 w-px bg-gray-300" />
 
-              <div style={styles.searchItem}>
+              <div className="flex items-center gap-1">
                 <Users size={16} />
                 <InputNumber
                   min={1}
                   value={guests}
                   onChange={setGuests}
                   bordered={false}
-                  style={{ width: 50 }}
+                  className="w-12"
                 />
                 <span>huéspedes</span>
               </div>
             </div>
 
-            <Button style={styles.searchButton} icon={<Search size={18} />} />
+            <Button
+              icon={<Search size={18} />}
+              className="absolute right-1 h-10 w-10 rounded-full bg-green-500 text-white border-none"
+            />
           </div>
-
           <Row gutter={[20, 20]} justify="center">
             {currentRooms.map((room) => {
               const isFav = favorites.includes(room.id);
@@ -179,55 +179,56 @@ export default function DashboardStudent_Screen() {
                 <Col key={room.id} xs={24} sm={12} md={8} xl={6}>
                   <Card
                     hoverable
-                    style={styles.card}
+                    className="rounded-2xl overflow-hidden shadow-lg"
                     cover={
-                      <div style={styles.imageWrapper}>
+                      <div className="relative">
                         <img
                           src={IMAGE_URL}
                           alt={room.name}
-                          style={styles.image}
+                          className="h-40 w-full object-cover"
                         />
-                        <div style={styles.topActions}>
+                        <div className="absolute inset-x-2 top-2 flex justify-between">
                           <Tag color="green">Disponible</Tag>
                           <div
-                            style={{
-                              ...styles.heart,
-                              color: isFav ? "#ff4d4f" : "#666",
-                            }}
                             onClick={() => toggleFavorite(room.id)}
+                            className="bg-white p-1.5 rounded-full cursor-pointer"
                           >
                             <Heart
                               size={18}
                               fill={isFav ? "#ff4d4f" : "none"}
+                              color={isFav ? "#ff4d4f" : "#666"}
                             />
                           </div>
                         </div>
                       </div>
                     }
                   >
-                    <h3 style={styles.roomTitle}>{room.name}</h3>
+                    <h3 className="text-sm font-semibold mb-2">{room.name}</h3>
 
-                    <div style={styles.roomInfo}>
-                      <div style={styles.infoRow}>
+                    <div className="flex flex-col gap-1 mb-3 text-gray-600 text-sm">
+                      <div className="flex items-center gap-2">
                         <Home size={14} />
-                        <span style={styles.infoText}>{room.type}</span>
+                        {room.type}
                       </div>
-                      <div style={styles.infoRow}>
+                      <div className="flex items-center gap-2">
                         <Bed size={14} />
-                        <span style={styles.infoText}>
-                          {room.beds} {room.beds === 1 ? "cama" : "camas"}
-                        </span>
+                        {room.beds} {room.beds === 1 ? "cama" : "camas"}
                       </div>
                     </div>
 
-                    <div style={styles.priceSection}>
-                      <span style={styles.price}>${room.price}</span>
-                      <span style={styles.priceLabel}>/noche</span>
+                    <div className="flex items-baseline mb-3">
+                      <span className="text-lg font-semibold">
+                        ${room.price}
+                      </span>
+                      <span className="ml-1 text-xs text-gray-500">/noche</span>
                     </div>
 
-                    <div style={styles.actions}>
+                    <div className="flex flex-col gap-2">
                       <Button
-                        style={styles.primaryButton}
+                        style={{
+                          backgroundColor: "#84cc16",
+                          color: "white",
+                        }}
                         onClick={() => openRoomDetails(room)}
                       >
                         Ver detalles
@@ -239,8 +240,7 @@ export default function DashboardStudent_Screen() {
               );
             })}
           </Row>
-
-          <div style={styles.paginationContainer}>
+          <div className="flex justify-center mt-10">
             <Pagination
               current={currentPage}
               pageSize={pageSize}
@@ -250,164 +250,111 @@ export default function DashboardStudent_Screen() {
               showQuickJumper
             />
           </div>
-
           <Modal
             open={openDetails}
-            footer={null}
             onCancel={() => setOpenDetails(false)}
+            footer={null}
             centered
             width={480}
             closable={false}
-            styles={{
-              body: { padding: 0 },
-            }}
+            styles={{ body: { padding: 0 } }}
           >
-            <div style={styles.modalHeader}>
-              <Button
-                type="text"
-                icon={<X size={18} />}
-                onClick={() => setOpenDetails(false)}
-                style={styles.closeButton}
-              />
-            </div>
             {selectedRoom && (
-              <div style={styles.modalWrapper}>
-                <div style={styles.modalContent}>
-                  <div style={styles.modalImageWrapper}>
-                    <img
-                      src={IMAGE_URL}
-                      alt={selectedRoom.name}
-                      style={styles.modalImage}
-                    />
+              <div className="relative rounded-xl overflow-hidden">
+                <button
+                  onClick={() => setOpenDetails(false)}
+                  className="absolute top-3 right-3 z-10 bg-white rounded-full p-1 shadow"
+                >
+                  <X size={18} />
+                </button>
+                <img
+                  src={IMAGE_URL}
+                  alt={selectedRoom.name}
+                  className="w-full h-52 object-cover"
+                />
+                <div className="p-5 space-y-4">
+                  <div className="flex justify-between items-start">
+                    <h3 className="text-lg font-semibold">
+                      {selectedRoom.name}
+                    </h3>
+                    <div className="flex gap-1">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <StarIcon
+                          key={star}
+                          size={18}
+                          className="cursor-pointer"
+                          fill={
+                            userRating[selectedRoom.id] >= star
+                              ? "#facc15"
+                              : "none"
+                          }
+                          color={
+                            userRating[selectedRoom.id] >= star
+                              ? "#facc15"
+                              : "#d1d5db"
+                          }
+                          onClick={() => handleRate(selectedRoom.id, star)}
+                        />
+                      ))}
+                    </div>
                   </div>
 
-                  <div style={styles.modalBody}>
-                    <Space
-                      direction="vertical"
-                      size={16}
-                      style={{ width: "100%" }}
-                    >
-                      <div style={styles.titleSection}>
-                        <h3 style={styles.modalTitle}>{selectedRoom.name}</h3>
-                        <div style={styles.ratingSection}>
-                          <div style={styles.ratingLabel}>Calificación</div>
-                          <div style={styles.starsContainer}>
-                            {[1, 2, 3, 4, 5].map((star) => (
-                              <StarIcon
-                                key={star}
-                                size={18}
-                                style={styles.starIcon}
-                                fill={
-                                  userRating[selectedRoom.id] >= star
-                                    ? "#ffd700"
-                                    : "none"
-                                }
-                                color={
-                                  userRating[selectedRoom.id] >= star
-                                    ? "#ffd700"
-                                    : "#ddd"
-                                }
-                                onClick={() =>
-                                  handleRate(selectedRoom.id, star)
-                                }
-                              />
-                            ))}
-                          </div>
-                        </div>
-                      </div>
+                  <div className="text-sm text-gray-600 flex items-center gap-2">
+                    <User size={14} />
+                    {selectedRoom.owner}
+                  </div>
 
-                      <Space size={8}>
-                        <User size={14} color="#666" />
-                        <span style={styles.modalText}>
-                          {selectedRoom.owner}
-                        </span>
-                      </Space>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div className="flex gap-2">
+                      <Home size={16} className="text-green-500" />
+                      {selectedRoom.type}
+                    </div>
 
-                      <div style={styles.modalGrid}>
-                        <div style={styles.modalGridItem}>
-                          <Home size={16} color="#52c41a" />
-                          <div>
-                            <div style={styles.modalLabel}>Tipo</div>
-                            <div style={styles.modalValue}>
-                              {selectedRoom.type}
-                            </div>
-                          </div>
-                        </div>
-                        <div style={styles.modalGridItem}>
-                          <Bed size={16} color="#52c41a" />
-                          <div>
-                            <div style={styles.modalLabel}>Camas</div>
-                            <div style={styles.modalValue}>
-                              {selectedRoom.beds}{" "}
-                              {selectedRoom.beds === 1 ? "cama" : "camas"}
-                            </div>
-                          </div>
-                        </div>
-                        <div style={styles.modalGridItem}>
-                          <DollarSign size={16} color="#52c41a" />
-                          <div>
-                            <div style={styles.modalLabel}>Precio</div>
-                            <div style={styles.modalPrice}>
-                              ${selectedRoom.price}/noche
-                            </div>
-                          </div>
-                        </div>
-                        <div style={styles.modalGridItem}>
-                          <MapPin size={16} color="#52c41a" />
-                          <div>
-                            <div style={styles.modalLabel}>Ubicación</div>
-                            <div style={styles.modalAddress}>
-                              {selectedRoom.address}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
+                    <div className="flex gap-2">
+                      <Bed size={16} className="text-green-500" />
+                      {selectedRoom.beds} camas
+                    </div>
 
-                      <Divider style={{ margin: 0 }} />
+                    <div className="flex gap-2">
+                      <DollarSign size={16} className="text-green-500" />$
+                      {selectedRoom.price}/noche
+                    </div>
 
-                      <div>
-                        <h4 style={styles.sectionTitle}>Servicios incluidos</h4>
-                        <div style={styles.servicesScrollContainer}>
-                          <Space
-                            direction="vertical"
-                            size={8}
-                            style={{ width: "100%" }}
-                          >
-                            {selectedRoom.services.map((service, index) => (
-                              <div key={index} style={styles.serviceItem}>
-                                <Space size={12}>
-                                  {service.icon}
-                                  <span style={styles.serviceName}>
-                                    {service.name}
-                                  </span>
-                                </Space>
-                                <span style={styles.servicePrice}>
-                                  {service.price === 0
-                                    ? "Incluido"
-                                    : `+$${service.price}`}
-                                </span>
-                              </div>
-                            ))}
-                          </Space>
-                        </div>
-                      </div>
+                    <div className="flex gap-2 col-span-2">
+                      <MapPin size={16} className="text-green-500" />
+                      {selectedRoom.address}
+                    </div>
+                  </div>
 
-                      <div style={styles.modalActions}>
-                        <Button
-                          style={styles.requestButton}
-                          onClick={() => {
-                            console.log(
-                              "Solicitar habitación:",
-                              selectedRoom.id,
-                            );
-                            setOpenDetails(false);
-                          }}
+                  <Divider className="my-2" />
+
+                  <div>
+                    <h4 className="font-semibold mb-2">Servicios incluidos</h4>
+
+                    <div className="max-h-40 overflow-y-auto space-y-2 text-sm">
+                      {selectedRoom.services.map((s, i) => (
+                        <div
+                          key={i}
+                          className="flex justify-between items-center"
                         >
-                          Solicitar habitación
-                        </Button>
-                      </div>
-                    </Space>
+                          <div className="flex items-center gap-2">
+                            {s.icon}
+                            {s.name}
+                          </div>
+                          <span className="font-medium text-green-600">
+                            {s.price === 0 ? "Incluido" : `+$${s.price}`}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
+
+                  <Button
+                    className="w-full h-11 bg-green-500 text-white border-none font-medium"
+                    onClick={() => setOpenDetails(false)}
+                  >
+                    Solicitar habitación
+                  </Button>
                 </div>
               </div>
             )}
@@ -417,285 +364,3 @@ export default function DashboardStudent_Screen() {
     </ConfigProvider>
   );
 }
-
-const lime = "#52c41a";
-
-const styles = {
-  page: {
-    minHeight: "100vh",
-    backgroundColor: "#f8f9fa",
-    display: "flex",
-    justifyContent: "center",
-    width: "100%",
-  },
-  container: {
-    width: "100%",
-    maxWidth: 1200,
-    padding: "24px 8px",
-  },
-  searchBar: {
-    position: "relative",
-    margin: "0 auto 28px",
-    background: "#f2f2f2",
-    borderRadius: 30,
-    height: 48,
-    maxWidth: 520,
-    display: "flex",
-    alignItems: "center",
-  },
-  searchContent: {
-    flex: 1,
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    gap: 14,
-  },
-  searchItem: {
-    display: "flex",
-    alignItems: "center",
-    gap: 6,
-    cursor: "pointer",
-    fontSize: 13,
-  },
-  divider: {
-    width: 1,
-    height: 20,
-    background: "#ddd",
-  },
-  dateText: {
-    fontWeight: 500,
-    textTransform: "lowercase",
-  },
-  searchButton: {
-    position: "absolute",
-    right: 4,
-    background: lime,
-    border: "none",
-    borderRadius: "50%",
-    width: 40,
-    height: 40,
-    color: "#fff",
-  },
-  card: {
-    borderRadius: 16,
-    overflow: "hidden",
-    boxShadow: "0 8px 20px rgba(0,0,0,0.08)",
-  },
-  imageWrapper: {
-    position: "relative",
-  },
-  image: {
-    width: "100%",
-    height: 160,
-    objectFit: "cover",
-  },
-  topActions: {
-    position: "absolute",
-    top: 10,
-    left: 10,
-    right: 10,
-    display: "flex",
-    justifyContent: "space-between",
-  },
-  heart: {
-    background: "#fff",
-    borderRadius: "50%",
-    padding: 6,
-    cursor: "pointer",
-  },
-  roomTitle: {
-    fontSize: 15,
-    fontWeight: 600,
-    marginBottom: 8,
-  },
-  roomInfo: {
-    display: "flex",
-    flexDirection: "column",
-    gap: 6,
-    marginBottom: 12,
-  },
-  infoRow: {
-    display: "flex",
-    alignItems: "center",
-    gap: 8,
-  },
-  infoText: {
-    fontSize: 13,
-    color: "#666",
-  },
-  priceSection: {
-    display: "flex",
-    alignItems: "baseline",
-    marginBottom: 12,
-  },
-  price: {
-    fontSize: 20,
-    fontWeight: 600,
-    color: "#333",
-  },
-  priceLabel: {
-    fontSize: 12,
-    color: "#666",
-    marginLeft: 4,
-  },
-  actions: {
-    display: "flex",
-    flexDirection: "column",
-    gap: 8,
-  },
-  primaryButton: {
-    background: lime,
-    borderColor: lime,
-    color: "#fff",
-  },
-  paginationContainer: {
-    display: "flex",
-    justifyContent: "center",
-    marginTop: 40,
-  },
-  modalWrapper: {
-    position: "relative",
-  },
-  modalHeader: {
-    position: "absolute",
-    top: 16,
-    right: 16,
-    zIndex: 10,
-  },
-  closeButton: {
-    color: "#666",
-    background: "transparent",
-    border: "none",
-    width: 28,
-    height: 28,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 0,
-    minWidth: "auto",
-  },
-  modalContent: {
-    borderRadius: 12,
-    overflow: "hidden",
-  },
-  modalImageWrapper: {
-    position: "relative",
-  },
-  modalImage: {
-    width: "100%",
-    height: 200,
-    objectFit: "cover",
-    marginTop: 30,
-  },
-  modalBody: {
-    padding: 24,
-  },
-  titleSection: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    gap: 16,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: 600,
-    margin: 0,
-    color: "#333",
-    flex: 1,
-  },
-  ratingSection: {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "flex-start",
-    marginLeft: 16,
-  },
-  ratingLabel: {
-    fontSize: 11,
-    color: "#666",
-    marginBottom: 4,
-  },
-  starsContainer: {
-    display: "flex",
-    gap: 2,
-  },
-  starIcon: {
-    cursor: "pointer",
-    transition: "all 0.2s",
-  },
-  modalText: {
-    fontSize: 14,
-    color: "#666",
-  },
-  modalGrid: {
-    display: "grid",
-    gridTemplateColumns: "1fr 1fr",
-    gap: 16,
-  },
-  modalGridItem: {
-    display: "flex",
-    gap: 12,
-    alignItems: "flex-start",
-  },
-  modalLabel: {
-    fontSize: 12,
-    color: "#999",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
-  modalValue: {
-    fontSize: 14,
-    fontWeight: 500,
-    color: "#333",
-    marginTop: 2,
-  },
-  modalPrice: {
-    fontSize: 14,
-    fontWeight: 600,
-    color: lime,
-    marginTop: 2,
-  },
-  modalAddress: {
-    fontSize: 13,
-    color: "#666",
-    lineHeight: 1.4,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: 600,
-    marginBottom: 12,
-    color: "#333",
-  },
-  servicesScrollContainer: {
-    maxHeight: 200,
-    overflowY: "auto",
-    paddingRight: 4,
-  },
-  serviceItem: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: "8px 0",
-  },
-  serviceName: {
-    fontSize: 14,
-    color: "#333",
-  },
-  servicePrice: {
-    fontSize: 14,
-    fontWeight: 500,
-    color: lime,
-  },
-  modalActions: {
-    display: "flex",
-    marginTop: 8,
-  },
-  requestButton: {
-    width: "100%",
-    background: lime,
-    borderColor: lime,
-    color: "#fff",
-    fontWeight: 500,
-    height: 42,
-    fontSize: 15,
-  },
-};
