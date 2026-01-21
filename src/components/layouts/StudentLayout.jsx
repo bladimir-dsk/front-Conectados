@@ -1,16 +1,16 @@
 import React, { useState } from "react";
 import { Layout, Menu, Button, Drawer, Avatar, Dropdown } from "antd";
 import {
-    LayoutDashboard,
-    CalendarCheck,
-    RotateCcw,
-    DollarSign,
-    Star,
-    Users,
-    Menu as MenuIcon,
-    LogOut,
-    User,
-    Search,
+  LayoutDashboard,
+  CalendarCheck,
+  RotateCcw,
+  DollarSign,
+  Star,
+  Users,
+  Menu as MenuIcon,
+  LogOut,
+  User,
+  Search,
 } from "lucide-react";
 import { Link, Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
@@ -18,136 +18,136 @@ import { useAuth } from "../../hooks/useAuth";
 const { Header, Sider, Content } = Layout;
 
 export default function StudentLayout() {
-    const [selectedKeys, setSelectedKeys] = useState([]);
-    const [openKeys, setOpenKeys] = useState(["price", "rating", "capacity"]);
-    const [drawerVisible, setDrawerVisible] = useState(false);
-    const navigate = useNavigate();
-    const location = useLocation();
-    const { user, logout } = useAuth();
+  const [selectedKeys, setSelectedKeys] = useState([]);
+  const [openKeys, setOpenKeys] = useState(["price", "rating", "capacity"]);
+  const [drawerVisible, setDrawerVisible] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { user, logout } = useAuth();
 
-    const handleMenuSelect = ({ key }) => {
-        if (key === "reset") {
-            setSelectedKeys([]);
-            setDrawerVisible(false);
-            return;
-        }
+  const handleMenuSelect = ({ key }) => {
+    if (key === "reset") {
+      setSelectedKeys([]);
+      setDrawerVisible(false);
+      return;
+    }
 
-        if (key === "dashboard") {
-            navigate("/estudiante/dashboard");
-            setSelectedKeys(["dashboard"]);
-        } else if (key === "reservas") {
-            navigate("/estudiante/reservas");
-            setSelectedKeys(["reservas"]);
-        } else if (key === "buscar") {
-            navigate("/estudiante/buscar");
-            setSelectedKeys(["buscar"]);
-        } else if (
-            key.startsWith("p") ||
-            key.startsWith("r") ||
-            key.startsWith("c")
-        ) {
-            // Filtros de búsqueda
-            if (selectedKeys.includes(key)) {
-                setSelectedKeys(selectedKeys.filter((k) => k !== key));
-            } else {
-                setSelectedKeys([...selectedKeys, key]);
-            }
-        } else {
-            setSelectedKeys([key]);
-        }
+    if (key === "dashboard") {
+      navigate("/estudiante/dashboard");
+      setSelectedKeys(["dashboard"]);
+    } else if (key === "reservas") {
+      navigate("/estudiante/reservas");
+      setSelectedKeys(["reservas"]);
+    } else if (key === "buscar") {
+      navigate("/estudiante/buscar");
+      setSelectedKeys(["buscar"]);
+    } else if (
+      key.startsWith("p") ||
+      key.startsWith("r") ||
+      key.startsWith("c")
+    ) {
+      // Filtros de búsqueda
+      if (selectedKeys.includes(key)) {
+        setSelectedKeys(selectedKeys.filter((k) => k !== key));
+      } else {
+        setSelectedKeys([...selectedKeys, key]);
+      }
+    } else {
+      setSelectedKeys([key]);
+    }
 
-        if (window.innerWidth < 768) {
-            setDrawerVisible(false);
-        }
-    };
+    if (window.innerWidth < 768) {
+      setDrawerVisible(false);
+    }
+  };
 
-    const handleLogout = () => {
-        logout();
-        navigate("/login");
-    };
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+  };
 
-    const userMenuItems = [
-        {
-            key: "profile",
-            icon: <User size={16} />,
-            label: "Mi perfil",
-        },
-        {
-            type: "divider",
-        },
-        {
-            key: "logout",
-            icon: <LogOut size={16} />,
-            label: "Cerrar sesión",
-            danger: true,
-            onClick: handleLogout,
-        },
-    ];
+  const userMenuItems = [
+    {
+      key: "profile",
+      icon: <User size={16} />,
+      label: "Mi perfil",
+    },
+    {
+      type: "divider",
+    },
+    {
+      key: "logout",
+      icon: <LogOut size={16} />,
+      label: "Cerrar sesión",
+      danger: true,
+      onClick: handleLogout,
+    },
+  ];
 
-    const menuItems = [
-        {
-            key: "dashboard",
-            icon: <LayoutDashboard size={18} />,
-            label: "Dashboard",
-        },
-        {
-            key: "buscar",
-            icon: <Search size={18} />,
-            label: "Buscar Habitaciones",
-        },
-        {
-            key: "reservas",
-            icon: <CalendarCheck size={18} />,
-            label: "Mis reservas",
-        },
-        { type: "divider" },
-        {
-            key: "reset",
-            icon: <RotateCcw size={16} />,
-            label: "Restablecer filtros"
-        },
-        {
-            key: "price",
-            icon: <DollarSign size={18} />,
-            label: "Por precios",
-            children: [
-                "Menos de $400",
-                "$400 a $500",
-                "$500 a $600",
-                "Más de $600",
-            ].map((l, i) => ({
-                key: `p${i}`,
-                label: l,
-            })),
-        },
-        {
-            key: "rating",
-            icon: <Star size={18} />,
-            label: "Por clasificación",
-            children: ["Ninguno", "Excelente", "Muy bueno", "Bueno"].map((l, i) => ({
-                key: `r${i}`,
-                label: l,
-            })),
-        },
-        {
-            key: "capacity",
-            icon: <Users size={18} />,
-            label: "Por capacidad",
-            children: [
-                "Individual",
-                "1 a 2 huéspedes",
-                "2 a 4 huéspedes",
-                "Más de 4 huéspedes",
-            ].map((l, i) => ({
-                key: `c${i}`,
-                label: l,
-            })),
-        },
-    ];
+  const menuItems = [
+    {
+      key: "dashboard",
+      icon: <LayoutDashboard size={18} />,
+      label: "Inicio",
+    },
+    {
+      key: "buscar",
+      icon: <Search size={18} />,
+      label: "Buscar Habitaciones",
+    },
+    {
+      key: "reservas",
+      icon: <CalendarCheck size={18} />,
+      label: "Mis reservas",
+    },
+    { type: "divider" },
+    {
+      key: "reset",
+      icon: <RotateCcw size={16} />,
+      label: "Restablecer filtros",
+    },
+    {
+      key: "price",
+      icon: <DollarSign size={18} />,
+      label: "Por precios",
+      children: [
+        "Menos de $400",
+        "$400 a $500",
+        "$500 a $600",
+        "Más de $600",
+      ].map((l, i) => ({
+        key: `p${i}`,
+        label: l,
+      })),
+    },
+    {
+      key: "rating",
+      icon: <Star size={18} />,
+      label: "Por clasificación",
+      children: ["Ninguno", "Excelente", "Muy bueno", "Bueno"].map((l, i) => ({
+        key: `r${i}`,
+        label: l,
+      })),
+    },
+    {
+      key: "capacity",
+      icon: <Users size={18} />,
+      label: "Por capacidad",
+      children: [
+        "Individual",
+        "1 a 2 huéspedes",
+        "2 a 4 huéspedes",
+        "Más de 4 huéspedes",
+      ].map((l, i) => ({
+        key: `c${i}`,
+        label: l,
+      })),
+    },
+  ];
 
-    return (
-        <>
-            <style>{`
+  return (
+    <>
+      <style>{`
         .student-layout{min-height:100vh}
         .student-sider{background:#fff;border-right:1px solid #eaeaea}
         .ant-menu-item,.ant-menu-submenu-title{padding-left:24px!important}
@@ -222,74 +222,87 @@ export default function StudentLayout() {
         }
       `}</style>
 
-            <Layout className="student-layout">
-                <Sider
-                    width={260}
-                    className="student-sider"
-                    breakpoint="lg"
-                    collapsedWidth="0"
-                >
-                    <div style={{ padding: "16px", borderBottom: "1px solid #eaeaea" }}>
-                        <h3 style={{ margin: 0, color: "#84cc16" }}>Panel Estudiante</h3>
-                    </div>
-                    <Menu
-                        mode="inline"
-                        items={menuItems}
-                        selectedKeys={selectedKeys}
-                        openKeys={openKeys}
-                        onSelect={handleMenuSelect}
-                        onOpenChange={setOpenKeys}
-                        multiple={true}
-                    />
-                </Sider>
+      <Layout className="student-layout">
+        <Sider
+          width={260}
+          className="student-sider"
+          breakpoint="lg"
+          collapsedWidth="0"
+        >
+          <div style={{ padding: "16px", borderBottom: "1px solid #eaeaea" }}>
+            <h3 style={{ margin: 0, color: "#84cc16" }}>Panel Estudiante</h3>
+          </div>
+          <Menu
+            mode="inline"
+            items={menuItems}
+            selectedKeys={selectedKeys}
+            openKeys={openKeys}
+            onSelect={handleMenuSelect}
+            onOpenChange={setOpenKeys}
+            multiple={true}
+          />
+        </Sider>
 
-                <Drawer
-                    title="Menú Estudiante"
-                    placement="left"
-                    onClose={() => setDrawerVisible(false)}
-                    open={drawerVisible}
-                    width={260}
-                >
-                    <Menu
-                        mode="inline"
-                        items={menuItems}
-                        selectedKeys={selectedKeys}
-                        openKeys={openKeys}
-                        onSelect={handleMenuSelect}
-                        onOpenChange={setOpenKeys}
-                        multiple={true}
-                    />
-                </Drawer>
+        <Drawer
+          title="Menú Estudiante"
+          placement="left"
+          onClose={() => setDrawerVisible(false)}
+          open={drawerVisible}
+          width={260}
+        >
+          <Menu
+            mode="inline"
+            items={menuItems}
+            selectedKeys={selectedKeys}
+            openKeys={openKeys}
+            onSelect={handleMenuSelect}
+            onOpenChange={setOpenKeys}
+            multiple={true}
+          />
+        </Drawer>
 
-                <Layout>
-                    <Header className="student-header">
-                        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                            <button
-                                className="mobile-menu-btn"
-                                onClick={() => setDrawerVisible(true)}
-                            >
-                                <MenuIcon size={24} color="#fff" />
-                            </button>
-                            <div className="student-logo">
-                                <img src="/LogoPrincipal-Horizontal.webp" alt="Logo" />
-                            </div>
-                        </div>
-                        <Dropdown menu={{ items: userMenuItems }} placement="bottomRight">
-                            <div style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
-                                <Avatar style={{ backgroundColor: "#84cc16" }}>
-                                    {user?.name?.charAt(0).toUpperCase()}
-                                </Avatar>
-                                <span style={{ color: "#fff", fontWeight: 500, display: window.innerWidth < 768 ? "none" : "block" }}>
-                                    {user?.name}
-                                </span>
-                            </div>
-                        </Dropdown>
-                    </Header>
-                    <Content className="student-content">
-                        <Outlet />
-                    </Content>
-                </Layout>
-            </Layout>
-        </>
-    );
+        <Layout>
+          <Header className="student-header">
+            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+              <button
+                className="mobile-menu-btn"
+                onClick={() => setDrawerVisible(true)}
+              >
+                <MenuIcon size={24} color="#fff" />
+              </button>
+              <div className="student-logo">
+                <img src="/LogoPrincipal-Horizontal.webp" alt="Logo" />
+              </div>
+            </div>
+            <Dropdown menu={{ items: userMenuItems }} placement="bottomRight">
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  cursor: "pointer",
+                }}
+              >
+                <Avatar style={{ backgroundColor: "#84cc16" }}>
+                  {user?.name?.charAt(0).toUpperCase()}
+                </Avatar>
+                <span
+                  style={{
+                    color: "#fff",
+                    fontWeight: 500,
+                    display: window.innerWidth < 768 ? "none" : "block",
+                  }}
+                >
+                  {user?.name}
+                </span>
+              </div>
+            </Dropdown>
+          </Header>
+          <Content className="student-content">
+            <Outlet />
+          </Content>
+        </Layout>
+      </Layout>
+    </>
+  );
 }
