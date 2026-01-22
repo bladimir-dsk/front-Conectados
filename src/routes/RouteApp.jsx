@@ -4,6 +4,7 @@ import LoadingFallback from "../components/fallbacks/LoadingFallback";
 import {
   DashboardStudent,
   ReservationStudent,
+  DocumentationStudent,
   Login,
   Register,
 } from "./lazyRoutes.js";
@@ -63,6 +64,7 @@ export default function RouteApp() {
           <Route path="reservas" element={<MisReservas />} /> */}
 
           <Route path="reservas" element={<ReservationStudent />} />
+          <Route path="documentation" element={<DocumentationStudent />} />
         </Route>
 
         {/* Ruta raíz - redirige a login */}

@@ -15,6 +15,11 @@ export const ReservationStudent = lazy(
   () => import("../screens/estudiantes/reservation/ReservationStudent_Screen"),
 );
 
+export const DocumentationStudent = lazy(
+  () =>
+    import("../screens/estudiantes/documentation/DocumentationStudent_Screen"),
+);
+
 // Componentes privados (necesitan autenticacion) ADMIN
 
 // Componentes privados (necesitan autenticacion) PROPIETARIOS
