@@ -20,6 +20,10 @@ export const DocumentationStudent = lazy(
     import("../screens/estudiantes/documentation/DocumentationStudent_Screen"),
 );
 
+export const ProfileStudent = lazy(
+  () => import("../screens/estudiantes/profile/ProfileStudent_Screen"),
+);
+
 // Componentes privados (necesitan autenticacion) ADMIN
 
 // Componentes privados (necesitan autenticacion) PROPIETARIOS

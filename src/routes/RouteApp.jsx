@@ -5,6 +5,7 @@ import {
   DashboardStudent,
   ReservationStudent,
   DocumentationStudent,
+  ProfileStudent,
   Login,
   Register,
 } from "./lazyRoutes.js";
@@ -60,10 +61,12 @@ export default function RouteApp() {
         >
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<DashboardStudent />} />
-          {/* <Route path="buscar" element={<BuscarHabitaciones />} />
-          <Route path="reservas" element={<MisReservas />} /> */}
+          {/* <Route path="buscar" element={<BuscarHabitaciones />} />*/}
+
+          <Route path="profile" element={<ProfileStudent />} />
 
           <Route path="reservas" element={<ReservationStudent />} />
+
           <Route path="documentation" element={<DocumentationStudent />} />
         </Route>
 
