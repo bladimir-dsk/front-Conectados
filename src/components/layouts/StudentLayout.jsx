@@ -11,6 +11,7 @@ import {
   LogOut,
   User,
   Search,
+  FileText,
 } from "lucide-react";
 import { Link, Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
@@ -38,6 +39,9 @@ export default function StudentLayout() {
     } else if (key === "reservas") {
       navigate("/estudiante/reservas");
       setSelectedKeys(["reservas"]);
+    } else if (key === "documentation") {
+      navigate("/estudiante/documentation");
+      setSelectedKeys(["documentation"]);
     } else if (key === "buscar") {
       navigate("/estudiante/buscar");
       setSelectedKeys(["buscar"]);
@@ -46,7 +50,6 @@ export default function StudentLayout() {
       key.startsWith("r") ||
       key.startsWith("c")
     ) {
-      // Filtros de búsqueda
       if (selectedKeys.includes(key)) {
         setSelectedKeys(selectedKeys.filter((k) => k !== key));
       } else {
@@ -99,6 +102,11 @@ export default function StudentLayout() {
       key: "reservas",
       icon: <CalendarCheck size={18} />,
       label: "Mis reservas",
+    },
+    {
+      key: "documentation",
+      icon: <FileText size={18} />,
+      label: "Mi documentación",
     },
     { type: "divider" },
     {
