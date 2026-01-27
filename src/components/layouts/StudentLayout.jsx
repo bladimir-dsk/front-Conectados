@@ -74,6 +74,7 @@ export default function StudentLayout() {
       key: "profile",
       icon: <User size={16} />,
       label: "Mi perfil",
+      onClick: () => navigate("/estudiante/profile"),
     },
     {
       type: "divider",
