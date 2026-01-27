@@ -16,41 +16,29 @@ export default function DocumentationStudent_Screen() {
     });
   };
 
-  const validateINE = (file) => {
-    if (ineFiles.length >= 2) {
+  const validateFiles = (file, limit, currentLength) => {
+    if (currentLength >= limit) {
       notify(
         "error",
         "Límite alcanzado",
-        "Solo se permiten 2 archivos para el INE",
+        `Solo se permiten ${limit} archivo${limit > 1 ? "s" : ""}`,
       );
       return Upload.LIST_IGNORE;
     }
 
-    const valid =
-      file.type === "image/png" ||
-      file.type === "image/jpeg" ||
-      file.type === "image/jpg";
+    const validTypes = [
+      "image/png",
+      "image/jpeg",
+      "image/jpg",
+      "application/pdf",
+    ];
 
-    if (!valid) {
+    if (!validTypes.includes(file.type)) {
       notify(
         "error",
         "Archivo incorrecto",
-        "Solo se permiten archivos PNG o JPG",
+        "Solo se permiten archivos PNG, JPG o PDF",
       );
-      return Upload.LIST_IGNORE;
-    }
-
-    return true;
-  };
-
-  const validatePDFSingle = (file, filesLength) => {
-    if (filesLength >= 1) {
-      notify("error", "Límite alcanzado", "Solo se permite un archivo");
-      return Upload.LIST_IGNORE;
-    }
-
-    if (file.type !== "application/pdf") {
-      notify("error", "Archivo incorrecto", "Solo se permiten archivos PDF");
       return Upload.LIST_IGNORE;
     }
 
@@ -103,11 +91,10 @@ export default function DocumentationStudent_Screen() {
       >
         {!saved && (
           <Upload
-            beforeUpload={validateINE}
+            beforeUpload={(file) => validateFiles(file, 2, ineFiles.length)}
             fileList={ineFiles}
             onChange={({ fileList }) => setIneFiles(fileList.slice(0, 2))}
             maxCount={2}
-            listType="picture"
           >
             <Button icon={<UploadOutlined />}>Subir INE (Ambos lados)</Button>
           </Upload>
@@ -118,7 +105,7 @@ export default function DocumentationStudent_Screen() {
       <Card title="Comprobante de Domicilio" className="rounded-xl shadow-sm">
         {!saved && (
           <Upload
-            beforeUpload={(file) => validatePDFSingle(file, addressFile.length)}
+            beforeUpload={(file) => validateFiles(file, 1, addressFile.length)}
             fileList={addressFile}
             onChange={({ fileList }) => setAddressFile(fileList.slice(0, 1))}
             maxCount={1}
@@ -132,9 +119,7 @@ export default function DocumentationStudent_Screen() {
       <Card title="Pasaporte (Opcional)" className="rounded-xl shadow-sm">
         {!saved && (
           <Upload
-            beforeUpload={(file) =>
-              validatePDFSingle(file, passportFile.length)
-            }
+            beforeUpload={(file) => validateFiles(file, 1, passportFile.length)}
             fileList={passportFile}
             onChange={({ fileList }) => setPassportFile(fileList.slice(0, 1))}
             maxCount={1}

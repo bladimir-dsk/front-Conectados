@@ -42,9 +42,9 @@ export default function StudentLayout() {
     } else if (key === "documentation") {
       navigate("/estudiante/documentation");
       setSelectedKeys(["documentation"]);
-    } else if (key === "buscar") {
-      navigate("/estudiante/buscar");
-      setSelectedKeys(["buscar"]);
+    } else if (key === "search") {
+      navigate("/estudiante/search");
+      setSelectedKeys(["search"]);
     } else if (
       key.startsWith("p") ||
       key.startsWith("r") ||
@@ -95,7 +95,7 @@ export default function StudentLayout() {
       label: "Inicio",
     },
     {
-      key: "buscar",
+      key: "search",
       icon: <Search size={18} />,
       label: "Buscar Habitaciones",
     },
