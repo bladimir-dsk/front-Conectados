@@ -123,23 +123,18 @@ const university = {
   lng: -89.6273,
 };
 
-const RoomMarker = ({ onClick, isSelected, showRoute }) => (
+const RoomMarker = ({ onClick }) => (
   <div
     onClick={onClick}
     className="-translate-x-1/2 -translate-y-full cursor-pointer"
   >
-    <Home
-      size={30}
-      className={`${showRoute ? "text-lime-500" : "text-red-500"} ${
-        isSelected ? "scale-125 drop-shadow-lg" : ""
-      } transition-all`}
-    />
+    <img src="/casa.png" className="w-8 h-8 drop-shadow-lg" />
   </div>
 );
 
 const UniversityMarker = () => (
   <div className="-translate-x-1/2 -translate-y-full">
-    <GraduationCap size={34} className="text-blue-600 drop-shadow" />
+    <img src="/edificio-escolar.png" className="w-9 h-9 drop-shadow-lg" />
   </div>
 );
 
@@ -160,7 +155,9 @@ const Info = ({ icon, label, value }) => (
     <div className="text-lime-500">{icon}</div>
     <div>
       <p className="text-xs text-gray-500">{label}</p>
-      <p className="font-medium text-gray-800 truncate">{value}</p>
+      <p className="font-medium text-gray-800 break-words leading-snug">
+        {value}
+      </p>
     </div>
   </div>
 );
@@ -264,7 +261,7 @@ export default function SearchStudent_Screen() {
         width={520}
         closable={false}
         mask={false}
-        bodyStyle={{ padding: 0 }}
+        styles={{ body: { padding: 0 } }}
         className="[&_.ant-modal-content]:rounded-2xl"
       >
         {selectedRoom && (
@@ -376,10 +373,10 @@ export default function SearchStudent_Screen() {
 
                   <Button
                     size="small"
-                    type="primary"
+                    type="default"
                     icon={<Map size={14} />}
                     onClick={() => showRouteOnMap(selectedRoom)}
-                    className="bg-lime-500 hover:bg-lime-600 border-lime-500 text-white"
+                    className="!bg-lime-500 hover:!bg-lime-600 !border-lime-500 !text-white"
                   >
                     Ver ruta
                   </Button>
@@ -411,7 +408,11 @@ export default function SearchStudent_Screen() {
                 block
                 type="primary"
                 disabled={!selectedRoom.available}
-                className="h-11 rounded-xl bg-lime-500 hover:bg-lime-600 border-lime-500 text-white"
+                className={`h-11 rounded-xl !text-white ${
+                  selectedRoom.available
+                    ? "!bg-lime-500 hover:!bg-lime-600 !border-lime-500"
+                    : "!bg-gray-400 !border-gray-400 cursor-not-allowed"
+                }`}
               >
                 {selectedRoom.available
                   ? "Solicitar habitación"
