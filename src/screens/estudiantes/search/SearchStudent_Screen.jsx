@@ -25,6 +25,7 @@ import {
   CheckCircle,
   XCircle,
 } from "lucide-react";
+import { useLocation } from "react-router-dom";
 
 const servicesCatalog = [
   { name: "Internet", icon: <Wifi size={16} />, price: 0 },
@@ -229,6 +230,7 @@ export default function SearchStudent_Screen() {
   return (
     <div className="relative h-[calc(100vh-64px)]">
       <GoogleMapReact
+        key="search-map"
         bootstrapURLKeys={{ key: import.meta.env.VITE_GOOGLE_MAPS_API_KEY }}
         defaultCenter={{ lat: 20.99, lng: -89.6 }}
         defaultZoom={13}
