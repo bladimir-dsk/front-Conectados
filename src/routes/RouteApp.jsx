@@ -9,6 +9,7 @@ import {
   SearchStudent,
   Login,
   Register,
+  AdminDashboard,
 } from "./lazyRoutes.js";
 import { ProtectedRoute } from "./ProtectedRoute";
 import AdminLayout from "../components/layouts/AdminLayout";
@@ -33,6 +34,7 @@ export default function RouteApp() {
           }
         >
           <Route index element={<Navigate to="dashboard" replace />} />
+          <Route path="dashboard" element={<AdminDashboard />} />
           {/* <Route path="dashboard" element={<Dashboard />} />
           <Route path="reservas" element={<Reservas />} /> */}
         </Route>

@@ -16,15 +16,17 @@ export default function LoginScreen() {
   const { notify } = useNotification();
   const navigate = useNavigate();
   const { login } = useAuth();
-  
-  // Hook useApi para el endpoint de login (sin autoFetch)
+
+  // Hook useApi para el endpoint de login
   const { postData } = useApi("/auth/login", {}, false);
 
   const handleSubmit = async (values) => {
     setLoading(true);
 
     try {
-      const data = await postData(values);
+      const data = await postData(values, false);
+
+      console.log("Respuesta completa del API:", data);
 
       const userData = {
         id: data.id,
@@ -33,6 +35,8 @@ export default function LoginScreen() {
         role: data.role,
         id_empresa: data.id_empresa,
       };
+
+      console.log("userData construido:", userData);
 
       // Primero hacer login
       login(userData, data.token);
@@ -52,7 +56,7 @@ export default function LoginScreen() {
 
       setTimeout(() => {
         navigate(roleRoutes[userData.role] || "/login");
-      }, 800);
+      });
     } catch (error) {
       console.error("Error:", error);
       notify({
@@ -139,10 +143,10 @@ export default function LoginScreen() {
             <FormInput
               name="email"
               label="Correo electrónico"
-              placeholder="john.doe@gmail.com"
+              placeholder="ejemplo@gmail.com"
               rules={[
-                { required: true, message: "Ingresa tu email" },
-                { type: "email", message: "Email no válido" },
+                { required: true, message: "Ingresa tu correo" },
+                { type: "email", message: "Correo no válido" },
               ]}
               inputProps={{
                 size: "large",
