@@ -1,8 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   Row,
   Col,
-  Card,
   Tag,
   Button,
   InputNumber,
@@ -18,7 +17,6 @@ import esES from "antd/locale/es_ES";
 import {
   Users,
   Wifi,
-  Eye,
   MapPin,
   DollarSign,
   Heart,
@@ -31,6 +29,22 @@ import {
   Bed,
   X,
   Star as StarIcon,
+  MapPin as MapPinIcon,
+  Droplets,
+  Zap,
+  Sparkles,
+  Utensils,
+  Shirt,
+  Wind,
+  Tv,
+  Car,
+  Dumbbell,
+  Waves,
+  Coffee,
+  Sandwich,
+  Moon,
+  Bell,
+  Bath,
 } from "lucide-react";
 import dayjs from "dayjs";
 import "dayjs/locale/es";
@@ -41,55 +55,277 @@ const { RangePicker } = DatePicker;
 
 const IMAGE_URL = "https://s03.s3c.es/imag/_v0/1200x655/0/f/c/habitacion.jpg";
 
-const rooms = Array.from({ length: 24 }, (_, i) => ({
-  id: i + 1,
-  name: `Habitación ${i + 1}`,
-  price: 80 + (i % 5) * 20,
-  owner: "Juan Pérez",
-  gender: "Mixto",
-  type:
-    i % 3 === 0
-      ? "Cuarto privado"
-      : i % 3 === 1
-        ? "Habitación compartida"
-        : "Estudio",
-  beds: i % 2 === 0 ? 1 : 2,
-  address: "Calle 10 #123, Centro, Mérida, Yucatán",
-  rating: 4.0 + i * 0.05,
-  reviews: 10 + i,
-  services: [
-    { name: "Internet", price: 0, icon: <Wifi size={14} /> },
-    { name: "Agua", price: 0, icon: <CheckCircle size={14} /> },
-    { name: "Luz", price: 20, icon: <CheckCircle size={14} /> },
-    { name: "Limpieza", price: 15, icon: <CheckCircle size={14} /> },
-    { name: "Cocina", price: 10, icon: <CheckCircle size={14} /> },
-    { name: "Lavadora", price: 5, icon: <CheckCircle size={14} /> },
-    { name: "Aire acondicionado", price: 25, icon: <CheckCircle size={14} /> },
-    { name: "Calefacción", price: 15, icon: <CheckCircle size={14} /> },
-    { name: "TV", price: 10, icon: <CheckCircle size={14} /> },
-    { name: "Parqueadero", price: 30, icon: <CheckCircle size={14} /> },
-    { name: "Gimnasio", price: 20, icon: <CheckCircle size={14} /> },
-    { name: "Piscina", price: 25, icon: <CheckCircle size={14} /> },
-    { name: "Wifi alta velocidad", price: 0, icon: <CheckCircle size={14} /> },
-    { name: "Desayuno", price: 12, icon: <CheckCircle size={14} /> },
-    { name: "Almuerzo", price: 18, icon: <CheckCircle size={14} /> },
-    { name: "Cena", price: 22, icon: <CheckCircle size={14} /> },
-    { name: "Room service", price: 8, icon: <CheckCircle size={14} /> },
-    { name: "Toallas", price: 0, icon: <CheckCircle size={14} /> },
-    { name: "Ropa de cama", price: 0, icon: <CheckCircle size={14} /> },
-    { name: "Secador de pelo", price: 5, icon: <CheckCircle size={14} /> },
-    { name: "Plancha", price: 3, icon: <CheckCircle size={14} /> },
-    { name: "Caja fuerte", price: 7, icon: <CheckCircle size={14} /> },
-    { name: "Minibar", price: 15, icon: <CheckCircle size={14} /> },
-    { name: "Balcón", price: 10, icon: <CheckCircle size={14} /> },
-    { name: "Vista al mar", price: 35, icon: <CheckCircle size={14} /> },
-    { name: "Transporte", price: 20, icon: <CheckCircle size={14} /> },
-    { name: "Spa", price: 40, icon: <CheckCircle size={14} /> },
-    { name: "Sauna", price: 25, icon: <CheckCircle size={14} /> },
-    { name: "Jacuzzi", price: 30, icon: <CheckCircle size={14} /> },
-    { name: "Mascotas", price: 15, icon: <CheckCircle size={14} /> },
-  ],
-}));
+const SERVICES = [
+  { name: "Internet", price: 0, icon: <Wifi size={16} /> },
+  { name: "Agua", price: 0, icon: <Droplets size={16} /> },
+  { name: "Luz", price: 20, icon: <Zap size={16} /> },
+  { name: "Limpieza", price: 15, icon: <Sparkles size={16} /> },
+  { name: "Cocina", price: 10, icon: <Utensils size={16} /> },
+  { name: "Lavadora", price: 5, icon: <Shirt size={16} /> },
+  { name: "Aire acondicionado", price: 25, icon: <Wind size={16} /> },
+  { name: "TV", price: 10, icon: <Tv size={16} /> },
+  { name: "Parqueadero", price: 30, icon: <Car size={16} /> },
+  { name: "Gimnasio", price: 20, icon: <Dumbbell size={16} /> },
+  { name: "Piscina", price: 25, icon: <Waves size={16} /> },
+  { name: "Desayuno", price: 12, icon: <Coffee size={16} /> },
+  { name: "Almuerzo", price: 18, icon: <Sandwich size={16} /> },
+  { name: "Cena", price: 22, icon: <Moon size={16} /> },
+  { name: "Room service", price: 8, icon: <Bell size={16} /> },
+  { name: "Toallas", price: 0, icon: <Bath size={16} /> },
+  { name: "Secador de pelo", price: 5, icon: <CheckCircle size={16} /> },
+  { name: "Plancha", price: 3, icon: <CheckCircle size={16} /> },
+  { name: "Caja fuerte", price: 7, icon: <CheckCircle size={16} /> },
+  { name: "Mascotas", price: 15, icon: <CheckCircle size={16} /> },
+];
+
+const RoomCard = ({ room, isFav, onToggleFavorite, onViewDetails }) => {
+  return (
+    <div className="relative h-[400px] rounded-2xl overflow-hidden shadow-lg group">
+      <img
+        src={IMAGE_URL}
+        alt={room.name}
+        className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+      />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-black/20" />
+      <div className="absolute top-3 left-3 right-3 flex justify-between items-start">
+        <Tag className="font-medium bg-white/20 backdrop-blur-sm border-0 text-white text-xs">
+          Disponible
+        </Tag>
+        <button
+          className={`bg-white/20 backdrop-blur-sm rounded-full p-1.5 cursor-pointer transition-colors ${
+            isFav ? "text-red-400" : "text-white"
+          }`}
+          onClick={() => onToggleFavorite(room.id)}
+          aria-label={isFav ? "Quitar de favoritos" : "Agregar a favoritos"}
+        >
+          <Heart size={16} fill={isFav ? "#ff4d4f" : "none"} />
+        </button>
+      </div>
+      <div className="absolute bottom-0 left-0 right-0 p-4">
+        <h3 className="text-lg font-bold text-white mb-1">{room.name}</h3>
+        <div className="flex items-center gap-1 mb-2">
+          <MapPin size={12} className="text-gray-300" />
+          <span className="text-gray-300 text-xs">Mérida, Yucatán</span>
+        </div>
+        <div className="flex justify-between items-center mb-3">
+          <div className="flex items-center gap-1">
+            <Star size={12} className="text-yellow-400" fill="#fbbf24" />
+            <span className="text-white font-medium text-sm">
+              {room.rating.toFixed(1)}
+            </span>
+            <span className="text-gray-300 text-xs">({room.reviews})</span>
+          </div>
+          <div className="flex items-baseline">
+            <span className="text-xl font-bold text-white">${room.price}</span>
+            <span className="text-gray-300 text-xs ml-1">/noche</span>
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <Button
+            className="flex-1 bg-lime-500 border-lime-500 text-white font-medium hover:bg-lime-600 hover:border-lime-600 h-10 text-sm"
+            onClick={() => onViewDetails(room)}
+          >
+            Ver detalles
+          </Button>
+          <Button
+            icon={<MapPinIcon size={14} />}
+            className="flex-1 border-lime-500 text-lime-500 bg-transparent hover:bg-lime-50 hover:border-lime-600 hover:text-lime-600 h-10 text-sm"
+            aria-label="Ver en mapa"
+          >
+            Mapa
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const RoomDetailsModal = ({
+  open,
+  onClose,
+  room,
+  userRating,
+  onRate,
+  onRequestRoom,
+}) => {
+  if (!room) return null;
+
+  return (
+    <Modal
+      open={open}
+      footer={null}
+      onCancel={onClose}
+      centered
+      width={480}
+      closable={false}
+      className="[&_.ant-modal-content]:rounded-2xl [&_.ant-modal-body]:p-0"
+    >
+      <div className="absolute top-4 right-4 z-10">
+        <Button
+          type="text"
+          icon={<X size={18} />}
+          onClick={onClose}
+          className="text-gray-500 hover:text-lime-500"
+          aria-label="Cerrar"
+        />
+      </div>
+      <div className="overflow-hidden">
+        <div className="relative h-56">
+          <div className="absolute inset-0">
+            <img
+              src={IMAGE_URL}
+              alt={room.name}
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+          </div>
+          <div className="absolute bottom-4 left-4 right-4">
+            <div className="flex justify-between items-end">
+              <div>
+                <h3 className="text-xl font-bold text-white mb-1">
+                  {room.name}
+                </h3>
+                <div className="flex items-center gap-2">
+                  <MapPinIcon size={14} className="text-lime-200" />
+                  <span className="text-lime-100 text-xs">Mérida, Yucatán</span>
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="text-2xl font-bold text-white">
+                  ${room.price}
+                  <span className="text-sm text-lime-100 ml-1">/noche</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-5">
+          <Space direction="vertical" size={16} className="w-full">
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-2">
+                <User size={16} className="text-gray-600" />
+                <span className="text-gray-700 text-sm font-medium">
+                  {room.owner}
+                </span>
+              </div>
+              <div className="text-right">
+                <div className="text-xs text-gray-500 mb-1">
+                  Tu calificación
+                </div>
+                <div className="flex gap-1">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <StarIcon
+                      key={star}
+                      size={16}
+                      className="cursor-pointer"
+                      fill={userRating >= star ? "#84cc16" : "none"}
+                      color={userRating >= star ? "#84cc16" : "#d1d5db"}
+                      onClick={() => onRate(room.id, star)}
+                      aria-label={`Calificar con ${star} estrella${
+                        star !== 1 ? "s" : ""
+                      }`}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                <Home size={18} className="text-lime-500" />
+                <div className="min-w-0">
+                  <div className="text-xs text-gray-500 uppercase tracking-wide truncate">
+                    Tipo
+                  </div>
+                  <div className="text-sm font-medium text-gray-800 truncate">
+                    {room.type}
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                <Bed size={18} className="text-lime-500" />
+                <div className="min-w-0">
+                  <div className="text-xs text-gray-500 uppercase tracking-wide">
+                    Camas
+                  </div>
+                  <div className="text-sm font-medium text-gray-800">
+                    {room.beds} {room.beds === 1 ? "cama" : "camas"}
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                <DollarSign size={18} className="text-lime-500" />
+                <div className="min-w-0">
+                  <div className="text-xs text-gray-500 uppercase tracking-wide">
+                    Género
+                  </div>
+                  <div className="text-sm font-medium text-gray-800 truncate">
+                    {room.gender}
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                <MapPinIcon size={18} className="text-lime-500" />
+                <div className="min-w-0">
+                  <div className="text-xs text-gray-500 uppercase tracking-wide">
+                    Ubicación
+                  </div>
+                  <div className="text-xs font-medium text-gray-800 truncate">
+                    {room.address}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <Divider className="my-0 border-gray-200" />
+
+            <div className="w-full">
+              <h4 className="text-base font-semibold text-gray-800 mb-3">
+                Servicios incluidos
+              </h4>
+              <div className="max-h-60 overflow-y-auto pr-2">
+                <div className="grid grid-cols-1 gap-2">
+                  {SERVICES.map((service, index) => (
+                    <div
+                      key={index}
+                      className="flex justify-between items-center py-2 border-b border-gray-100 last:border-0"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="text-lime-500 flex-shrink-0">
+                          {service.icon}
+                        </div>
+                        <span className="text-gray-700 text-sm truncate">
+                          {service.name}
+                        </span>
+                      </div>
+                      <span className="text-lime-500 font-medium text-sm whitespace-nowrap flex-shrink-0 ml-2">
+                        {service.price === 0
+                          ? "Incluido"
+                          : `+$${service.price}`}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <Button
+              className="w-full bg-lime-500 border-lime-500 text-white font-medium h-11 hover:bg-lime-600 hover:border-lime-600 rounded-lg"
+              onClick={() => {
+                onRequestRoom(room.id);
+                onClose();
+              }}
+              aria-label="Solicitar habitación"
+            >
+              Solicitar habitación
+            </Button>
+          </Space>
+        </div>
+      </div>
+    </Modal>
+  );
+};
 
 export default function DashboardStudent_Screen() {
   const [favorites, setFavorites] = useState([]);
@@ -99,7 +335,27 @@ export default function DashboardStudent_Screen() {
   const [selectedRoom, setSelectedRoom] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [userRating, setUserRating] = useState({});
-  const pageSize = 8;
+  const pageSize = 6;
+
+  const rooms = useMemo(() => {
+    return Array.from({ length: 24 }, (_, i) => ({
+      id: i + 1,
+      name: `Habitación ${i + 1}`,
+      price: 80 + (i % 5) * 20,
+      owner: "Juan Pérez",
+      gender: "Mixto",
+      type:
+        i % 3 === 0
+          ? "Cuarto privado"
+          : i % 3 === 1
+            ? "Habitación compartida"
+            : "Estudio",
+      beds: i % 2 === 0 ? 1 : 2,
+      address: "Calle 10 #123, Centro, Mérida, Yucatán",
+      rating: 4.0 + i * 0.05,
+      reviews: 10 + i,
+    }));
+  }, []);
 
   const toggleFavorite = (id) => {
     setFavorites((prev) =>
@@ -116,17 +372,20 @@ export default function DashboardStudent_Screen() {
     setUserRating((prev) => ({ ...prev, [roomId]: value }));
   };
 
-  const currentRooms = rooms.slice(
-    (currentPage - 1) * pageSize,
-    currentPage * pageSize,
-  );
+  const handleRequestRoom = (roomId) => {
+    console.log("Solicitar habitación:", roomId);
+  };
+
+  const currentRooms = useMemo(() => {
+    return rooms.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  }, [rooms, currentPage, pageSize]);
 
   return (
     <ConfigProvider locale={esES}>
-      <div className="min-h-screen w-full flex justify-center bg-gray-100">
-        <div className="w-full max-w-[1200px] px-2 py-6">
-          <div className="relative mx-auto mb-7 h-12 max-w-[520px] rounded-full bg-gray-200 flex items-center">
-            <div className="flex flex-1 items-center justify-center gap-4 text-sm">
+      <div className="min-h-screen bg-gray-50 flex justify-center w-full">
+        <div className="w-full max-w-7xl px-4 py-8">
+          <div className="relative mx-auto mb-10 bg-white rounded-2xl border border-gray-200 h-14 max-w-lg flex items-center shadow-sm">
+            <div className="flex-1 flex justify-center items-center gap-6 px-4">
               <Popover
                 trigger="click"
                 placement="bottom"
@@ -139,108 +398,69 @@ export default function DashboardStudent_Screen() {
                   />
                 }
               >
-                <div className="flex items-center gap-1 cursor-pointer">
-                  <CalendarDays size={16} />
-                  <span className="font-medium lowercase">
-                    {dateRange
-                      ? `${dayjs(dateRange[0]).format("DD MMM")} - ${dayjs(
+                <div className="flex items-center gap-3 cursor-pointer">
+                  <CalendarDays size={18} className="text-gray-600" />
+                  <div className="flex flex-col">
+                    <span className="text-xs text-gray-500 font-medium">
+                      FECHAS
+                    </span>
+                    <span className="text-sm font-medium text-gray-800">
+                      {dateRange ? (
+                        `${dayjs(dateRange[0]).format("DD MMM")} - ${dayjs(
                           dateRange[1],
                         ).format("DD MMM")}`
-                      : "Fechas"}
-                  </span>
+                      ) : (
+                        <span className="text-gray-400">Seleccionar</span>
+                      )}
+                    </span>
+                  </div>
                 </div>
               </Popover>
 
-              <div className="h-5 w-px bg-gray-300" />
+              <div className="w-px h-6 bg-gray-300" />
 
-              <div className="flex items-center gap-1">
-                <Users size={16} />
-                <InputNumber
-                  min={1}
-                  value={guests}
-                  onChange={setGuests}
-                  bordered={false}
-                  className="w-12"
-                />
-                <span>huéspedes</span>
+              <div className="flex items-center gap-3">
+                <Users size={18} className="text-gray-600" />
+                <div className="flex flex-col">
+                  <span className="text-xs text-gray-500 font-medium">
+                    HUÉSPEDES
+                  </span>
+                  <div className="flex items-center">
+                    <InputNumber
+                      min={1}
+                      max={20}
+                      value={guests}
+                      onChange={setGuests}
+                      bordered={false}
+                      className="w-12 text-base font-medium text-gray-800 p-0"
+                      controls={false}
+                    />
+                  </div>
+                </div>
               </div>
             </div>
 
             <Button
+              className="absolute right-4 bg-lime-500 border-none rounded-full w-11 h-11 text-white hover:bg-lime-600 shadow-md"
               icon={<Search size={18} />}
-              className="absolute right-1 h-10 w-10 rounded-full bg-green-500 text-white border-none"
+              aria-label="Buscar habitaciones"
             />
           </div>
-          <Row gutter={[20, 20]} justify="center">
-            {currentRooms.map((room) => {
-              const isFav = favorites.includes(room.id);
 
-              return (
-                <Col key={room.id} xs={24} sm={12} md={8} xl={6}>
-                  <Card
-                    hoverable
-                    className="rounded-2xl overflow-hidden shadow-lg"
-                    cover={
-                      <div className="relative">
-                        <img
-                          src={IMAGE_URL}
-                          alt={room.name}
-                          className="h-40 w-full object-cover"
-                        />
-                        <div className="absolute inset-x-2 top-2 flex justify-between">
-                          <Tag color="green">Disponible</Tag>
-                          <div
-                            onClick={() => toggleFavorite(room.id)}
-                            className="bg-white p-1.5 rounded-full cursor-pointer"
-                          >
-                            <Heart
-                              size={18}
-                              fill={isFav ? "#ff4d4f" : "none"}
-                              color={isFav ? "#ff4d4f" : "#666"}
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    }
-                  >
-                    <h3 className="text-sm font-semibold mb-2">{room.name}</h3>
-
-                    <div className="flex flex-col gap-1 mb-3 text-gray-600 text-sm">
-                      <div className="flex items-center gap-2">
-                        <Home size={14} />
-                        {room.type}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Bed size={14} />
-                        {room.beds} {room.beds === 1 ? "cama" : "camas"}
-                      </div>
-                    </div>
-
-                    <div className="flex items-baseline mb-3">
-                      <span className="text-lg font-semibold">
-                        ${room.price}
-                      </span>
-                      <span className="ml-1 text-xs text-gray-500">/noche</span>
-                    </div>
-
-                    <div className="flex flex-col gap-2">
-                      <Button
-                        style={{
-                          backgroundColor: "#84cc16",
-                          color: "white",
-                        }}
-                        onClick={() => openRoomDetails(room)}
-                      >
-                        Ver detalles
-                      </Button>
-                      <Button icon={<MapPin size={16} />}>Ver en mapa</Button>
-                    </div>
-                  </Card>
-                </Col>
-              );
-            })}
+          <Row gutter={[24, 24]}>
+            {currentRooms.map((room) => (
+              <Col key={room.id} xs={24} sm={12} lg={8} xl={8}>
+                <RoomCard
+                  room={room}
+                  isFav={favorites.includes(room.id)}
+                  onToggleFavorite={toggleFavorite}
+                  onViewDetails={openRoomDetails}
+                />
+              </Col>
+            ))}
           </Row>
-          <div className="flex justify-center mt-10">
+
+          <div className="flex justify-center mt-12">
             <Pagination
               current={currentPage}
               pageSize={pageSize}
@@ -248,117 +468,18 @@ export default function DashboardStudent_Screen() {
               onChange={setCurrentPage}
               showSizeChanger={false}
               showQuickJumper
+              className="[&_.ant-pagination-item]:rounded-full [&_.ant-pagination-item-active]:bg-lime-500 [&_.ant-pagination-item-active]:border-lime-500 [&_.ant-pagination-item-active_a]:text-white"
             />
           </div>
-          <Modal
+
+          <RoomDetailsModal
             open={openDetails}
-            onCancel={() => setOpenDetails(false)}
-            footer={null}
-            centered
-            width={480}
-            closable={false}
-            styles={{ body: { padding: 0 } }}
-          >
-            {selectedRoom && (
-              <div className="relative rounded-xl overflow-hidden">
-                <button
-                  onClick={() => setOpenDetails(false)}
-                  className="absolute top-3 right-3 z-10 bg-white rounded-full p-1 shadow"
-                >
-                  <X size={18} />
-                </button>
-                <img
-                  src={IMAGE_URL}
-                  alt={selectedRoom.name}
-                  className="w-full h-52 object-cover"
-                />
-                <div className="p-5 space-y-4">
-                  <div className="flex justify-between items-start">
-                    <h3 className="text-lg font-semibold">
-                      {selectedRoom.name}
-                    </h3>
-                    <div className="flex gap-1">
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <StarIcon
-                          key={star}
-                          size={18}
-                          className="cursor-pointer"
-                          fill={
-                            userRating[selectedRoom.id] >= star
-                              ? "#facc15"
-                              : "none"
-                          }
-                          color={
-                            userRating[selectedRoom.id] >= star
-                              ? "#facc15"
-                              : "#d1d5db"
-                          }
-                          onClick={() => handleRate(selectedRoom.id, star)}
-                        />
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="text-sm text-gray-600 flex items-center gap-2">
-                    <User size={14} />
-                    {selectedRoom.owner}
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div className="flex gap-2">
-                      <Home size={16} className="text-green-500" />
-                      {selectedRoom.type}
-                    </div>
-
-                    <div className="flex gap-2">
-                      <Bed size={16} className="text-green-500" />
-                      {selectedRoom.beds} camas
-                    </div>
-
-                    <div className="flex gap-2">
-                      <DollarSign size={16} className="text-green-500" />$
-                      {selectedRoom.price}/noche
-                    </div>
-
-                    <div className="flex gap-2 col-span-2">
-                      <MapPin size={16} className="text-green-500" />
-                      {selectedRoom.address}
-                    </div>
-                  </div>
-
-                  <Divider className="my-2" />
-
-                  <div>
-                    <h4 className="font-semibold mb-2">Servicios incluidos</h4>
-
-                    <div className="max-h-40 overflow-y-auto space-y-2 text-sm">
-                      {selectedRoom.services.map((s, i) => (
-                        <div
-                          key={i}
-                          className="flex justify-between items-center"
-                        >
-                          <div className="flex items-center gap-2">
-                            {s.icon}
-                            {s.name}
-                          </div>
-                          <span className="font-medium text-green-600">
-                            {s.price === 0 ? "Incluido" : `+$${s.price}`}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <Button
-                    className="w-full h-11 bg-green-500 text-white border-none font-medium"
-                    onClick={() => setOpenDetails(false)}
-                  >
-                    Solicitar habitación
-                  </Button>
-                </div>
-              </div>
-            )}
-          </Modal>
+            onClose={() => setOpenDetails(false)}
+            room={selectedRoom}
+            userRating={userRating[selectedRoom?.id]}
+            onRate={handleRate}
+            onRequestRoom={handleRequestRoom}
+          />
         </div>
       </div>
     </ConfigProvider>

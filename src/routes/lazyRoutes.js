@@ -24,6 +24,10 @@ export const ProfileStudent = lazy(
   () => import("../screens/estudiantes/profile/ProfileStudent_Screen"),
 );
 
+export const SearchStudent = lazy(
+  () => import("../screens/estudiantes/search/SearchStudent_Screen"),
+);
+
 // Componentes privados (necesitan autenticacion) ADMIN
 
 // Componentes privados (necesitan autenticacion) PROPIETARIOS

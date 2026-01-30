@@ -6,6 +6,7 @@ import {
   ReservationStudent,
   DocumentationStudent,
   ProfileStudent,
+  SearchStudent,
   Login,
   Register,
 } from "./lazyRoutes.js";
@@ -68,6 +69,8 @@ export default function RouteApp() {
           <Route path="reservas" element={<ReservationStudent />} />
 
           <Route path="documentation" element={<DocumentationStudent />} />
+
+          <Route path="search" element={<SearchStudent />} />
         </Route>
 
         {/* Ruta raíz - redirige a login */}

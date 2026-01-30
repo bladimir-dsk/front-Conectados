@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Layout, Menu, Button, Drawer, Avatar, Dropdown } from "antd";
 import {
   LayoutDashboard,
@@ -26,6 +26,18 @@ export default function StudentLayout() {
   const location = useLocation();
   const { user, logout } = useAuth();
 
+  useEffect(() => {
+    if (location.pathname.includes("/estudiante/search")) {
+      setSelectedKeys(["search"]);
+    } else if (location.pathname.includes("/estudiante/dashboard")) {
+      setSelectedKeys(["dashboard"]);
+    } else if (location.pathname.includes("/estudiante/reservas")) {
+      setSelectedKeys(["reservas"]);
+    } else if (location.pathname.includes("/estudiante/documentation")) {
+      setSelectedKeys(["documentation"]);
+    }
+  }, [location.pathname]);
+
   const handleMenuSelect = ({ key }) => {
     if (key === "reset") {
       setSelectedKeys([]);
@@ -35,16 +47,12 @@ export default function StudentLayout() {
 
     if (key === "dashboard") {
       navigate("/estudiante/dashboard");
-      setSelectedKeys(["dashboard"]);
+    } else if (key === "search") {
+      navigate("/estudiante/search");
     } else if (key === "reservas") {
       navigate("/estudiante/reservas");
-      setSelectedKeys(["reservas"]);
     } else if (key === "documentation") {
       navigate("/estudiante/documentation");
-      setSelectedKeys(["documentation"]);
-    } else if (key === "buscar") {
-      navigate("/estudiante/buscar");
-      setSelectedKeys(["buscar"]);
     } else if (
       key.startsWith("p") ||
       key.startsWith("r") ||
@@ -55,8 +63,6 @@ export default function StudentLayout() {
       } else {
         setSelectedKeys([...selectedKeys, key]);
       }
-    } else {
-      setSelectedKeys([key]);
     }
 
     if (window.innerWidth < 768) {
@@ -95,7 +101,7 @@ export default function StudentLayout() {
       label: "Inicio",
     },
     {
-      key: "buscar",
+      key: "search",
       icon: <Search size={18} />,
       label: "Buscar Habitaciones",
     },
