@@ -3,32 +3,26 @@ import { Form, Input } from "antd";
 const FormInput = ({
   name,
   label,
-  rules = [],
   placeholder,
-  size = "large",
-  hasFeedback = true,
-  validateTrigger = "onChange",
-  validateDebounce,
-  validateFirst = false,
-  formItemProps = {},
-  inputProps = {},
+  rules,
+  inputProps,
+  noFormItem = false,
 }) => {
-  const { type, ...restInputProps } = inputProps;
+  const inputElement = (
+    <Input
+      size="large"
+      placeholder={placeholder}
+      {...inputProps}
+    />
+  );
 
-  const InputComponent = type === "password" ? Input.Password : Input;
+  if (noFormItem) {
+    return inputElement;
+  }
 
   return (
-    <Form.Item
-      name={name}
-      label={label}
-      rules={rules}
-      hasFeedback={hasFeedback}
-      validateTrigger={validateTrigger}
-      validateDebounce={validateDebounce}
-      validateFirst={validateFirst}
-      {...formItemProps}
-    >
-      <InputComponent placeholder={placeholder} size={size} {...restInputProps} />
+    <Form.Item name={name} label={label} rules={rules} hasFeedback>
+      {inputElement}
     </Form.Item>
   );
 };

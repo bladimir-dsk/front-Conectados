@@ -1,8 +1,7 @@
-import React, { useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { App, Button, Input, Space, Table, Tag, Tooltip } from "antd";
 import {
   PlusOutlined,
-  UserOutlined,
   SearchOutlined,
   EditOutlined,
   DeleteOutlined,
@@ -12,6 +11,7 @@ import dayjs from "dayjs";
 import "dayjs/locale/es";
 import OwnerModal_Admin from "./modals/OwnerModal_Admin";
 import { initialOwnersData } from "./OwnersData";
+import { CircleUser } from "lucide-react";
 dayjs.locale("es");
 
 export default function OwnersScreen_Admin() {
@@ -270,7 +270,7 @@ export default function OwnersScreen_Admin() {
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 flex-1">
             <div className="p-2">
-              <UserOutlined className="text-3xl text-[#111214]!" />
+              <CircleUser className=" text-[#111214]!" size={35} />
             </div>
             <div className="space-y-0">
               <h1 className="text-xl md:text-2xl font-bold text-[#111214] leading-tight">

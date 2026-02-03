@@ -16,7 +16,7 @@ function ThemeApp() {
       theme={{
         algorithm: darkMode ? theme.darkAlgorithm : theme.defaultAlgorithm,
         token: {
-          colorPrimary: '#C7DC5B',
+          colorPrimary: '#84cc16',
           borderRadius: 6,
         },
       }}

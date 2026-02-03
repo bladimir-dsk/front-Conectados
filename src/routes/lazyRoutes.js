@@ -36,5 +36,12 @@ export const AdminDashboard = lazy(
 export const AdminOwners = lazy(
   () => import("../screens/admin/owners/OwnersScreen_Admin"),
 );
-
+export const AdminStudentAdministration = lazy(
+  () =>
+    import("../screens/admin/students/administration/StudentAdministrationScreen_Admin"),
+);
+export const AdminStudentDocumentation = lazy(
+  () =>
+    import("../screens/admin/students/documentation/StudentDocumentationScreen_Admin"),
+);
 // Componentes privados (necesitan autenticacion) PROPIETARIOS

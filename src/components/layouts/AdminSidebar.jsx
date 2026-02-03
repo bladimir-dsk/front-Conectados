@@ -8,6 +8,7 @@ import {
   Moon,
   Sun,
   CircleUser,
+  UserRoundPen,
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useTheme } from "../../hooks/useTheme";
@@ -30,11 +31,11 @@ export default function AdminSidebar({
     background: "#84cc16",
     backgroundHover: "#9cd522",
     backgroundActive: "#a3dc2a",
-    submenuBg: "#73b012",
+    submenuBg: "#7ABD13",
     text: "#111214",
     textSecondary: "#f0f0f0",
     border: "#73b012",
-    menuSelected: "#65a30d",
+    menuSelected: "#61990C",
   };
 
   const menuItems = [
@@ -47,6 +48,15 @@ export default function AdminSidebar({
       key: "/admin/propietarios",
       icon: <CircleUser size={18} />,
       label: "Propietarios",
+    },
+    {
+      key: "estudiantes",
+      icon: <UserRoundPen size={18} />,
+      label: "Estudiantes",
+      children: [
+        { key: "/admin/estudiantes/administracion", label: "Administración" },
+        { key: "/admin/estudiantes/documentacion", label: "Documentación" }
+      ]
     },
     {
       key: "/admin/habitaciones",
@@ -143,7 +153,7 @@ export default function AdminSidebar({
         /* Items dentro del submenú */
         .custom-sidebar-menu.ant-menu-dark .ant-menu-sub .ant-menu-item {
             background-color: transparent !important;
-            color: ${SIDEBAR_COLORS.textSecondary} !important;
+            color: ${SIDEBAR_COLORS.text} !important;
         }
         
         .custom-sidebar-menu.ant-menu-dark .ant-menu-sub .ant-menu-item:hover {
@@ -153,7 +163,7 @@ export default function AdminSidebar({
         
         .custom-sidebar-menu.ant-menu-dark .ant-menu-sub .ant-menu-item-selected {
             background-color: ${SIDEBAR_COLORS.menuSelected} !important;
-            color: ${SIDEBAR_COLORS.text} !important;
+            color: ${SIDEBAR_COLORS.textSecondary} !important;
         }
         
         /* Flecha del submenú */
