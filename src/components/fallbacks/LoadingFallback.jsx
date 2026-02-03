@@ -3,7 +3,7 @@ import logo from "/Logo-Principal.webp";
 
 export default function LoadingFallback() {
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-zinc-900">
       <div className="text-center">
         {/* Logo con animación */}
         <div className="relative mb-16">

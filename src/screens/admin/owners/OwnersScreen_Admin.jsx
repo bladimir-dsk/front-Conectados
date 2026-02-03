@@ -1,5 +1,5 @@
 import React, { useRef, useState } from "react";
-import { Button, Input, Space, Table, Tag, Tooltip } from "antd";
+import { App, Button, Input, Space, Table, Tag, Tooltip } from "antd";
 import {
   PlusOutlined,
   UserOutlined,
@@ -10,66 +10,70 @@ import {
 import Highlighter from "react-highlight-words";
 import dayjs from "dayjs";
 import "dayjs/locale/es";
+import OwnerModal_Admin from "./modals/OwnerModal_Admin";
+import { initialOwnersData } from "./OwnersData";
 dayjs.locale("es");
-
-// Datos de ejemplo
-const mockOwnersData = [
-  {
-    key: "1",
-    id: 1,
-    name: "Ana López",
-    email: "ana.lopez@example.com",
-    phone: "9991234567",
-    status: "Suspendido",
-    registrationDate: "2024-03-12",
-    properties: 0,
-  },
-  {
-    key: "2",
-    id: 2,
-    name: "Carlos Méndez Ortega",
-    email: "carlos.mendez@example.com",
-    phone: "5567892345",
-    status: "Verificado",
-    registrationDate: "2024-05-20",
-    properties: 3,
-  },
-  {
-    key: "3",
-    id: 3,
-    name: "Ricardo Herrera Torres",
-    email: "ricardo.h@gmail.com",
-    phone: "3312349988",
-    status: "Pendiente",
-    registrationDate: "2024-02-02",
-    properties: 1,
-  },
-  {
-    key: "4",
-    id: 4,
-    name: "María García Pérez",
-    email: "maria.garcia@example.com",
-    phone: "9998765432",
-    status: "Verificado",
-    registrationDate: "2024-01-15",
-    properties: 2,
-  },
-  {
-    key: "5",
-    id: 5,
-    name: "Juan Ramírez López",
-    email: "juan.ramirez@example.com",
-    phone: "5551234567",
-    status: "Pendiente",
-    registrationDate: "2024-06-10",
-    properties: 0,
-  },
-];
 
 export default function OwnersScreen_Admin() {
   const [searchText, setSearchText] = useState("");
   const [searchedColumn, setSearchedColumn] = useState("");
   const searchInput = useRef(null);
+  const { message, modal } = App.useApp();
+  const [ownersData, setOwnersData] = useState(initialOwnersData);
+  const [modalState, setModalState] = useState({ add: false, edit: false });
+  const [selectedOwner, setSelectedOwner] = useState(null);
+
+  const openModal = (type, owner = null) => {
+    setModalState({ add: false, edit: false, [type]: true });
+    setSelectedOwner(owner);
+  };
+
+  const closeModal = (type) => {
+    setModalState((prev) => ({ ...prev, [type]: false }));
+    setSelectedOwner(null);
+  };
+
+  const handleSaveOwner = (values) => {
+    if (modalState.edit && selectedOwner) {
+      setOwnersData((prev) =>
+        prev.map((item) =>
+          item.id === selectedOwner.id ? { ...item, ...values } : item
+        )
+      );
+      closeModal("edit");
+    } else {
+      const newId =
+        ownersData.length > 0
+          ? Math.max(...ownersData.map((o) => o.id)) + 1
+          : 1;
+
+      setOwnersData((prev) => [
+        ...prev,
+        {
+          key: String(newId),
+          id: newId,
+          ...values,
+          registrationDate: dayjs().format("YYYY-MM-DD"),
+          properties: 0,
+        },
+      ]);
+      closeModal("add");
+    }
+  };
+
+  const handleDelete = (record) => {
+    modal.confirm({
+      title: "¿Estás seguro?",
+      content: `Se eliminará el propietario: ${record.name}`,
+      okText: "Aceptar",
+      okType: "danger",
+      cancelText: "Cancelar",
+      onOk: () => {
+        setOwnersData((prev) => prev.filter((item) => item.id !== record.id));
+        message.success("Propietario eliminado correctamente");
+      },
+    });
+  };
 
   const handleSearch = (selectedKeys, confirm, dataIndex) => {
     confirm();
@@ -243,7 +247,7 @@ export default function OwnersScreen_Admin() {
               type="link"
               icon={<EditOutlined />}
               style={{ color: "#52c41a" }}
-              onClick={() => console.log("Editar", record)}
+              onClick={() => openModal("edit", record)}
             />
           </Tooltip>
           <Tooltip title="Eliminar" color="red">
@@ -251,7 +255,7 @@ export default function OwnersScreen_Admin() {
               type="link"
               danger
               icon={<DeleteOutlined />}
-              onClick={() => console.log("Eliminar", record)}
+              onClick={() => handleDelete(record)} 
             />
           </Tooltip>
         </Space>
@@ -261,7 +265,7 @@ export default function OwnersScreen_Admin() {
 
   return (
     <div>
-      {/* Header con color */}
+      {/* Header */}
       <div className="bg-linear-to-r from-[#84cc16] to-[#65a30d] px-6 py-6 md:py-3 rounded-md">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 flex-1">
@@ -278,7 +282,6 @@ export default function OwnersScreen_Admin() {
             </div>
           </div>
 
-          {/* Un solo botón que cambia según el tamaño */}
           <Button
             type="primary"
             size="large"
@@ -289,18 +292,19 @@ export default function OwnersScreen_Admin() {
               borderColor: "#C4D82E",
               color: "#111214",
             }}
+            onClick={() => openModal("add")}
           >
             <span className="hidden md:inline ml-2">Agregar</span>
           </Button>
         </div>
       </div>
 
-      {/* Content pegado */}
+      {/* Tabla */}
       <div className="p-2">
         <div className="bg-white dark:bg-[#141414] rounded-md shadow-lg p-4 md:p-6 min-h-125">
           <Table
             columns={columns}
-            dataSource={mockOwnersData}
+            dataSource={ownersData}
             scroll={{ x: "max-content" }}
             pagination={{
               pageSize: 10,
@@ -313,6 +317,23 @@ export default function OwnersScreen_Admin() {
           />
         </div>
       </div>
+
+      {/* Modal – Agregar */}
+      <OwnerModal_Admin
+        visible={modalState.add}
+        onClose={() => closeModal("add")}
+        onSave={handleSaveOwner}
+        isEditing={false}
+      />
+
+      {/* Modal – Editar */}
+      <OwnerModal_Admin
+        visible={modalState.edit}
+        onClose={() => closeModal("edit")}
+        onSave={handleSaveOwner}
+        editData={selectedOwner}
+        isEditing={true}
+      />
     </div>
   );
 }
