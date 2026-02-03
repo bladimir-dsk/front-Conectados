@@ -5,6 +5,7 @@ const FormInput = ({
   label,
   rules = [],
   placeholder,
+  size = "large",
   hasFeedback = true,
   validateTrigger = "onChange",
   validateDebounce,
@@ -27,7 +28,7 @@ const FormInput = ({
       validateFirst={validateFirst}
       {...formItemProps}
     >
-      <InputComponent placeholder={placeholder} {...restInputProps} />
+      <InputComponent placeholder={placeholder} size={size} {...restInputProps} />
     </Form.Item>
   );
 };

@@ -30,6 +30,11 @@ export const SearchStudent = lazy(
 
 // Componentes privados (necesitan autenticacion) ADMIN
 
-export const AdminDashboard = lazy(() => import("../screens/admin/dashboard/DashboardScreen_Admin"))
+export const AdminDashboard = lazy(
+  () => import("../screens/admin/dashboard/DashboardScreen_Admin"),
+);
+export const AdminOwners = lazy(
+  () => import("../screens/admin/owners/OwnersScreen_Admin"),
+);
 
 // Componentes privados (necesitan autenticacion) PROPIETARIOS
