@@ -8,7 +8,7 @@ export default function LoadingFallback() {
         {/* Logo con animación */}
         <div className="relative mb-16">
           <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-24 h-24 border-4 border-green-200 dark:border-green-900 rounded-full animate-ping"></div>
+            <div className="w-24 h-24 border-4 border-lime-200 dark:border-lime-900 rounded-full animate-ping"></div>
           </div>
           <div className="relative flex items-center justify-center">
             <img
