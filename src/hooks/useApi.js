@@ -30,12 +30,17 @@ export function useApi(endpoint, options, autoFetch = true) {
     }, [endpoint]); // Solo depende de endpoint
 
     // POST
-    const postData = useCallback(async (body) => {
+    const postData = useCallback(async (body, shouldRefetch = true) => {
         setLoading(true);
         setError(null);
         try {
             const response = await api.post(endpoint, body, optionsRef.current);
-            await fetchData();
+
+            // Solo hacer fetchData si es necesario
+            if (shouldRefetch && autoFetch) {
+                await fetchData();
+            }
+
             return response.data;
         } catch (err) {
             const errorMessage = err.response?.data?.message || err.message || "Error en POST";
@@ -44,9 +49,7 @@ export function useApi(endpoint, options, autoFetch = true) {
         } finally {
             setLoading(false);
         }
-    },
-        [endpoint, fetchData]
-    );
+    }, [endpoint, fetchData, autoFetch]);
 
     const patchData = useCallback(
         async (body, id = null) => {

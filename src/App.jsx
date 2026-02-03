@@ -1,4 +1,4 @@
-import { Button, Card } from "antd";
+import React from "react";
 import { BrowserRouter } from "react-router-dom";
 import { AuthProvider } from "./context/AuthProvider";
 import ThemeProvider from "./context/ThemeContext";
