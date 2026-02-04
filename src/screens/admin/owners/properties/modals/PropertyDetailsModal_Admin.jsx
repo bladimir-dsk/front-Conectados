@@ -1,7 +1,8 @@
-import { Button, Tag } from "antd";
-import { X, MapPin, Home, DollarSign, Calendar, User } from "lucide-react";
+import { Button, Tag, Table, Empty, Divider } from "antd";
+import { X, MapPin, DollarSign, Calendar, User } from "lucide-react";
 import dayjs from "dayjs";
 import "dayjs/locale/es";
+import { getServiceIcon } from "../../../../../components/icon/serviceIconsConfig";
 
 dayjs.locale("es");
 
@@ -11,6 +12,67 @@ const PropertyDetailsModal_Admin = ({ visible, onClose, propertyData, ownerData 
     const getStatusColor = (status) => {
         return status === "Activo" ? "green" : "red";
     };
+
+    // Columnas para la tabla de espacios
+    const spacesColumns = [
+        {
+            title: "Nombre",
+            dataIndex: "spaceName",
+            key: "spaceName",
+        },
+        {
+            title: "Número/Identificador",
+            dataIndex: "spaceNumber",
+            key: "spaceNumber",
+            align: "center",
+        },
+        {
+            title: "Precio Mensual",
+            dataIndex: "monthlyPrice",
+            key: "monthlyPrice",
+            align: "center",
+            render: (price) => (
+                <span className="font-semibold text-green-600">
+                    ${price?.toLocaleString("es-MX")}
+                </span>
+            ),
+        },
+    ];
+
+    // Columnas para la tabla de servicios
+    const servicesColumns = [
+        {
+            title: "Icono",
+            dataIndex: "icon",
+            key: "icon",
+            align: "center",
+            width: 70,
+            render: (iconKey) => {
+                const { icon: IconComponent, color } = getServiceIcon(iconKey);
+                return (
+                    <div className="flex justify-center">
+                        <IconComponent size={22} color={color} />
+                    </div>
+                );
+            },
+        },
+        {
+            title: "Servicio",
+            dataIndex: "serviceName",
+            key: "serviceName",
+        },
+        {
+            title: "Precio Mensual",
+            dataIndex: "monthlyPrice",
+            key: "monthlyPrice",
+            align: "center",
+            render: (price) => (
+                <span className="font-semibold text-green-600">
+                    ${price?.toLocaleString("es-MX")}
+                </span>
+            ),
+        },
+    ];
 
     return (
         <>
@@ -23,7 +85,7 @@ const PropertyDetailsModal_Admin = ({ visible, onClose, propertyData, ownerData 
             {/* Modal */}
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                 <div
-                    className="bg-white dark:bg-zinc-900 rounded-xl shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden"
+                    className="bg-white dark:bg-zinc-900 rounded-xl shadow-2xl w-full max-w-6xl max-h-[90vh] flex flex-col overflow-hidden"
                     onClick={(e) => e.stopPropagation()}
                 >
                     {/* Header */}
@@ -174,6 +236,55 @@ const PropertyDetailsModal_Admin = ({ visible, onClose, propertyData, ownerData 
                                 </div>
                             </div>
                         </div>
+
+                        {/* Sección de Espacios y Servicios */}
+                        <div className="px-6 pb-6">
+                            <Divider className="my-4" />
+
+                            {/* Espacios - Solo si es "Por espacios" */}
+                            {propertyData.rentalType === "Por espacios" && (
+                                <div className="mb-6">
+                                    <h3 className="text-base font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                                        Espacios disponibles
+                                    </h3>
+                                    <Table
+                                        columns={spacesColumns}
+                                        dataSource={propertyData.spaces || []}
+                                        pagination={false}
+                                        size="small"
+                                        locale={{
+                                            emptyText: (
+                                                <Empty
+                                                    description="No hay espacios registrados"
+                                                    image={Empty.PRESENTED_IMAGE_SIMPLE}
+                                                />
+                                            ),
+                                        }}
+                                    />
+                                </div>
+                            )}
+
+                            {/* Servicios */}
+                            <div>
+                                <h3 className="text-base font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                                    Servicios incluidos
+                                </h3>
+                                <Table
+                                    columns={servicesColumns}
+                                    dataSource={propertyData.services || []}
+                                    pagination={false}
+                                    size="small"
+                                    locale={{
+                                        emptyText: (
+                                            <Empty
+                                                description="No hay servicios registrados"
+                                                image={Empty.PRESENTED_IMAGE_SIMPLE}
+                                            />
+                                        ),
+                                    }}
+                                />
+                            </div>
+                        </div>
                     </div>
 
                     {/* Footer */}
@@ -183,10 +294,7 @@ const PropertyDetailsModal_Admin = ({ visible, onClose, propertyData, ownerData 
                             type="primary"
                             onClick={onClose}
                             className="px-8 rounded-lg"
-                            style={{
-                                backgroundColor: "#84cc16",
-                                borderColor: "#84cc16",
-                            }}
+                            danger
                         >
                             Cerrar
                         </Button>

@@ -78,8 +78,8 @@ const PropertyModal_Admin = ({
                         : editData?.image || "https://via.placeholder.com/400x300?text=Sin+Imagen";
 
                 setTimeout(() => {
-                    onSave({ 
-                        ...values, 
+                    onSave({
+                        ...values,
                         image: imageUrl,
                         ownerId: selectedOwnerId // Siempre usar el ownerId de la URL
                     });
@@ -99,18 +99,23 @@ const PropertyModal_Admin = ({
         fileList,
         onChange: ({ fileList: newFileList }) => setFileList(newFileList),
         beforeUpload: (file) => {
-            const isImage = file.type.startsWith("image/");
-            if (!isImage) {
-                message.error("Solo puedes subir archivos de imagen");
-                return false;
+            const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg'];
+            const isValidType = allowedTypes.includes(file.type);
+
+            if (!isValidType) {
+                message.error("Solo se permiten archivos PNG, JPG o JPEG");
+                return Upload.LIST_IGNORE; 
             }
+
             const isLt5M = file.size / 1024 / 1024 < 5;
             if (!isLt5M) {
                 message.error("La imagen debe ser menor a 5MB");
-                return false;
+                return Upload.LIST_IGNORE;
             }
+
             return false;
         },
+        accept: ".png,.jpg,.jpeg",
         listType: "picture",
         maxCount: 1,
     };
@@ -308,7 +313,6 @@ const PropertyModal_Admin = ({
                             size="middle"
                             type="primary"
                             onClick={handleSubmit}
-                            style={{ backgroundColor: "#52c41a", borderColor: "#52c41a" }}
                             className="h-8 px-4 rounded-lg"
                         >
                             {isEditing ? "Actualizar" : "Guardar"}
