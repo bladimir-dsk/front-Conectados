@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Card,
   Typography,
@@ -13,6 +13,7 @@ import {
   Col,
   Tag,
   Drawer,
+  Tabs,
 } from "antd";
 import {
   XCircle,
@@ -24,6 +25,8 @@ import {
   Printer,
   CreditCard,
   Trash2,
+  Clock4,
+  Ban,
 } from "lucide-react";
 
 const { Title, Text, Paragraph } = Typography;
@@ -35,6 +38,14 @@ export default function ReservationStudent_Screen() {
   const [cancelReason, setCancelReason] = useState("");
   const [customReason, setCustomReason] = useState("");
   const [agreePolicy, setAgreePolicy] = useState(false);
+  const [reservations, setReservations] = useState([]);
+
+  useEffect(() => {
+    const savedReservations = localStorage.getItem("student_reservations");
+    if (savedReservations) {
+      setReservations(JSON.parse(savedReservations));
+    }
+  }, []);
 
   const cancelReasons = [
     "Cambio de planes",
@@ -44,59 +55,34 @@ export default function ReservationStudent_Screen() {
     "Otro",
   ];
 
-  const reservations = [
-    {
-      id: "394223134212",
-      time: "12:49",
-      date: "04/05/24",
-      room: "Habitación 1 (2 espacios)",
-      days: 2,
-      price: 2445.6,
-      tax: 440.21,
-      serviceFee: 244.54,
-      total: 3130.35,
-      paymentMethod: "Stripe",
-      status: "Por pagar",
-      statusColor: "warning",
-    },
-    {
-      id: "394223134213",
-      time: "14:30",
-      date: "05/05/24",
-      room: "Habitación 2 (individual)",
-      days: 3,
-      price: 3200.0,
-      tax: 576.0,
-      serviceFee: 320.0,
-      total: 4096.0,
-      paymentMethod: "Stripe",
-      status: "Por pagar",
-      statusColor: "warning",
-    },
-    {
-      id: "394223134214",
-      time: "10:15",
-      date: "03/05/24",
-      room: "Habitación Suite Ejecutiva",
-      days: 1,
-      price: 1800.0,
-      tax: 324.0,
-      serviceFee: 180.0,
-      total: 2304.0,
-      paymentMethod: "Tarjeta de crédito",
-      status: "Reservado",
-      statusColor: "success",
-    },
-  ];
-
   const handleCancelClick = (reservation) => {
     setSelectedReservation(reservation);
     setShowCancelDrawer(true);
   };
 
-  const handleConfirmCancel = () => {
-    if (!agreePolicy) return;
+  const handleCancelReservation = (reservationId) => {
+    const updatedReservations = reservations.map((res) => {
+      if (res.id === reservationId) {
+        return {
+          ...res,
+          status: "Cancelado",
+          statusColor: "error",
+          tabKey: "cancelado",
+        };
+      }
+      return res;
+    });
+    setReservations(updatedReservations);
+    localStorage.setItem(
+      "student_reservations",
+      JSON.stringify(updatedReservations),
+    );
+  };
 
+  const handleConfirmCancel = () => {
+    if (!agreePolicy || !selectedReservation) return;
+
+    handleCancelReservation(selectedReservation.id);
     setShowCancelDrawer(false);
     setCancelReason("");
     setCustomReason("");
@@ -112,181 +98,247 @@ export default function ReservationStudent_Screen() {
     }).format(amount);
   };
 
+  const renderReservationCard = (reservation) => (
+    <Card key={reservation.id}>
+      <Space orientation="vertical" style={{ width: "100%" }}>
+        <div style={{ textAlign: "center", marginBottom: 16 }}>
+          <img
+            src="/LogoPrincipal-Horizontal.webp"
+            alt="Conecta-DoS"
+            style={{ height: 32, marginBottom: 12 }}
+          />
+          <Row justify="space-between" style={{ fontSize: "14px" }}>
+            <Col>
+              <Text type="secondary">Operación:</Text>
+              <Text code style={{ marginLeft: 4 }}>
+                {reservation.id}
+              </Text>
+            </Col>
+            <Col>
+              <Space>
+                <Tag icon={<Calendar size={12} />} color="blue">
+                  {reservation.date}
+                </Tag>
+                <Tag icon={<Clock size={12} />} color="purple">
+                  {reservation.time}
+                </Tag>
+              </Space>
+            </Col>
+          </Row>
+        </div>
+
+        <Text strong style={{ fontSize: "15px" }}>
+          {reservation.room}
+        </Text>
+
+        <Divider style={{ margin: "12px 0" }} />
+
+        <div style={{ marginBottom: "16px" }}>
+          <Row justify="space-between" style={{ marginBottom: "8px" }}>
+            <Col>
+              <Text type="secondary">Cant. días:</Text>
+            </Col>
+            <Col>
+              <Text strong>{reservation.days} Días</Text>
+            </Col>
+          </Row>
+          <Row justify="space-between" style={{ marginBottom: "8px" }}>
+            <Col>
+              <Text type="secondary">Precio:</Text>
+            </Col>
+            <Col>
+              <Text>{formatCurrency(reservation.price)}</Text>
+            </Col>
+          </Row>
+          <Row justify="space-between" style={{ marginBottom: "8px" }}>
+            <Col>
+              <Text type="secondary">IGV 18%:</Text>
+            </Col>
+            <Col>
+              <Text>{formatCurrency(reservation.tax)}</Text>
+            </Col>
+          </Row>
+          <Row justify="space-between" style={{ marginBottom: "8px" }}>
+            <Col>
+              <Text type="secondary">Rec. Servicios:</Text>
+            </Col>
+            <Col>
+              <Text>{formatCurrency(reservation.serviceFee)}</Text>
+            </Col>
+          </Row>
+        </div>
+
+        <Divider style={{ margin: "12px 0" }} />
+
+        <Row
+          justify="space-between"
+          align="middle"
+          style={{ marginBottom: "16px" }}
+        >
+          <Col>
+            <Text strong>Tot. PAGO:</Text>
+            <Text strong style={{ marginLeft: "8px", fontSize: "16px" }}>
+              {formatCurrency(reservation.total)}
+            </Text>
+          </Col>
+          <Col>
+            <Tag
+              color={reservation.statusColor}
+              icon={
+                reservation.status === "Reservado" ? (
+                  <CheckCircle size={12} />
+                ) : reservation.status === "Cancelado" ? (
+                  <Ban size={12} />
+                ) : (
+                  <Clock4 size={12} />
+                )
+              }
+            >
+              {reservation.status}
+            </Tag>
+          </Col>
+        </Row>
+
+        <Row justify="space-between" style={{ marginBottom: "16px" }}>
+          <Col>
+            <Text type="secondary">Forma PAGO:</Text>
+            <Text style={{ marginLeft: "8px" }}>
+              {reservation.paymentMethod}
+            </Text>
+          </Col>
+        </Row>
+
+        <Divider style={{ margin: "16px 0" }} />
+
+        {reservation.status === "En proceso" ? (
+          <Row gutter={8}>
+            <Button
+              icon={<XCircle size={16} />}
+              block
+              danger
+              style={{ fontSize: "13px", height: "40px" }}
+              onClick={() => handleCancelClick(reservation)}
+            >
+              Cancelar
+            </Button>
+          </Row>
+        ) : reservation.status === "Reservado" ? (
+          <Row gutter={8}>
+            <Col span={12}>
+              <Button
+                icon={<CreditCard size={16} />}
+                block
+                type="primary"
+                style={{ fontSize: "13px", height: "40px" }}
+              >
+                Pagar
+              </Button>
+            </Col>
+            <Col span={12}>
+              <Button
+                icon={<Printer size={16} />}
+                block
+                type="default"
+                style={{ fontSize: "13px", height: "40px" }}
+              >
+                Imprimir
+              </Button>
+            </Col>
+          </Row>
+        ) : (
+          <Row gutter={8}>
+            <Col span={24}>
+              <Button
+                icon={<Download size={16} />}
+                block
+                type="default"
+                style={{ fontSize: "13px", height: "40px" }}
+              >
+                Descargar Comprobante
+              </Button>
+            </Col>
+          </Row>
+        )}
+      </Space>
+    </Card>
+  );
+
+  const tabItems = [
+    {
+      key: "enProceso",
+      label: (
+        <Space>
+          <Clock4 size={16} />
+          EN PROCESO
+        </Space>
+      ),
+      children: (
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fill, minmax(350px, 1fr))",
+            gap: "16px",
+          }}
+        >
+          {reservations
+            .filter((r) => r.tabKey === "enProceso")
+            .map(renderReservationCard)}
+        </div>
+      ),
+    },
+    {
+      key: "reservado",
+      label: (
+        <Space>
+          <CheckCircle size={16} />
+          RESERVADO
+        </Space>
+      ),
+      children: (
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fill, minmax(350px, 1fr))",
+            gap: "16px",
+          }}
+        >
+          {reservations
+            .filter((r) => r.tabKey === "reservado")
+            .map(renderReservationCard)}
+        </div>
+      ),
+    },
+    {
+      key: "cancelado",
+      label: (
+        <Space>
+          <Ban size={16} />
+          DENEGADO O CANCELADO
+        </Space>
+      ),
+      children: (
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fill, minmax(350px, 1fr))",
+            gap: "16px",
+          }}
+        >
+          {reservations
+            .filter((r) => r.tabKey === "cancelado")
+            .map(renderReservationCard)}
+        </div>
+      ),
+    },
+  ];
+
   return (
     <div style={{ padding: "24px" }}>
       <Title level={2} style={{ marginBottom: 24 }}>
         Mis Reservaciones
       </Title>
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(350px, 1fr))",
-          gap: "16px",
-        }}
-      >
-        {reservations.map((reservation, index) => (
-          <Card key={index} style={{ height: "100%" }}>
-            <Space direction="vertical" style={{ width: "100%" }}>
-              <div style={{ textAlign: "center", marginBottom: 16 }}>
-                <img
-                  src="/LogoPrincipal-Horizontal.webp"
-                  alt="Conecta-DoS"
-                  style={{ height: 32, marginBottom: 12 }}
-                />
-                <Row justify="space-between" style={{ fontSize: "14px" }}>
-                  <Col>
-                    <Text type="secondary">Operación:</Text>
-                    <Text code style={{ marginLeft: 4 }}>
-                      {reservation.id}
-                    </Text>
-                  </Col>
-                  <Col>
-                    <Space>
-                      <Tag icon={<Calendar size={12} />} color="blue">
-                        {reservation.date}
-                      </Tag>
-                      <Tag icon={<Clock size={12} />} color="purple">
-                        {reservation.time}
-                      </Tag>
-                    </Space>
-                  </Col>
-                </Row>
-              </div>
-
-              <Text strong style={{ fontSize: "15px" }}>
-                {reservation.room}
-              </Text>
-
-              <Divider style={{ margin: "12px 0" }} />
-
-              <div style={{ marginBottom: "16px" }}>
-                <Row justify="space-between" style={{ marginBottom: "8px" }}>
-                  <Col>
-                    <Text type="secondary">Cant. días:</Text>
-                  </Col>
-                  <Col>
-                    <Text strong>{reservation.days} Días</Text>
-                  </Col>
-                </Row>
-                <Row justify="space-between" style={{ marginBottom: "8px" }}>
-                  <Col>
-                    <Text type="secondary">Precio:</Text>
-                  </Col>
-                  <Col>
-                    <Text>{formatCurrency(reservation.price)}</Text>
-                  </Col>
-                </Row>
-                <Row justify="space-between" style={{ marginBottom: "8px" }}>
-                  <Col>
-                    <Text type="secondary">IGV 18%:</Text>
-                  </Col>
-                  <Col>
-                    <Text>{formatCurrency(reservation.tax)}</Text>
-                  </Col>
-                </Row>
-                <Row justify="space-between" style={{ marginBottom: "8px" }}>
-                  <Col>
-                    <Text type="secondary">Rec. Servicios:</Text>
-                  </Col>
-                  <Col>
-                    <Text>{formatCurrency(reservation.serviceFee)}</Text>
-                  </Col>
-                </Row>
-              </div>
-
-              <Divider style={{ margin: "12px 0" }} />
-
-              <Row
-                justify="space-between"
-                align="middle"
-                style={{ marginBottom: "16px" }}
-              >
-                <Col>
-                  <Text strong>Tot. PAGO:</Text>
-                  <Text strong style={{ marginLeft: "8px", fontSize: "16px" }}>
-                    {formatCurrency(reservation.total)}
-                  </Text>
-                </Col>
-                <Col>
-                  <Tag
-                    color={reservation.statusColor}
-                    icon={
-                      reservation.status === "Reservado" ? (
-                        <CheckCircle size={12} />
-                      ) : (
-                        <XCircle size={12} />
-                      )
-                    }
-                  >
-                    {reservation.status}
-                  </Tag>
-                </Col>
-              </Row>
-
-              <Row justify="space-between" style={{ marginBottom: "16px" }}>
-                <Col>
-                  <Text type="secondary">Forma PAGO:</Text>
-                  <Text style={{ marginLeft: "8px" }}>
-                    {reservation.paymentMethod}
-                  </Text>
-                </Col>
-              </Row>
-
-              <Divider style={{ margin: "16px 0" }} />
-
-              {reservation.status === "Por pagar" ? (
-                <Row gutter={8}>
-                  <Col span={12}>
-                    <Button
-                      icon={<CreditCard size={16} />}
-                      block
-                      type="primary"
-                      style={{ fontSize: "13px", height: "40px" }}
-                    >
-                      Pagar
-                    </Button>
-                  </Col>
-                  <Col span={12}>
-                    <Button
-                      icon={<XCircle size={16} />}
-                      block
-                      danger
-                      style={{ fontSize: "13px", height: "40px" }}
-                      onClick={() => handleCancelClick(reservation)}
-                    >
-                      Cancelar
-                    </Button>
-                  </Col>
-                </Row>
-              ) : (
-                <Row gutter={8}>
-                  <Col span={12}>
-                    <Button
-                      icon={<Download size={16} />}
-                      block
-                      type="default"
-                      style={{ fontSize: "13px", height: "40px" }}
-                    >
-                      Descargar
-                    </Button>
-                  </Col>
-                  <Col span={12}>
-                    <Button
-                      icon={<Printer size={16} />}
-                      block
-                      type="default"
-                      style={{ fontSize: "13px", height: "40px" }}
-                    >
-                      Imprimir
-                    </Button>
-                  </Col>
-                </Row>
-              )}
-            </Space>
-          </Card>
-        ))}
-      </div>
+      <Tabs defaultActiveKey="enProceso" items={tabItems} />
 
       <Drawer
         title={
@@ -296,7 +348,7 @@ export default function ReservationStudent_Screen() {
           </Space>
         }
         placement="right"
-        width={500}
+        styles={{ wrapper: { width: 500 } }}
         open={showCancelDrawer}
         onClose={() => setShowCancelDrawer(false)}
         footer={
@@ -317,7 +369,7 @@ export default function ReservationStudent_Screen() {
         }
       >
         {selectedReservation && (
-          <Space direction="vertical" style={{ width: "100%" }}>
+          <Space orientation="vertical" style={{ width: "100%" }}>
             <Paragraph style={{ fontSize: "16px", marginBottom: 24 }}>
               Te agradecemos que hayas leído correctamente nuestras políticas
               para cancelar tu reserva.
@@ -332,7 +384,7 @@ export default function ReservationStudent_Screen() {
               size="small"
               style={{ marginBottom: 24, backgroundColor: "#fafafa" }}
             >
-              <Space direction="vertical" style={{ width: "100%" }}>
+              <Space orientation="vertical" style={{ width: "100%" }}>
                 <div
                   style={{
                     display: "flex",
@@ -417,7 +469,7 @@ export default function ReservationStudent_Screen() {
                 value={cancelReason}
                 style={{ marginBottom: 16, width: "100%" }}
               >
-                <Space direction="vertical" style={{ width: "100%" }}>
+                <Space orientation="vertical" style={{ width: "100%" }}>
                   {cancelReasons.map((reason) => (
                     <Radio
                       key={reason}
@@ -450,7 +502,7 @@ export default function ReservationStudent_Screen() {
             </Checkbox>
 
             <Alert
-              message="Importante"
+              title="Importante"
               description="Recuerda que la cantidad de reservas es acumulable para promociones y programas de lealtad."
               type="info"
               showIcon

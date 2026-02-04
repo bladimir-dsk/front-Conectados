@@ -263,7 +263,7 @@ export default function StudentLayout() {
           placement="left"
           onClose={() => setDrawerVisible(false)}
           open={drawerVisible}
-          width={260}
+          styles={{ wrapper: { width: 260 } }}
         >
           <Menu
             mode="inline"

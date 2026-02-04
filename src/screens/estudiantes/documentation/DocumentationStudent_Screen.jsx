@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Upload, Button, Card, notification } from "antd";
 import { UploadOutlined } from "@ant-design/icons";
 
@@ -7,6 +7,11 @@ export default function DocumentationStudent_Screen() {
   const [addressFile, setAddressFile] = useState([]);
   const [passportFile, setPassportFile] = useState([]);
   const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    const hasDocs = localStorage.getItem("hasDocuments") === "true";
+    setSaved(hasDocs);
+  }, []);
 
   const notify = (type, title, description) => {
     notification[type]({
@@ -55,6 +60,8 @@ export default function DocumentationStudent_Screen() {
       return;
     }
 
+    localStorage.setItem("hasDocuments", "true");
+
     setSaved(true);
     notify(
       "success",
@@ -66,6 +73,7 @@ export default function DocumentationStudent_Screen() {
   const removeFile = (setter) => {
     setter([]);
     setSaved(false);
+    localStorage.setItem("hasDocuments", "false");
   };
 
   const renderSaved = (files, setter) =>
