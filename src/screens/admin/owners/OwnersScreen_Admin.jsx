@@ -5,6 +5,7 @@ import {
   SearchOutlined,
   EditOutlined,
   DeleteOutlined,
+  HomeOutlined,
 } from "@ant-design/icons";
 import Highlighter from "react-highlight-words";
 import dayjs from "dayjs";
@@ -12,6 +13,7 @@ import "dayjs/locale/es";
 import OwnerModal_Admin from "./modals/OwnerModal_Admin";
 import { initialOwnersData } from "./OwnersData";
 import { CircleUser } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 dayjs.locale("es");
 
 export default function OwnersScreen_Admin() {
@@ -22,6 +24,7 @@ export default function OwnersScreen_Admin() {
   const [ownersData, setOwnersData] = useState(initialOwnersData);
   const [modalState, setModalState] = useState({ add: false, edit: false });
   const [selectedOwner, setSelectedOwner] = useState(null);
+  const navigate = useNavigate();
 
   const openModal = (type, owner = null) => {
     setModalState({ add: false, edit: false, [type]: true });
@@ -31,6 +34,12 @@ export default function OwnersScreen_Admin() {
   const closeModal = (type) => {
     setModalState((prev) => ({ ...prev, [type]: false }));
     setSelectedOwner(null);
+  };
+
+  const handleViewProperties = (owner) => {
+    navigate(`/admin/propietarios/${owner.id}/propiedades`, {
+      state: { owner }
+    });
   };
 
   const handleSaveOwner = (values) => {
@@ -242,6 +251,14 @@ export default function OwnersScreen_Admin() {
       width: 120,
       render: (_, record) => (
         <Space size="small">
+          <Tooltip title="Propiedades" color="cyan">
+            <Button
+              type="link"
+              icon={<HomeOutlined />}
+              style={{ color: "#13c2c2" }}
+              onClick={() => handleViewProperties(record)}
+            />
+          </Tooltip>
           <Tooltip title="Editar" color="green">
             <Button
               type="link"
@@ -255,7 +272,7 @@ export default function OwnersScreen_Admin() {
               type="link"
               danger
               icon={<DeleteOutlined />}
-              onClick={() => handleDelete(record)} 
+              onClick={() => handleDelete(record)}
             />
           </Tooltip>
         </Space>
@@ -301,7 +318,7 @@ export default function OwnersScreen_Admin() {
 
       {/* Tabla */}
       <div className="p-2">
-        <div className="bg-white dark:bg-[#141414] rounded-md shadow-lg p-4 md:p-6 min-h-125">
+        <div className="bg-white dark:bg-[#141414] rounded-md shadow-lg p-4 md:p-6">
           <Table
             columns={columns}
             dataSource={ownersData}

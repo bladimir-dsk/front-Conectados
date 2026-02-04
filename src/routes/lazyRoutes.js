@@ -36,6 +36,10 @@ export const AdminDashboard = lazy(
 export const AdminOwners = lazy(
   () => import("../screens/admin/owners/OwnersScreen_Admin"),
 );
+export const AdminOwnersProperties = lazy(
+  () =>
+    import("../screens/admin/owners/properties/OwnersPropertiesScreen_Admin"),
+);
 export const AdminStudentAdministration = lazy(
   () =>
     import("../screens/admin/students/administration/StudentAdministrationScreen_Admin"),
