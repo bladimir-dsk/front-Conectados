@@ -77,7 +77,6 @@ const SERVICES = [
   { name: "Desayuno", price: 12, icon: <Coffee size={16} /> },
   { name: "Almuerzo", price: 18, icon: <Sandwich size={16} /> },
   { name: "Cena", price: 22, icon: <Moon size={16} /> },
-  { name: "Room service", price: 8, icon: <Bell size={16} /> },
 ];
 
 const RoomCard = ({
@@ -383,7 +382,7 @@ const ReservationModal = ({
   ];
 
   const stepContents = [
-    <div key="1" className="text-center py-6">
+    <div key="1" className="text-center py-0">
       {hasDocuments ? (
         <>
           <CheckCircle size={48} className="text-green-500 mx-auto mb-3" />
@@ -422,13 +421,13 @@ const ReservationModal = ({
         </>
       )}
     </div>,
-    <div key="2" className="py-3">
+    <div key="2" className="py-0">
       <div className="mb-4">
-        <h1 className="text-xl font-bold text-gray-800 mb-3">
+        <h1 className="text-xl font-bold text-gray-800 mb-4">
           Procesar reservación
         </h1>
 
-        <div className="flex gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200 mb-4">
+        <div className="flex gap-3 p-4 bg-gray-50 rounded-lg border border-gray-200 mb-3">
           <div className="w-20 h-20 flex-shrink-0">
             <img
               src={IMAGE_URL}
@@ -456,7 +455,7 @@ const ReservationModal = ({
               </div>
             </div>
 
-            <div className="text-xs text-gray-600 space-y-0.5">
+            <div className="text-xs text-gray-600 space-y-0.0">
               <div className="flex items-center gap-1">
                 <Home size={12} />
                 <span>
@@ -486,32 +485,40 @@ const ReservationModal = ({
         </div>
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-6">
         <div>
           <h4 className="font-medium text-gray-700 mb-2 text-sm">
-            Tipo de renta *
+            TIPO DE ALOJAMIENTO
           </h4>
           <div className="grid grid-cols-2 gap-2">
-            {["completo", "espacio"].map((type) => (
+            {[
+              {
+                key: "completo",
+                label: "Completo",
+                desc: "Toda la propiedad",
+                icon: <Home size={16} className="text-lime-600" />,
+              },
+              {
+                key: "espacio",
+                label: "Por espacio",
+                desc: "Habitación específica",
+                icon: <Bed size={16} className="text-lime-600" />,
+              },
+            ].map((type) => (
               <div
-                key={type}
-                className={`p-2 border rounded-lg cursor-pointer transition-all text-center ${
-                  rentType === type
+                key={type.key}
+                className={`p-3 border rounded-lg cursor-pointer transition-all flex flex-col items-center justify-center text-center ${
+                  rentType === type.key
                     ? "border-lime-600 bg-lime-50"
                     : "border-gray-200 hover:border-gray-300"
                 }`}
-                onClick={() => onRentTypeChange(type)}
+                onClick={() => onRentTypeChange(type.key)}
               >
-                <div className="flex items-center justify-center gap-2">
-                  <div
-                    className={`w-3 h-3 rounded-full border ${
-                      rentType === type
-                        ? "border-lime-600 bg-lime-600"
-                        : "border-gray-300"
-                    }`}
-                  />
-                  <span className="text-xs font-medium capitalize">{type}</span>
+                <div className="mb-2">{type.icon}</div>
+                <div className="font-bold text-gray-800 text-sm">
+                  {type.label}
                 </div>
+                <div className="text-xs text-gray-600 mt-1">{type.desc}</div>
               </div>
             ))}
           </div>
@@ -527,27 +534,17 @@ const ReservationModal = ({
                 {[1, 2, 3].map((num) => (
                   <div
                     key={num}
-                    className={`p-2 border rounded-lg text-center cursor-pointer transition-all ${
+                    className={`p-3 border rounded-lg text-center cursor-pointer transition-all ${
                       selectedRooms === num
                         ? "border-lime-600 bg-lime-50"
                         : "border-gray-200 hover:border-gray-300"
                     }`}
                     onClick={() => onSelectedRoomsChange(num)}
                   >
-                    <div
-                      className={`w-4 h-4 mx-auto mb-1 rounded-full border flex items-center justify-center ${
-                        selectedRooms === num
-                          ? "border-lime-600"
-                          : "border-gray-300"
-                      }`}
-                    >
-                      {selectedRooms === num && (
-                        <div className="w-2 h-2 bg-lime-600 rounded-full" />
-                      )}
+                    <div className="text-sm font-bold text-gray-800">{num}</div>
+                    <div className="text-xs text-gray-600">
+                      {num === 1 ? "Habitación" : "Habitaciones"}
                     </div>
-                    <span className="text-xs">
-                      {num} {num === 1 ? "Habitación" : "Habitaciones"}
-                    </span>
                   </div>
                 ))}
               </div>
@@ -561,25 +558,16 @@ const ReservationModal = ({
                 {["Cama 1", "Cama 2"].map((cama) => (
                   <div
                     key={cama}
-                    className={`p-2 border rounded-lg text-center cursor-pointer transition-all ${
+                    className={`p-3 border rounded-lg text-center cursor-pointer transition-all ${
                       selectedBed === cama
                         ? "border-lime-600 bg-lime-50"
                         : "border-gray-200 hover:border-gray-300"
                     }`}
                     onClick={() => onSelectedBedChange(cama)}
                   >
-                    <div
-                      className={`w-4 h-4 mx-auto mb-1 rounded-full border flex items-center justify-center ${
-                        selectedBed === cama
-                          ? "border-lime-600"
-                          : "border-gray-300"
-                      }`}
-                    >
-                      {selectedBed === cama && (
-                        <div className="w-2 h-2 bg-lime-600 rounded-full" />
-                      )}
+                    <div className="text-sm font-medium text-gray-800">
+                      {cama}
                     </div>
-                    <span className="text-xs">{cama}</span>
                   </div>
                 ))}
               </div>
@@ -589,7 +577,7 @@ const ReservationModal = ({
 
         <div>
           <h4 className="font-medium text-gray-700 mb-2 text-sm">
-            Plazo de renta *
+            PLAZO DE RENTA
           </h4>
           <div className="grid grid-cols-3 gap-2">
             {[
@@ -599,24 +587,13 @@ const ReservationModal = ({
             ].map((option) => (
               <div
                 key={option.months}
-                className={`p-2 border rounded-lg text-center cursor-pointer transition-all ${
+                className={`p-3 border rounded-lg text-center cursor-pointer transition-all ${
                   rentPeriod === option.months
                     ? "border-lime-600 bg-lime-50"
                     : "border-gray-200 hover:border-gray-300"
                 }`}
                 onClick={() => onRentPeriodChange(option.months)}
               >
-                <div
-                  className={`w-4 h-4 mx-auto mb-1 rounded-full border flex items-center justify-center ${
-                    rentPeriod === option.months
-                      ? "border-lime-600"
-                      : "border-gray-300"
-                  }`}
-                >
-                  {rentPeriod === option.months && (
-                    <div className="w-2 h-2 bg-lime-600 rounded-full" />
-                  )}
-                </div>
                 <div className="text-sm font-bold text-gray-800">
                   {option.months}
                 </div>
@@ -631,77 +608,64 @@ const ReservationModal = ({
 
         <div>
           <h4 className="font-medium text-gray-700 mb-2 text-sm">
-            Servicios Incluidos
+            SERVICIOS ADICIONALES
           </h4>
-          <div className="mb-3">
-            <div className="border border-gray-200 rounded-lg bg-white p-3">
-              <div className="grid grid-cols-2 gap-2 mb-3">
+          <div className="border border-gray-200 rounded-lg bg-white p-4 mb-3">
+            <div className="mb-4">
+              <div className="text-xs font-medium text-gray-700 mb-2">
+                INCLUIDOS EN EL PRECIO
+              </div>
+              <div className="flex gap-2">
                 {includedServices.map((service, index) => (
                   <div
                     key={index}
-                    className="flex flex-col items-center justify-center p-2 border border-gray-100 rounded-md"
+                    className="flex-1 flex flex-col items-center justify-center p-3 border border-gray-200 rounded-md"
                   >
                     <div className="text-lime-600 mb-1">{service.icon}</div>
-                    <span className="text-xs font-medium text-center">
-                      {service.name}
-                    </span>
+                    <span className="text-xs font-medium">{service.name}</span>
                   </div>
                 ))}
+                <button
+                  className="w-12 flex items-center justify-center p-3 border border-gray-200 rounded-md text-gray-600 hover:bg-gray-50"
+                  onClick={() => setShowExtraServices(!showExtraServices)}
+                >
+                  <Plus size={16} />
+                </button>
               </div>
-              <Button
-                type="default"
-                icon={<Plus size={14} />}
-                className="w-full !bg-white !text-black hover: !border-lime-600 "
-                onClick={() => setShowExtraServices(!showExtraServices)}
-              >
-                Agregar servicios
-              </Button>
             </div>
-          </div>
 
-          {showExtraServices && (
-            <div className="h-32 overflow-y-auto border border-gray-200 rounded-lg p-2">
-              <div className="space-y-1">
-                {extraServices.map((service, index) => (
-                  <div
-                    key={index}
-                    className={`flex items-center justify-between p-1.5 rounded cursor-pointer transition-all ${
-                      selectedServices.includes(service.name)
-                        ? "bg-lime-50"
-                        : "hover:bg-gray-50"
-                    }`}
-                    onClick={() => handleServiceToggle(service.name)}
-                  >
-                    <div className="flex items-center gap-2 min-w-0">
-                      <div
-                        className={`w-3 h-3 border rounded flex items-center justify-center flex-shrink-0 ${
-                          selectedServices.includes(service.name)
-                            ? "border-lime-600 bg-lime-600"
-                            : "border-gray-300"
-                        }`}
-                      >
-                        {selectedServices.includes(service.name) && (
-                          <CheckCircle size={8} className="text-white" />
-                        )}
+            {showExtraServices && (
+              <div>
+                <Divider className="my-3" />
+                <div className="text-xs font-medium text-gray-700 mb-2">
+                  SERVICIOS PREMIUM
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  {extraServices.map((service, index) => (
+                    <div
+                      key={index}
+                      className={`p-3 border rounded-lg cursor-pointer transition-all flex flex-col items-center text-center ${
+                        selectedServices.includes(service.name)
+                          ? "border-lime-600 bg-lime-50"
+                          : "border-gray-200 hover:border-gray-300"
+                      }`}
+                      onClick={() => handleServiceToggle(service.name)}
+                    >
+                      <div className="text-lime-600 mb-2">{service.icon}</div>
+                      <div className="text-xs font-medium text-gray-800 mb-1">
+                        {service.name}
                       </div>
-                      <div className="flex items-center gap-1.5 min-w-0">
-                        <span className="text-lime-600">{service.icon}</span>
-                        <span className="text-xs font-medium truncate">
-                          {service.name}
-                        </span>
+                      <div className="text-xs font-bold text-lime-600">
+                        +${service.price}/mes
                       </div>
                     </div>
-                    <span className="text-xs font-bold text-lime-600 whitespace-nowrap ml-2">
-                      +${service.price}
-                    </span>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
-
-        <div className="bg-gray-50 rounded-lg p-3">
+        <div className="bg-gray-50 rounded-lg p-4">
           <div className="space-y-2">
             <div className="flex justify-between items-center">
               <span className="text-gray-600 text-sm">Subtotal</span>
@@ -782,7 +746,7 @@ const ReservationModal = ({
           titlePlacement="vertical"
         />
         <Divider className="my-0" />
-        <div className="px-6 py-4 max-h-[65vh] overflow-y-auto">
+        <div className="px-3 py-0 max-h-[65vh] overflow-y-auto">
           {stepContents[step - 1]}
         </div>
       </div>
@@ -819,9 +783,30 @@ export default function DashboardStudent_Screen() {
   const navigate = useNavigate();
 
   const checkDocuments = () => {
-    const docs = localStorage.getItem("hasDocuments");
-    setHasDocuments(docs === "true");
+    const ine = JSON.parse(localStorage.getItem("ineFiles") || "[]");
+    const address = JSON.parse(localStorage.getItem("addressFile") || "[]");
+
+    const valid =
+      Array.isArray(ine) &&
+      ine.length === 2 &&
+      Array.isArray(address) &&
+      address.length === 1;
+
+    setHasDocuments(valid);
   };
+
+  useEffect(() => {
+    const handleStorageChange = () => {
+      const docs = localStorage.getItem("hasDocuments");
+      setHasDocuments(docs === "true");
+    };
+
+    handleStorageChange();
+
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+    };
+  }, []);
 
   useEffect(() => {
     checkDocuments();
@@ -977,12 +962,13 @@ export default function DashboardStudent_Screen() {
   };
 
   const handleRequestRoom = (roomId) => {
-    checkDocuments();
     const room = filteredRooms.find((r) => r.id === roomId);
     if (room) {
       setSelectedRoom(room);
       calculatePrices(room.price, rentPeriod, selectedServices);
     }
+
+    checkDocuments();
     setReservationStep(1);
     setReservationModalOpen(true);
   };
@@ -1027,9 +1013,9 @@ export default function DashboardStudent_Screen() {
 
   return (
     <ConfigProvider locale={esES}>
-      <div className="min-h-screen bg-gray-50 flex justify-center w-full">
-        <div className="w-full max-w-7xl px-4 py-8">
-          <div className="relative mx-auto mb-10 bg-white rounded-2xl border border-gray-200 h-14 max-w-lg flex items-center shadow-sm">
+      <div className="min-h-screen bg-gray-50 flex justify-center w-full mb-0">
+        <div className="w-full max-w-7xl px-4 py-8 mb-0">
+          <div className="relative mx-auto mb-2 bg-white rounded-2xl border border-gray-200 h-14 max-w-lg flex items-center shadow-sm">
             <div className="flex-1 flex justify-center items-center gap-6 px-4">
               <Popover
                 trigger="click"
@@ -1093,7 +1079,7 @@ export default function DashboardStudent_Screen() {
             />
           </div>
 
-          <div className="mb-4 text-sm text-gray-600">
+          <div className="mb-3 text-sm text-gray-600">
             Mostrando {filteredRooms.length} de {rooms.length} habitaciones
             {appliedFilters.dateRange &&
               appliedFilters.dateRange[0] &&

@@ -24,13 +24,19 @@ import {
   DollarSign,
   Star,
   Wifi,
-  Droplet,
+  Droplets,
   Zap,
   Sparkles,
-  CookingPot,
-  WashingMachine,
-  Snowflake,
+  Utensils,
+  Shirt,
+  Wind,
   Tv,
+  Car,
+  Dumbbell,
+  Waves,
+  Coffee,
+  Sandwich,
+  Moon,
   ShieldCheck,
   X,
   Navigation,
@@ -50,26 +56,19 @@ const IMAGE_URL = "https://s03.s3c.es/imag/_v0/1200x655/0/f/c/habitacion.jpg";
 
 const SERVICES = [
   { name: "Internet", price: 0, icon: <Wifi size={16} /> },
-  { name: "Agua", price: 0, icon: <Droplet size={16} /> },
+  { name: "Agua", price: 0, icon: <Droplets size={16} /> },
   { name: "Luz", price: 20, icon: <Zap size={16} /> },
   { name: "Limpieza", price: 15, icon: <Sparkles size={16} /> },
-  { name: "Cocina", price: 10, icon: <CookingPot size={16} /> },
-  { name: "Lavadora", price: 5, icon: <WashingMachine size={16} /> },
-  { name: "Aire acondicionado", price: 25, icon: <Snowflake size={16} /> },
+  { name: "Cocina", price: 10, icon: <Utensils size={16} /> },
+  { name: "Lavadora", price: 5, icon: <Shirt size={16} /> },
+  { name: "Aire acondicionado", price: 25, icon: <Wind size={16} /> },
   { name: "TV", price: 10, icon: <Tv size={16} /> },
-];
-
-const servicesCatalog = [
-  { name: "Internet", icon: <Wifi size={16} />, price: 0 },
-  { name: "Agua", icon: <Droplet size={16} />, price: 0 },
-  { name: "Luz", icon: <Zap size={16} />, price: 0 },
-  { name: "Limpieza", icon: <Sparkles size={16} />, price: 15 },
-  { name: "Cocina", icon: <CookingPot size={16} />, price: 10 },
-  { name: "Lavadora", icon: <WashingMachine size={16} />, price: 0 },
-  { name: "Aire acondicionado", icon: <Snowflake size={16} />, price: 0 },
-  { name: "TV", icon: <Tv size={16} />, price: 0 },
-  { name: "Seguridad", icon: <ShieldCheck size={16} />, price: 0 },
-  { name: "Mantenimiento", icon: <Sparkles size={16} />, price: 0 },
+  { name: "Parqueadero", price: 30, icon: <Car size={16} /> },
+  { name: "Gimnasio", price: 20, icon: <Dumbbell size={16} /> },
+  { name: "Piscina", price: 25, icon: <Waves size={16} /> },
+  { name: "Desayuno", price: 12, icon: <Coffee size={16} /> },
+  { name: "Almuerzo", price: 18, icon: <Sandwich size={16} /> },
+  { name: "Cena", price: 22, icon: <Moon size={16} /> },
 ];
 
 const rooms = [
@@ -80,13 +79,13 @@ const rooms = [
     price: 2500,
     rating: 4.3,
     available: true,
-    services: servicesCatalog,
+    services: SERVICES,
     lat: 20.9671,
     lng: -89.6237,
     image: IMAGE_URL,
-    address: "Centro, Mérida, Yucatán",
-    owner: "Propietario verificado",
-    type: "Habitación privada",
+    address: "Calle 10 #123, Centro, Mérida, Yucatán",
+    owner: "Juan Pérez",
+    type: "Cuarto privado",
     beds: 1,
     gender: "Mixto",
   },
@@ -97,13 +96,13 @@ const rooms = [
     price: 3200,
     rating: 4.5,
     available: true,
-    services: servicesCatalog,
+    services: SERVICES,
     lat: 20.9802,
     lng: -89.6103,
     image: IMAGE_URL,
-    address: "Itzimná, Mérida",
-    owner: "Propietario verificado",
-    type: "Habitación privada",
+    address: "Calle 25 #456, Itzimná, Mérida",
+    owner: "María García",
+    type: "Cuarto privado",
     beds: 1,
     gender: "Femenino",
   },
@@ -114,12 +113,12 @@ const rooms = [
     price: 2800,
     rating: 4.2,
     available: true,
-    services: servicesCatalog,
+    services: SERVICES,
     lat: 20.9954,
     lng: -89.6356,
     image: IMAGE_URL,
-    address: "Chuburná, Mérida",
-    owner: "Propietario verificado",
+    address: "Calle 30 #789, Chuburná, Mérida",
+    owner: "Carlos López",
     type: "Habitación compartida",
     beds: 2,
     gender: "Mixto",
@@ -131,13 +130,13 @@ const rooms = [
     price: 3000,
     rating: 4.4,
     available: true,
-    services: servicesCatalog,
+    services: SERVICES,
     lat: 21.0152,
     lng: -89.6487,
     image: IMAGE_URL,
-    address: "Paseo Montejo, Mérida",
-    owner: "Propietario verificado",
-    type: "Habitación privada",
+    address: "Paseo Montejo #101, Centro, Mérida",
+    owner: "Ana Rodríguez",
+    type: "Cuarto privado",
     beds: 1,
     gender: "Masculino",
   },
@@ -148,13 +147,13 @@ const rooms = [
     price: 4200,
     rating: 4.8,
     available: true,
-    services: servicesCatalog,
+    services: SERVICES,
     lat: 21.0281,
     lng: -89.5904,
     image: IMAGE_URL,
-    address: "Altabrisa, Mérida",
-    owner: "Propietario premium",
-    type: "Habitación privada",
+    address: "Altabrisa #202, Mérida",
+    owner: "Luis Hernández",
+    type: "Cuarto privado",
     beds: 1,
     gender: "Mixto",
   },
@@ -165,12 +164,12 @@ const rooms = [
     price: 3500,
     rating: 4.1,
     available: true,
-    services: servicesCatalog,
+    services: SERVICES,
     lat: 21.0403,
     lng: -89.6109,
     image: IMAGE_URL,
-    address: "Jardines del Norte",
-    owner: "Propietario verificado",
+    address: "Jardines del Norte #303, Mérida",
+    owner: "Sofía Martínez",
     type: "Habitación compartida",
     beds: 2,
     gender: "Mixto",
@@ -182,13 +181,13 @@ const rooms = [
     price: 2700,
     rating: 4.0,
     available: true,
-    services: servicesCatalog,
+    services: SERVICES,
     lat: 20.9959,
     lng: -89.6048,
     image: IMAGE_URL,
-    address: "México Norte",
-    owner: "Propietario verificado",
-    type: "Habitación privada",
+    address: "México Norte #404, Mérida",
+    owner: "Pedro Gómez",
+    type: "Cuarto privado",
     beds: 1,
     gender: "Femenino",
   },
@@ -199,30 +198,30 @@ const rooms = [
     price: 3300,
     rating: 4.3,
     available: true,
-    services: servicesCatalog,
+    services: SERVICES,
     lat: 20.9584,
     lng: -89.6082,
     image: IMAGE_URL,
-    address: "Ginerés, Mérida",
-    owner: "Propietario verificado",
-    type: "Habitación privada",
+    address: "Ginerés #505, Mérida",
+    owner: "Laura Díaz",
+    type: "Cuarto privado",
     beds: 1,
     gender: "Masculino",
   },
   ...Array.from({ length: 16 }).map((_, i) => ({
     id: i + 9,
     title: `Habitación Zona ${i + 9}`,
-    name: `Habitación Zona ${i + 9}`,
+    name: `Habitación ${i + 9}`,
     price: 2600 + (i % 5) * 300,
     rating: 4 + (i % 3) * 0.2,
     available: true,
-    services: servicesCatalog,
+    services: SERVICES,
     lat: 20.96 + i * 0.003,
     lng: -89.62 + i * 0.002,
     image: IMAGE_URL,
-    address: `Zona ${i + 9}, Mérida`,
+    address: `Calle ${i + 10} #${100 + i}, Mérida, Yucatán`,
     owner: "Propietario verificado",
-    type: i % 2 === 0 ? "Habitación privada" : "Habitación compartida",
+    type: i % 2 === 0 ? "Cuarto privado" : "Habitación compartida",
     beds: i % 2 === 0 ? 1 : 2,
     gender: i % 3 === 0 ? "Femenino" : "Mixto",
   })),
@@ -311,7 +310,7 @@ const ReservationModal = ({
   ];
 
   const stepContents = [
-    <div key="1" className="text-center py-6">
+    <div key="1" className="text-center py-0">
       {hasDocuments ? (
         <>
           <CheckCircle size={48} className="text-green-500 mx-auto mb-3" />
@@ -342,6 +341,7 @@ const ReservationModal = ({
             type="default"
             className="!bg-lime-600 hover:!bg-lime-600 !border-lime-600 !text-white"
             onClick={() => {
+              onClose();
               window.location.href = "/estudiante/documentation";
             }}
           >
@@ -350,13 +350,13 @@ const ReservationModal = ({
         </>
       )}
     </div>,
-    <div key="2" className="py-3">
+    <div key="2" className="py-0">
       <div className="mb-4">
-        <h1 className="text-xl font-bold text-gray-800 mb-3">
+        <h1 className="text-xl font-bold text-gray-800 mb-4">
           Procesar reservación
         </h1>
 
-        <div className="flex gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200 mb-4">
+        <div className="flex gap-3 p-4 bg-gray-50 rounded-lg border border-gray-200 mb-3">
           <div className="w-20 h-20 flex-shrink-0">
             <img
               src={room?.image || IMAGE_URL}
@@ -373,7 +373,7 @@ const ReservationModal = ({
                     : "AL-001"}
                 </Tag>
                 <h3 className="font-semibold text-gray-800 truncate">
-                  {room?.name || "Habitación"}
+                  {room?.name || "Casa color roja"}
                 </h3>
               </div>
               <div className="text-right">
@@ -414,32 +414,40 @@ const ReservationModal = ({
         </div>
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-6">
         <div>
           <h4 className="font-medium text-gray-700 mb-2 text-sm">
-            Tipo de renta *
+            TIPO DE ALOJAMIENTO
           </h4>
           <div className="grid grid-cols-2 gap-2">
-            {["completo", "espacio"].map((type) => (
+            {[
+              {
+                key: "completo",
+                label: "Completo",
+                desc: "Toda la propiedad",
+                icon: <Home size={16} className="text-lime-600" />,
+              },
+              {
+                key: "espacio",
+                label: "Por espacio",
+                desc: "Habitación específica",
+                icon: <Bed size={16} className="text-lime-600" />,
+              },
+            ].map((type) => (
               <div
-                key={type}
-                className={`p-2 border rounded-lg cursor-pointer transition-all text-center ${
-                  rentType === type
+                key={type.key}
+                className={`p-3 border rounded-lg cursor-pointer transition-all flex flex-col items-center justify-center text-center ${
+                  rentType === type.key
                     ? "border-lime-600 bg-lime-50"
                     : "border-gray-200 hover:border-gray-300"
                 }`}
-                onClick={() => onRentTypeChange(type)}
+                onClick={() => onRentTypeChange(type.key)}
               >
-                <div className="flex items-center justify-center gap-2">
-                  <div
-                    className={`w-3 h-3 rounded-full border ${
-                      rentType === type
-                        ? "border-lime-600 bg-lime-600"
-                        : "border-gray-300"
-                    }`}
-                  />
-                  <span className="text-xs font-medium capitalize">{type}</span>
+                <div className="mb-2">{type.icon}</div>
+                <div className="font-bold text-gray-800 text-sm">
+                  {type.label}
                 </div>
+                <div className="text-xs text-gray-600 mt-1">{type.desc}</div>
               </div>
             ))}
           </div>
@@ -455,27 +463,17 @@ const ReservationModal = ({
                 {[1, 2, 3].map((num) => (
                   <div
                     key={num}
-                    className={`p-2 border rounded-lg text-center cursor-pointer transition-all ${
+                    className={`p-3 border rounded-lg text-center cursor-pointer transition-all ${
                       selectedRooms === num
                         ? "border-lime-600 bg-lime-50"
                         : "border-gray-200 hover:border-gray-300"
                     }`}
                     onClick={() => onSelectedRoomsChange(num)}
                   >
-                    <div
-                      className={`w-4 h-4 mx-auto mb-1 rounded-full border flex items-center justify-center ${
-                        selectedRooms === num
-                          ? "border-lime-600"
-                          : "border-gray-300"
-                      }`}
-                    >
-                      {selectedRooms === num && (
-                        <div className="w-2 h-2 bg-lime-600 rounded-full" />
-                      )}
+                    <div className="text-sm font-bold text-gray-800">{num}</div>
+                    <div className="text-xs text-gray-600">
+                      {num === 1 ? "Habitación" : "Habitaciones"}
                     </div>
-                    <span className="text-xs">
-                      {num} {num === 1 ? "Habitación" : "Habitaciones"}
-                    </span>
                   </div>
                 ))}
               </div>
@@ -489,25 +487,16 @@ const ReservationModal = ({
                 {["Cama 1", "Cama 2"].map((cama) => (
                   <div
                     key={cama}
-                    className={`p-2 border rounded-lg text-center cursor-pointer transition-all ${
+                    className={`p-3 border rounded-lg text-center cursor-pointer transition-all ${
                       selectedBed === cama
                         ? "border-lime-600 bg-lime-50"
                         : "border-gray-200 hover:border-gray-300"
                     }`}
                     onClick={() => onSelectedBedChange(cama)}
                   >
-                    <div
-                      className={`w-4 h-4 mx-auto mb-1 rounded-full border flex items-center justify-center ${
-                        selectedBed === cama
-                          ? "border-lime-600"
-                          : "border-gray-300"
-                      }`}
-                    >
-                      {selectedBed === cama && (
-                        <div className="w-2 h-2 bg-lime-600 rounded-full" />
-                      )}
+                    <div className="text-sm font-medium text-gray-800">
+                      {cama}
                     </div>
-                    <span className="text-xs">{cama}</span>
                   </div>
                 ))}
               </div>
@@ -517,7 +506,7 @@ const ReservationModal = ({
 
         <div>
           <h4 className="font-medium text-gray-700 mb-2 text-sm">
-            Plazo de renta *
+            PLAZO DE RENTA
           </h4>
           <div className="grid grid-cols-3 gap-2">
             {[
@@ -527,24 +516,13 @@ const ReservationModal = ({
             ].map((option) => (
               <div
                 key={option.months}
-                className={`p-2 border rounded-lg text-center cursor-pointer transition-all ${
+                className={`p-3 border rounded-lg text-center cursor-pointer transition-all ${
                   rentPeriod === option.months
                     ? "border-lime-600 bg-lime-50"
                     : "border-gray-200 hover:border-gray-300"
                 }`}
                 onClick={() => onRentPeriodChange(option.months)}
               >
-                <div
-                  className={`w-4 h-4 mx-auto mb-1 rounded-full border flex items-center justify-center ${
-                    rentPeriod === option.months
-                      ? "border-lime-600"
-                      : "border-gray-300"
-                  }`}
-                >
-                  {rentPeriod === option.months && (
-                    <div className="w-2 h-2 bg-lime-600 rounded-full" />
-                  )}
-                </div>
                 <div className="text-sm font-bold text-gray-800">
                   {option.months}
                 </div>
@@ -559,77 +537,64 @@ const ReservationModal = ({
 
         <div>
           <h4 className="font-medium text-gray-700 mb-2 text-sm">
-            Servicios Incluidos
+            SERVICIOS ADICIONALES
           </h4>
-          <div className="mb-3">
-            <div className="border border-gray-200 rounded-lg bg-white p-3">
-              <div className="grid grid-cols-2 gap-2 mb-3">
+          <div className="border border-gray-200 rounded-lg bg-white p-4 mb-3">
+            <div className="mb-4">
+              <div className="text-xs font-medium text-gray-700 mb-2">
+                INCLUIDOS EN EL PRECIO
+              </div>
+              <div className="flex gap-2">
                 {includedServices.map((service, index) => (
                   <div
                     key={index}
-                    className="flex flex-col items-center justify-center p-2 border border-gray-100 rounded-md"
+                    className="flex-1 flex flex-col items-center justify-center p-3 border border-gray-200 rounded-md"
                   >
                     <div className="text-lime-600 mb-1">{service.icon}</div>
-                    <span className="text-xs font-medium text-center">
-                      {service.name}
-                    </span>
+                    <span className="text-xs font-medium">{service.name}</span>
                   </div>
                 ))}
+                <button
+                  className="w-12 flex items-center justify-center p-3 border border-gray-200 rounded-md text-gray-600 hover:bg-gray-50"
+                  onClick={() => setShowExtraServices(!showExtraServices)}
+                >
+                  <Plus size={16} />
+                </button>
               </div>
-              <Button
-                type="default"
-                icon={<Plus size={14} />}
-                className="w-full !bg-white !text-black hover:!border-lime-600"
-                onClick={() => setShowExtraServices(!showExtraServices)}
-              >
-                Agregar servicios
-              </Button>
             </div>
-          </div>
 
-          {showExtraServices && (
-            <div className="h-32 overflow-y-auto border border-gray-200 rounded-lg p-2">
-              <div className="space-y-1">
-                {extraServices.map((service, index) => (
-                  <div
-                    key={index}
-                    className={`flex items-center justify-between p-1.5 rounded cursor-pointer transition-all ${
-                      selectedServices.includes(service.name)
-                        ? "bg-lime-50"
-                        : "hover:bg-gray-50"
-                    }`}
-                    onClick={() => handleServiceToggle(service.name)}
-                  >
-                    <div className="flex items-center gap-2 min-w-0">
-                      <div
-                        className={`w-3 h-3 border rounded flex items-center justify-center flex-shrink-0 ${
-                          selectedServices.includes(service.name)
-                            ? "border-lime-600 bg-lime-600"
-                            : "border-gray-300"
-                        }`}
-                      >
-                        {selectedServices.includes(service.name) && (
-                          <CheckCircle size={8} className="text-white" />
-                        )}
+            {showExtraServices && (
+              <div>
+                <Divider className="my-3" />
+                <div className="text-xs font-medium text-gray-700 mb-2">
+                  SERVICIOS PREMIUM
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  {extraServices.map((service, index) => (
+                    <div
+                      key={index}
+                      className={`p-3 border rounded-lg cursor-pointer transition-all flex flex-col items-center text-center ${
+                        selectedServices.includes(service.name)
+                          ? "border-lime-600 bg-lime-50"
+                          : "border-gray-200 hover:border-gray-300"
+                      }`}
+                      onClick={() => handleServiceToggle(service.name)}
+                    >
+                      <div className="text-lime-600 mb-2">{service.icon}</div>
+                      <div className="text-xs font-medium text-gray-800 mb-1">
+                        {service.name}
                       </div>
-                      <div className="flex items-center gap-1.5 min-w-0">
-                        <span className="text-lime-600">{service.icon}</span>
-                        <span className="text-xs font-medium truncate">
-                          {service.name}
-                        </span>
+                      <div className="text-xs font-bold text-lime-600">
+                        +${service.price}/mes
                       </div>
                     </div>
-                    <span className="text-xs font-bold text-lime-600 whitespace-nowrap ml-2">
-                      +${service.price}
-                    </span>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
-
-        <div className="bg-gray-50 rounded-lg p-3">
+        <div className="bg-gray-50 rounded-lg p-4">
           <div className="space-y-2">
             <div className="flex justify-between items-center">
               <span className="text-gray-600 text-sm">Subtotal</span>
@@ -707,10 +672,10 @@ const ReservationModal = ({
           className="mb-6 px-6"
           responsive={false}
           size="small"
-          labelPlacement="vertical"
+          titlePlacement="vertical"
         />
         <Divider className="my-0" />
-        <div className="px-6 py-4 max-h-[65vh] overflow-y-auto">
+        <div className="px-3 py-0 max-h-[65vh] overflow-y-auto">
           {stepContents[step - 1]}
         </div>
       </div>
@@ -750,9 +715,33 @@ export default function SearchStudent_Screen() {
     libraries: ["places"],
   });
 
+  const checkDocuments = () => {
+    const ine = JSON.parse(localStorage.getItem("ineFiles") || "[]");
+    const address = JSON.parse(localStorage.getItem("addressFile") || "[]");
+
+    const valid =
+      Array.isArray(ine) &&
+      ine.length === 2 &&
+      Array.isArray(address) &&
+      address.length === 1;
+
+    setHasDocuments(valid);
+    localStorage.setItem("hasDocuments", valid.toString());
+    return valid;
+  };
+
   useEffect(() => {
-    const docs = localStorage.getItem("hasDocuments");
-    setHasDocuments(docs === "true");
+    checkDocuments();
+
+    const handleStorageChange = () => {
+      checkDocuments();
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+    };
   }, []);
 
   const calculatePrices = (roomPrice, period, services) => {
@@ -827,6 +816,8 @@ export default function SearchStudent_Screen() {
   };
 
   const handleRequestRoom = (room) => {
+    checkDocuments();
+    setSelectedRoom(room);
     if (room) {
       calculatePrices(room.price, rentPeriod, selectedServices);
     }

@@ -101,30 +101,34 @@ export default function ReservationStudent_Screen() {
   const renderReservationCard = (reservation) => (
     <Card key={reservation.id}>
       <Space orientation="vertical" style={{ width: "100%" }}>
-        <div style={{ textAlign: "center", marginBottom: 16 }}>
-          <img
-            src="/LogoPrincipal-Horizontal.webp"
-            alt="Conecta-DoS"
-            style={{ height: 32, marginBottom: 12 }}
-          />
-          <Row justify="space-between" style={{ fontSize: "14px" }}>
-            <Col>
-              <Text type="secondary">Operación:</Text>
-              <Text code style={{ marginLeft: 4 }}>
-                {reservation.id}
-              </Text>
-            </Col>
-            <Col>
-              <Space>
-                <Tag icon={<Calendar size={12} />} color="blue">
-                  {reservation.date}
-                </Tag>
-                <Tag icon={<Clock size={12} />} color="purple">
-                  {reservation.time}
-                </Tag>
-              </Space>
-            </Col>
-          </Row>
+        <div style={{ marginBottom: 16 }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            <img
+              src="/LogoPrincipal-Horizontal.webp"
+              alt="Conecta-DoS"
+              style={{ height: 32 }}
+            />
+            <Space>
+              <Tag icon={<Calendar size={12} />} color="blue">
+                {reservation.date}
+              </Tag>
+              <Tag icon={<Clock size={12} />} color="purple">
+                {reservation.time}
+              </Tag>
+            </Space>
+          </div>
+          <div style={{ textAlign: "left", marginTop: 8 }}>
+            <Text type="secondary">Operación:</Text>
+            <Text code style={{ marginLeft: 4 }}>
+              {reservation.id}
+            </Text>
+          </div>
         </div>
 
         <Text strong style={{ fontSize: "15px" }}>

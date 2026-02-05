@@ -9,8 +9,21 @@ export default function DocumentationStudent_Screen() {
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    const hasDocs = localStorage.getItem("hasDocuments") === "true";
-    setSaved(hasDocs);
+    const storedIne = JSON.parse(localStorage.getItem("ineFiles") || "[]");
+    const storedAddress = JSON.parse(
+      localStorage.getItem("addressFile") || "[]",
+    );
+    const storedPassport = JSON.parse(
+      localStorage.getItem("passportFile") || "[]",
+    );
+
+    setIneFiles(storedIne);
+    setAddressFile(storedAddress);
+    setPassportFile(storedPassport);
+
+    if (storedIne.length || storedAddress.length || storedPassport.length) {
+      setSaved(true);
+    }
   }, []);
 
   const notify = (type, title, description) => {
@@ -60,9 +73,21 @@ export default function DocumentationStudent_Screen() {
       return;
     }
 
-    localStorage.setItem("hasDocuments", "true");
+    localStorage.setItem(
+      "ineFiles",
+      JSON.stringify(ineFiles.map(({ uid, name }) => ({ uid, name }))),
+    );
+    localStorage.setItem(
+      "addressFile",
+      JSON.stringify(addressFile.map(({ uid, name }) => ({ uid, name }))),
+    );
+    localStorage.setItem(
+      "passportFile",
+      JSON.stringify(passportFile.map(({ uid, name }) => ({ uid, name }))),
+    );
 
     setSaved(true);
+
     notify(
       "success",
       "Archivos guardados correctamente",
@@ -70,20 +95,20 @@ export default function DocumentationStudent_Screen() {
     );
   };
 
-  const removeFile = (setter) => {
+  const removeFile = (setter, key) => {
     setter([]);
+    localStorage.removeItem(key);
     setSaved(false);
-    localStorage.setItem("hasDocuments", "false");
   };
 
-  const renderSaved = (files, setter) =>
+  const renderSaved = (files, key, setter) =>
     files.map((file) => (
       <div
         key={file.uid}
         className="flex items-center justify-between rounded-xl border px-4 py-3 mt-3 bg-white shadow-sm"
       >
         <span className="text-sm font-medium truncate">{file.name}</span>
-        <Button danger type="link" onClick={() => removeFile(setter)}>
+        <Button danger type="link" onClick={() => removeFile(setter, key)}>
           Remover
         </Button>
       </div>
@@ -107,7 +132,7 @@ export default function DocumentationStudent_Screen() {
             <Button icon={<UploadOutlined />}>Subir INE (Ambos lados)</Button>
           </Upload>
         )}
-        {saved && renderSaved(ineFiles, setIneFiles)}
+        {saved && renderSaved(ineFiles, "ineFiles", setIneFiles)}
       </Card>
 
       <Card title="Comprobante de Domicilio" className="rounded-xl shadow-sm">
@@ -121,7 +146,7 @@ export default function DocumentationStudent_Screen() {
             <Button icon={<UploadOutlined />}>Subir Comprobante</Button>
           </Upload>
         )}
-        {saved && renderSaved(addressFile, setAddressFile)}
+        {saved && renderSaved(addressFile, "addressFile", setAddressFile)}
       </Card>
 
       <Card title="Pasaporte (Opcional)" className="rounded-xl shadow-sm">
@@ -135,7 +160,7 @@ export default function DocumentationStudent_Screen() {
             <Button icon={<UploadOutlined />}>Subir Pasaporte</Button>
           </Upload>
         )}
-        {saved && renderSaved(passportFile, setPassportFile)}
+        {saved && renderSaved(passportFile, "passportFile", setPassportFile)}
       </Card>
 
       {!saved && (
