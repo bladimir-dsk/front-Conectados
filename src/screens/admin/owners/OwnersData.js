@@ -127,6 +127,29 @@ export const initialPropertiesData = [
         spaceName: "Habitación Principal",
         spaceNumber: "101",
         monthlyPrice: 8000,
+        beds: [
+          {
+            key: "1",
+            id: 1,
+            bedName: "Cama King",
+            bedNumber: "K-1",
+            monthlyPrice: 4000,
+          },
+          {
+            key: "2",
+            id: 2,
+            bedName: "Cama Individual",
+            bedNumber: "I-1",
+            monthlyPrice: 3000,
+          },
+          {
+            key: "3",
+            id: 3,
+            bedName: "Sofá cama",
+            bedNumber: "S-1",
+            monthlyPrice: 2500,
+          },
+        ],
       },
       {
         key: "2",
@@ -134,6 +157,22 @@ export const initialPropertiesData = [
         spaceName: "Habitación Secundaria",
         spaceNumber: "102",
         monthlyPrice: 6500,
+        beds: [
+          {
+            key: "1",
+            id: 1,
+            bedName: "Cama Queen",
+            bedNumber: "Q-1",
+            monthlyPrice: 3500,
+          },
+          {
+            key: "2",
+            id: 2,
+            bedName: "Cama Individual",
+            bedNumber: "I-2",
+            monthlyPrice: 2800,
+          },
+        ],
       },
       {
         key: "3",
@@ -141,6 +180,37 @@ export const initialPropertiesData = [
         spaceName: "Estudio",
         spaceNumber: "103",
         monthlyPrice: 5500,
+        beds: [],
+      },
+      {
+        key: "4",
+        id: 4,
+        spaceName: "Habitación Compartida",
+        spaceNumber: "104",
+        monthlyPrice: 7000,
+        beds: [
+          {
+            key: "1",
+            id: 1,
+            bedName: "Litera Superior",
+            bedNumber: "LS-1",
+            monthlyPrice: 2200,
+          },
+          {
+            key: "2",
+            id: 2,
+            bedName: "Litera Inferior",
+            bedNumber: "LI-1",
+            monthlyPrice: 2400,
+          },
+          {
+            key: "3",
+            id: 3,
+            bedName: "Cama Individual",
+            bedNumber: "I-3",
+            monthlyPrice: 2500,
+          },
+        ],
       },
     ],
     services: [
@@ -303,6 +373,22 @@ export const initialPropertiesData = [
         spaceName: "Cuarto 1",
         spaceNumber: "A-1",
         monthlyPrice: 6000,
+        beds: [
+          {
+            key: "1",
+            id: 1,
+            bedName: "Cama Matrimonial",
+            bedNumber: "M-1",
+            monthlyPrice: 3000,
+          },
+          {
+            key: "2",
+            id: 2,
+            bedName: "Cama Individual",
+            bedNumber: "I-1",
+            monthlyPrice: 2500,
+          },
+        ],
       },
       {
         key: "2",
@@ -310,6 +396,22 @@ export const initialPropertiesData = [
         spaceName: "Cuarto 2",
         spaceNumber: "A-2",
         monthlyPrice: 6000,
+        beds: [
+          {
+            key: "1",
+            id: 1,
+            bedName: "Cama Queen",
+            bedNumber: "Q-1",
+            monthlyPrice: 3200,
+          },
+          {
+            key: "2",
+            id: 2,
+            bedName: "Cama Individual",
+            bedNumber: "I-2",
+            monthlyPrice: 2600,
+          },
+        ],
       },
       {
         key: "3",
@@ -317,6 +419,22 @@ export const initialPropertiesData = [
         spaceName: "Cuarto 3",
         spaceNumber: "A-3",
         monthlyPrice: 5500,
+        beds: [
+          {
+            key: "1",
+            id: 1,
+            bedName: "Litera Superior",
+            bedNumber: "LS-1",
+            monthlyPrice: 2800,
+          },
+          {
+            key: "2",
+            id: 2,
+            bedName: "Litera Inferior",
+            bedNumber: "LI-1",
+            monthlyPrice: 2800,
+          },
+        ],
       },
       {
         key: "4",
@@ -324,6 +442,22 @@ export const initialPropertiesData = [
         spaceName: "Cuarto 4",
         spaceNumber: "B-1",
         monthlyPrice: 5500,
+        beds: [
+          {
+            key: "1",
+            id: 1,
+            bedName: "Cama Matrimonial",
+            bedNumber: "M-2",
+            monthlyPrice: 2900,
+          },
+          {
+            key: "2",
+            id: 2,
+            bedName: "Cama Individual",
+            bedNumber: "I-3",
+            monthlyPrice: 2400,
+          },
+        ],
       },
       {
         key: "5",
@@ -331,6 +465,52 @@ export const initialPropertiesData = [
         spaceName: "Cuarto 5",
         spaceNumber: "B-2",
         monthlyPrice: 5000,
+        beds: [
+          {
+            key: "1",
+            id: 1,
+            bedName: "Cama Individual",
+            bedNumber: "I-4",
+            monthlyPrice: 2500,
+          },
+          {
+            key: "2",
+            id: 2,
+            bedName: "Cama Individual",
+            bedNumber: "I-5",
+            monthlyPrice: 2500,
+          },
+        ],
+      },
+      {
+        key: "6",
+        id: 6,
+        spaceName: "Cuarto 6",
+        spaceNumber: "B-3",
+        monthlyPrice: 7500,
+        beds: [
+          {
+            key: "1",
+            id: 1,
+            bedName: "Cama King",
+            bedNumber: "K-1",
+            monthlyPrice: 4000,
+          },
+          {
+            key: "2",
+            id: 2,
+            bedName: "Litera Superior",
+            bedNumber: "LS-2",
+            monthlyPrice: 1800,
+          },
+          {
+            key: "3",
+            id: 3,
+            bedName: "Litera Inferior",
+            bedNumber: "LI-2",
+            monthlyPrice: 1800,
+          },
+        ],
       },
     ],
     services: [

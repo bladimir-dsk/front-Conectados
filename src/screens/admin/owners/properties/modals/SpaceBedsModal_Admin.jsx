@@ -11,58 +11,54 @@ import {
 } from "antd";
 import { PlusOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
 import { useState, useEffect } from "react";
-import { Bed, X } from "lucide-react";
+import { X } from "lucide-react";
 import FormInput from "../../../../../components/inputs/FormInput";
-import SpaceBedsModal_Admin from "./SpaceBedsModal_Admin";
 
-const PropertySpacesModal_Admin = ({ visible, onClose, propertyData }) => {
+const SpaceBedsModal_Admin = ({ visible, onClose, spaceData, onSaveBeds }) => {
   const [form] = Form.useForm();
   const { message, modal } = App.useApp();
-  const [spaces, setSpaces] = useState([]);
-  const [editingSpace, setEditingSpace] = useState(null);
+  const [beds, setBeds] = useState([]);
+  const [editingBed, setEditingBed] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [bedsModalVisible, setBedsModalVisible] = useState(false);
-  const [selectedSpace, setSelectedSpace] = useState(null);
 
   useEffect(() => {
-    if (visible && propertyData) {
-      // Cargar espacios existentes o inicializar vacío
-      setSpaces(propertyData.spaces || []);
+    if (visible && spaceData) {
+      // Cargar camas existentes o inicializar vacío
+      setBeds(spaceData.beds || []);
       form.resetFields();
-      setEditingSpace(null);
+      setEditingBed(null);
       setIsEditing(false);
     }
-  }, [visible, propertyData, form]);
+  }, [visible, spaceData, form]);
 
   const handleSubmit = () => {
     form
       .validateFields()
       .then((values) => {
-        if (isEditing && editingSpace) {
-          // Editar espacio existente
-          setSpaces((prev) =>
-            prev.map((space) =>
-              space.id === editingSpace.id ? { ...space, ...values } : space,
+        if (isEditing && editingBed) {
+          // Editar cama existente
+          setBeds((prev) =>
+            prev.map((bed) =>
+              bed.id === editingBed.id ? { ...bed, ...values } : bed,
             ),
           );
-          message.success("Espacio actualizado correctamente");
+          message.success("Cama actualizada correctamente");
         } else {
-          // Agregar nuevo espacio
+          // Agregar nueva cama
           const newId =
-            spaces.length > 0 ? Math.max(...spaces.map((s) => s.id)) + 1 : 1;
-          setSpaces((prev) => [
+            beds.length > 0 ? Math.max(...beds.map((b) => b.id)) + 1 : 1;
+          setBeds((prev) => [
             ...prev,
             {
               id: newId,
               key: String(newId),
               ...values,
-              beds: [],
             },
           ]);
-          message.success("Espacio agregado correctamente");
+          message.success("Cama agregada correctamente");
         }
         form.resetFields();
-        setEditingSpace(null);
+        setEditingBed(null);
         setIsEditing(false);
       })
       .catch(() => {
@@ -71,11 +67,11 @@ const PropertySpacesModal_Admin = ({ visible, onClose, propertyData }) => {
   };
 
   const handleEdit = (record) => {
-    setEditingSpace(record);
+    setEditingBed(record);
     setIsEditing(true);
     form.setFieldsValue({
-      spaceName: record.spaceName,
-      spaceNumber: record.spaceNumber,
+      bedName: record.bedName,
+      bedNumber: record.bedNumber,
       monthlyPrice: record.monthlyPrice,
     });
   };
@@ -83,51 +79,42 @@ const PropertySpacesModal_Admin = ({ visible, onClose, propertyData }) => {
   const handleDelete = (record) => {
     modal.confirm({
       title: "¿Estás seguro?",
-      content: `Se eliminará el espacio: ${record.spaceName}`,
+      content: `Se eliminará la cama: ${record.bedName}`,
       okText: "Aceptar",
       okType: "danger",
       cancelText: "Cancelar",
       onOk: () => {
-        setSpaces((prev) => prev.filter((space) => space.id !== record.id));
-        message.success("Espacio eliminado correctamente");
+        setBeds((prev) => prev.filter((bed) => bed.id !== record.id));
+        message.success("Cama eliminada correctamente");
       },
     });
   };
 
   const handleCancel = () => {
     form.resetFields();
-    setEditingSpace(null);
+    setEditingBed(null);
     setIsEditing(false);
   };
 
   const handleSaveAll = () => {
-    // Aquí guardarías los espacios en el backend o estado global
-    message.success("Espacios guardados correctamente");
+    // Guardar camas y cerrar modal
+    onSaveBeds(spaceData.id, beds);
+    message.success("Camas guardadas correctamente");
     onClose();
-  };
-
-  const handleOpenBedsModal = (space) => {
-    setSelectedSpace(space);
-    setBedsModalVisible(true);
-  };
-
-  const handleSaveBeds = (spaceId, beds) => {
-    setSpaces((prev) =>
-      prev.map((space) => (space.id === spaceId ? { ...space, beds } : space)),
-    );
   };
 
   const columns = [
     {
-      title: "Nombre",
-      dataIndex: "spaceName",
-      key: "spaceName",
+      title: "Nombre de la cama",
+      dataIndex: "bedName",
+      key: "bedName",
     },
     {
-      title: "Número/Identificador",
-      dataIndex: "spaceNumber",
-      key: "spaceNumber",
+      title: "Identificador",
+      dataIndex: "bedNumber",
+      key: "bedNumber",
       align: "center",
+      render: (text) => <Tag color="blue">{text}</Tag>,
     },
     {
       title: "Precio mensual",
@@ -141,31 +128,12 @@ const PropertySpacesModal_Admin = ({ visible, onClose, propertyData }) => {
       ),
     },
     {
-      title: "# Camas",
-      dataIndex: "beds",
-      key: "beds",
-      align: "center",
-      render: (beds) => (
-        <Tag color={beds && beds.length > 0 ? "cyan" : "default"}>
-          {beds ? beds.length : 0}
-        </Tag>
-      ),
-    },
-    {
       title: "Acciones",
       key: "actions",
       align: "center",
-      width: 120,
+      width: 100,
       render: (_, record) => (
         <Space size="small">
-          <Tooltip title="Gestionar camas" color="cyan">
-            <Button
-              type="link"
-              icon={<Bed size={17} />}
-              style={{ color: "#13c2c2" }}
-              onClick={() => handleOpenBedsModal(record)}
-            />
-          </Tooltip>
           <Tooltip title="Editar" color="green">
             <Button
               type="link"
@@ -193,24 +161,24 @@ const PropertySpacesModal_Admin = ({ visible, onClose, propertyData }) => {
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black opacity-50 z-50 transition-opacity"
+        className="fixed inset-0 bg-black opacity-50 z-[60] transition-opacity"
         onClick={onClose}
       />
 
       {/* Modal */}
-      <div className="fixed inset-0 z-50 flex items-center backdrop-blur-md justify-center p-4">
+      <div className="fixed inset-0 z-[60] flex items-center backdrop-blur-md justify-center p-4">
         <div
-          className="bg-white dark:bg-zinc-900 rounded-lg shadow-xl w-full max-w-5xl max-h-[90vh] flex flex-col"
+          className="bg-white dark:bg-zinc-900 rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] flex flex-col"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-zinc-700">
             <div>
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                Gestionar espacios
+                Gestionar camas
               </h2>
               <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                {propertyData?.propertyName}
+                {spaceData?.spaceName} - {spaceData?.spaceNumber}
               </p>
             </div>
             <button
@@ -226,14 +194,14 @@ const PropertySpacesModal_Admin = ({ visible, onClose, propertyData }) => {
             {/* Formulario para agregar/editar */}
             <div className="bg-gray-50 dark:bg-zinc-800 p-4 rounded-lg mb-4">
               <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-                {isEditing ? "Editar espacio" : "Agregar nuevo espacio"}
+                {isEditing ? "Editar cama" : "Agregar nueva cama"}
               </h3>
               <Form form={form} layout="vertical" autoComplete="off">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   <FormInput
-                    name="spaceName"
-                    label="Nombre del espacio"
-                    placeholder="Ej: Habitación, Cuarto, Depto"
+                    name="bedName"
+                    label="Nombre de la cama"
+                    placeholder="Ej: Cama King, Cama Individual"
                     rules={[
                       {
                         required: true,
@@ -243,9 +211,9 @@ const PropertySpacesModal_Admin = ({ visible, onClose, propertyData }) => {
                   />
 
                   <FormInput
-                    name="spaceNumber"
-                    label="Número/Identificador"
-                    placeholder="Ej: 101, A-1, Cuarto 3"
+                    name="bedNumber"
+                    label="Identificador"
+                    placeholder="Ej: K-1, I-1, C-1"
                     rules={[
                       {
                         required: true,
@@ -263,7 +231,7 @@ const PropertySpacesModal_Admin = ({ visible, onClose, propertyData }) => {
                   >
                     <InputNumber
                       size="large"
-                      placeholder="8000"
+                      placeholder="3000"
                       style={{ width: "100%" }}
                       min={0}
                       formatter={(value) =>
@@ -291,20 +259,20 @@ const PropertySpacesModal_Admin = ({ visible, onClose, propertyData }) => {
               </Form>
             </div>
 
-            {/* Tabla de espacios */}
+            {/* Tabla de camas */}
             <div>
               <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-                Espacios registrados ({spaces.length})
+                Camas registradas ({beds.length})
               </h3>
               <Table
                 columns={columns}
-                dataSource={spaces}
+                dataSource={beds}
                 pagination={false}
                 size="small"
                 locale={{
                   emptyText: (
                     <Empty
-                      description="No hay espacios registrados. Agrega el primero arriba."
+                      description="No hay camas registradas. Agrega la primera arriba."
                       image={Empty.PRESENTED_IMAGE_SIMPLE}
                     />
                   ),
@@ -318,22 +286,19 @@ const PropertySpacesModal_Admin = ({ visible, onClose, propertyData }) => {
             <Button size="middle" danger onClick={onClose}>
               Cerrar
             </Button>
-            <Button size="middle" type="primary" onClick={handleSaveAll}>
+            <Button
+              size="middle"
+              type="primary"
+              onClick={handleSaveAll}
+              style={{ backgroundColor: "#52c41a", borderColor: "#52c41a" }}
+            >
               Guardar cambios
             </Button>
           </div>
         </div>
       </div>
-
-      {/* Modal de camas */}
-      <SpaceBedsModal_Admin
-        visible={bedsModalVisible}
-        onClose={() => setBedsModalVisible(false)}
-        spaceData={selectedSpace}
-        onSaveBeds={handleSaveBeds}
-      />
     </>
   );
 };
 
-export default PropertySpacesModal_Admin;
+export default SpaceBedsModal_Admin;
