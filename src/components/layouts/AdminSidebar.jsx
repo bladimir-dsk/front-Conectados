@@ -78,17 +78,49 @@ export default function AdminSidebar({
   };
 
   const getSelectedKey = () => {
-    const exactMatch = menuItems.find((item) => item.key === location.pathname);
-    if (exactMatch) return [location.pathname];
+    const currentPath = location.pathname;
 
+    // Verificar coincidencia exacta
+    const exactMatch = menuItems.find((item) => item.key === currentPath);
+    if (exactMatch) return [currentPath];
+
+    // Verificar hijos de submenús
     for (const item of menuItems) {
       if (item.children) {
         const childMatch = item.children.find(
-          (child) => child.key === location.pathname,
+          (child) => child.key === currentPath,
         );
         if (childMatch) return [childMatch.key];
       }
     }
+
+    let bestMatch = null;
+    let longestMatch = 0;
+
+    menuItems.forEach((item) => {
+      if (item.key && currentPath.startsWith(item.key)) {
+        if (item.key.length > longestMatch) {
+          longestMatch = item.key.length;
+          bestMatch = item.key;
+        }
+      }
+
+      // También verificar en los hijos
+      if (item.children) {
+        item.children.forEach((child) => {
+          if (child.key && currentPath.startsWith(child.key)) {
+            if (child.key.length > longestMatch) {
+              longestMatch = child.key.length;
+              bestMatch = child.key;
+            }
+          }
+        });
+      }
+    });
+
+    if (bestMatch) return [bestMatch];
+
+    // Default
     return ["/admin/dashboard"];
   };
 

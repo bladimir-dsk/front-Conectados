@@ -8,6 +8,8 @@ import {
     EditOutlined,
     DeleteOutlined,
     EyeOutlined,
+    TagOutlined,
+    InsertRowBelowOutlined,
 } from "@ant-design/icons";
 import { Building2 } from "lucide-react";
 import Highlighter from "react-highlight-words";
@@ -15,6 +17,8 @@ import dayjs from "dayjs";
 import "dayjs/locale/es";
 import PropertyModal_Admin from "./modals/PropertyModal_Admin";
 import PropertyDetailsModal_Admin from "./modals/PropertyDetailsModal_Admin";
+import PropertySpacesModal_Admin from "./modals/PropertySpacesModal_Admin";
+import PropertyServicesModal_Admin from "./modals/PropertyServicesModal_Admin";
 import { initialPropertiesData } from "../OwnersData";
 
 dayjs.locale("es");
@@ -34,6 +38,8 @@ export default function OwnersPropertiesScreen_Admin() {
         add: false,
         edit: false,
         details: false,
+        spaces: false,
+        services: false,
     });
     const [selectedProperty, setSelectedProperty] = useState(null);
 
@@ -46,7 +52,14 @@ export default function OwnersPropertiesScreen_Admin() {
     }, [ownerId]);
 
     const openModal = (type, property = null) => {
-        setModalState({ add: false, edit: false, details: false, [type]: true });
+        setModalState({ 
+            add: false, 
+            edit: false, 
+            details: false, 
+            spaces: false,
+            services: false,
+            [type]: true 
+        });
         setSelectedProperty(property);
     };
 
@@ -304,6 +317,32 @@ export default function OwnersPropertiesScreen_Admin() {
                             onClick={() => openModal("details", record)}
                         />
                     </Tooltip>
+                    <Tooltip 
+                        title={
+                            record.rentalType === "Por espacios" 
+                                ? "Agregar espacios" 
+                                : "Solo disponible para rentas por espacios"
+                        } 
+                        color={record.rentalType === "Por espacios" ? "orange" : "gray"}
+                    >
+                        <Button 
+                            type="link"
+                            icon={<InsertRowBelowOutlined />}
+                            style={{
+                                color: record.rentalType === "Por espacios" ? "#FF8904" : "#d9d9d9"
+                            }}
+                            disabled={record.rentalType !== "Por espacios"}
+                            onClick={() => record.rentalType === "Por espacios" && openModal("spaces", record)}
+                        />
+                    </Tooltip>
+                    <Tooltip title="Agregar servicios" color="cyan">
+                        <Button
+                            type="link"
+                            icon={<TagOutlined />}
+                            style={{ color: "#13c2c2" }}
+                            onClick={() => openModal("services", record)}
+                        />
+                    </Tooltip>
                     <Tooltip title="Editar" color="green">
                         <Button
                             type="link"
@@ -335,7 +374,7 @@ export default function OwnersPropertiesScreen_Admin() {
                             type="text"
                             icon={<ArrowLeftOutlined />}
                             onClick={() => navigate("/admin/propietarios")}
-                            className="text-[#111214] hover:bg-[#65a30d]"
+                            className="text-[#111214]! hover:bg-[#65a30d]!"
                             size="large"
                         />
                         <div className="p-2">
@@ -420,6 +459,20 @@ export default function OwnersPropertiesScreen_Admin() {
                 onClose={() => closeModal("details")}
                 propertyData={selectedProperty}
                 ownerData={owner}
+            />
+
+            {/* Modal – Gestionar Espacios */}
+            <PropertySpacesModal_Admin
+                visible={modalState.spaces}
+                onClose={() => closeModal("spaces")}
+                propertyData={selectedProperty}
+            />
+
+            {/* Modal – Gestionar Servicios */}
+            <PropertyServicesModal_Admin
+                visible={modalState.services}
+                onClose={() => closeModal("services")}
+                propertyData={selectedProperty}
             />
         </div>
     );
