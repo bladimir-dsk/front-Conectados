@@ -77,7 +77,10 @@ export default function RouteApp() {
 
           <Route path="documentation" element={<DocumentationStudent />} />
 
-          <Route path="search" element={<SearchStudent />} />
+          <Route path="search">
+            <Route index element={<SearchStudent />} />
+            <Route path=":roomId" element={<SearchStudent />} />
+          </Route>
         </Route>
 
         {/* Ruta raíz - redirige a login */}
