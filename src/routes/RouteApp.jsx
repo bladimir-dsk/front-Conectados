@@ -1,4 +1,4 @@
-import React, { Suspense } from "react";
+import { Suspense } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import LoadingFallback from "../components/fallbacks/LoadingFallback";
 import {
@@ -10,6 +10,10 @@ import {
   Login,
   Register,
   AdminDashboard,
+  AdminOwners,
+  AdminStudentAdministration,
+  AdminStudentDocumentation,
+  AdminOwnersProperties,
 } from "./lazyRoutes.js";
 import { ProtectedRoute } from "./ProtectedRoute";
 import AdminLayout from "../components/layouts/AdminLayout";
@@ -31,10 +35,13 @@ export default function RouteApp() {
             <ProtectedRoute requiredRole="admin">
               <AdminLayout />
             </ProtectedRoute>
-          }
-        >
+          }>
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<AdminDashboard />} />
+          <Route path="propietarios" element={<AdminOwners />} />
+          <Route path="propietarios/:ownerId/propiedades" element={<AdminOwnersProperties />} />
+          <Route path="estudiantes/administracion" element={<AdminStudentAdministration />} />
+          <Route path="estudiantes/documentacion" element={<AdminStudentDocumentation />} />
           {/* <Route path="dashboard" element={<Dashboard />} />
           <Route path="reservas" element={<Reservas />} /> */}
         </Route>
@@ -46,8 +53,7 @@ export default function RouteApp() {
             <ProtectedRoute requiredRole="propietario">
               <OwnerLayout />
             </ProtectedRoute>
-          }
-        >
+          }>
           <Route index element={<Navigate to="dashboard" replace />} />
           {/* <Route path="dashboard" element={<DashboardOwner />} />
           <Route path="habitaciones" element={<HabitacionesOwner />} /> */}
@@ -60,8 +66,7 @@ export default function RouteApp() {
             <ProtectedRoute requiredRole="estudiante">
               <StudentLayout />
             </ProtectedRoute>
-          }
-        >
+          }>
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<DashboardStudent />} />
           {/* <Route path="buscar" element={<BuscarHabitaciones />} />*/}
