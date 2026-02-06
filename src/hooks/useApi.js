@@ -9,12 +9,15 @@ export function useApi(endpoint, options, autoFetch = true) {
     const optionsRef = useRef(options);
     const hasFetchedRef = useRef(false);
 
-    // Actualizar ref solo cuando cambien las opciones
+    // 🔹 NUEVO: Extraer endpoint base sin query params
+    const getBaseEndpoint = useCallback(() => {
+        return endpoint.split('?')[0]; // /propietarios?params → /propietarios
+    }, [endpoint]);
+
     useEffect(() => {
         optionsRef.current = options;
     }, [options]);
 
-    // GET - estable sin dependencias externas
     const fetchData = useCallback(async () => {
         setLoading(true);
         setError(null);
@@ -27,16 +30,15 @@ export function useApi(endpoint, options, autoFetch = true) {
         } finally {
             setLoading(false);
         }
-    }, [endpoint]); // Solo depende de endpoint
+    }, [endpoint]);
 
-    // POST
     const postData = useCallback(async (body, shouldRefetch = true) => {
         setLoading(true);
         setError(null);
         try {
-            const response = await api.post(endpoint, body, optionsRef.current);
+            const baseEndpoint = getBaseEndpoint(); // 👈 Usar endpoint base
+            const response = await api.post(baseEndpoint, body, optionsRef.current);
 
-            // Solo hacer fetchData si es necesario
             if (shouldRefetch && autoFetch) {
                 await fetchData();
             }
@@ -49,18 +51,17 @@ export function useApi(endpoint, options, autoFetch = true) {
         } finally {
             setLoading(false);
         }
-    }, [endpoint, fetchData, autoFetch]);
+    }, [getBaseEndpoint, fetchData, autoFetch]);
 
     const patchData = useCallback(
         async (body, id = null) => {
             setLoading(true);
             setError(null);
             try {
-                const url = id ? `${endpoint}/${id}` : endpoint;
+                const baseEndpoint = getBaseEndpoint(); // 👈 Usar endpoint base
+                const url = id ? `${baseEndpoint}/${id}` : baseEndpoint;
 
                 const response = await api.patch(url, body, optionsRef.current);
-
-                // Recargar datos después de actualizar
                 await fetchData();
                 return response.data;
             } catch (err) {
@@ -71,22 +72,21 @@ export function useApi(endpoint, options, autoFetch = true) {
                 setLoading(false);
             }
         },
-        [endpoint, fetchData]
+        [getBaseEndpoint, fetchData]
     );
 
-    // DELETE
+    // 🔹 ACTUALIZADO: DELETE usa endpoint base limpio
     const deleteData = useCallback(
         async (id) => {
             setLoading(true);
             setError(null);
             try {
-                const response = await api.delete(`${endpoint}/${id}`, optionsRef.current);
+                const baseEndpoint = getBaseEndpoint(); // 👈 /propietarios (sin params)
+                const response = await api.delete(`${baseEndpoint}/${id}`, optionsRef.current);
 
-                // Recargar datos después de eliminar
-                await fetchData();
+                await fetchData(); // Recargar con filtros originales
                 return response.data;
             } catch (err) {
-
                 const errorMessage = err.response?.data?.message
                     || err.response?.data?.error
                     || err.message
@@ -97,18 +97,16 @@ export function useApi(endpoint, options, autoFetch = true) {
                 setLoading(false);
             }
         },
-        [endpoint, fetchData]
+        [getBaseEndpoint, fetchData]
     );
 
     useEffect(() => {
-        // Solo ejecutar si autoFetch está activo y no se ha ejecutado antes
         if (autoFetch && !hasFetchedRef.current) {
             hasFetchedRef.current = true;
             fetchData();
         }
-    }, [autoFetch, endpoint]); // Removido fetchData de las dependencias
+    }, [autoFetch, endpoint]);
 
-    // Resetear el flag cuando cambie el endpoint
     useEffect(() => {
         hasFetchedRef.current = false;
     }, [endpoint]);

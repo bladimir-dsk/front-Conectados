@@ -14,6 +14,7 @@ import {
   AdminStudentAdministration,
   AdminStudentDocumentation,
   AdminOwnersProperties,
+  AdminServices,
 } from "./lazyRoutes.js";
 import { ProtectedRoute } from "./ProtectedRoute";
 import AdminLayout from "../components/layouts/AdminLayout";
@@ -31,7 +32,7 @@ export default function RouteApp() {
         {/* Rutas protegidas - Admin */}
         <Route
           path="/admin"
-          element={
+          element={ 
             <ProtectedRoute requiredRole="admin">
               <AdminLayout />
             </ProtectedRoute>
@@ -42,6 +43,7 @@ export default function RouteApp() {
           <Route path="propietarios/:ownerId/propiedades" element={<AdminOwnersProperties />} />
           <Route path="estudiantes/administracion" element={<AdminStudentAdministration />} />
           <Route path="estudiantes/documentacion" element={<AdminStudentDocumentation />} />
+          <Route path="servicios-alojamiento" element={<AdminServices />} />
           {/* <Route path="dashboard" element={<Dashboard />} />
           <Route path="reservas" element={<Reservas />} /> */}
         </Route>

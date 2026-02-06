@@ -2,13 +2,14 @@ import React from "react";
 import { Layout, Menu, Drawer, Button, Tooltip } from "antd";
 import {
   LayoutDashboard,
-  CalendarCheck,
   Home,
   Users,
   Moon,
   Sun,
   CircleUser,
   UserRoundPen,
+  Tag,
+  Wrench,
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useTheme } from "../../hooks/useTheme";
@@ -33,7 +34,7 @@ export default function AdminSidebar({
     backgroundActive: "#a3dc2a",
     submenuBg: "#7ABD13",
     text: "#111214",
-    textSecondary: "#f0f0f0",
+    textSecondary: "#f0f0f0", 
     border: "#73b012",
     menuSelected: "#61990C",
   };
@@ -48,6 +49,11 @@ export default function AdminSidebar({
       key: "/admin/propietarios",
       icon: <CircleUser size={18} />,
       label: "Propietarios",
+    },
+    {
+      key: "/admin/servicios-alojamiento",
+      icon: <Wrench size={18}/>,
+      label: "Servicios"
     },
     {
       key: "estudiantes",

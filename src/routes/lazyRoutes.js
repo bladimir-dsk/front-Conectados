@@ -48,4 +48,5 @@ export const AdminStudentDocumentation = lazy(
   () =>
     import("../screens/admin/students/documentation/StudentDocumentationScreen_Admin"),
 );
+export const AdminServices = lazy(() => import("../screens/admin/services/ServicesScreen_Admin"))
 // Componentes privados (necesitan autenticacion) PROPIETARIOS

@@ -1,7 +1,10 @@
-import { Button, Form, App, Select, Upload } from "antd";
+import { Button, Form, App, Select, Upload, Input } from "antd";
 import { useEffect, useState } from "react";
 import { X, Upload as UploadIcon } from "lucide-react";
-import FormInput from "../../../../../components/inputs/FormInput";
+import { useApi } from "../../../../../hooks/useApi";
+import axios from "axios";
+
+const { TextArea } = Input;
 
 const StudentDocumentationModal_Admin = ({
     visible,
@@ -14,93 +17,215 @@ const StudentDocumentationModal_Admin = ({
     const [form] = Form.useForm();
     const { message } = App.useApp();
     const [fileList, setFileList] = useState([]);
+    const [hasChanges, setHasChanges] = useState(false);
+    const [initialData, setInitialData] = useState(null);
+    const [uploadEndpoint, setUploadEndpoint] = useState(null);
+    const [uploading, setUploading] = useState(false);
+    const [updating, setUpdating] = useState(false);
+
+    // Obtener token y baseURL
+    const token = localStorage.getItem('token');
+    const baseURL = import.meta.env.VITE_API_URL;
+
+    const { fetchData: refreshDocuments } = useApi("/documentacion", {}, false);
 
     const documentTypeOptions = [
-        { value: "INE", label: "INE" },
-        { value: "Comprobante de domicilio", label: "Comprobante de domicilio" },
-        { value: "Credencial universitaria", label: "Credencial universitaria" },
-        { value: "Constancia de estudios", label: "Constancia de estudios" },
-        { value: "Acta de nacimiento", label: "Acta de nacimiento" },
+        { value: "ine_delantera", label: "INE (Delantera)" },
+        { value: "ine_trasera", label: "INE (Trasera)" },
+        { value: "pasaporte", label: "Pasaporte" },
+        { value: "cfe", label: "CFE" },
     ];
 
     const statusOptions = [
-        { value: "Aprobado", label: "Aprobado" },
-        { value: "Pendiente", label: "Pendiente" },
-        { value: "Rechazado", label: "Rechazado" },
+        { value: "aprobado", label: "Aprobado" },
+        { value: "pendiente", label: "Pendiente" },
+        { value: "rechazado", label: "Rechazado" },
     ];
 
     useEffect(() => {
         if (visible) {
             if (isEditing && editData) {
-                form.setFieldsValue({
-                    documentType: editData.documentType,
+                const initialValues = {
+                    typeDocument: editData.typeDocument,
                     status: editData.status,
-                    rejectionReasons: editData.rejectionReasons,
-                    reviewedBy: editData.reviewedBy,
-                });
+                    observation: editData.observation || "",
+                };
+
+                form.setFieldsValue(initialValues);
+                setInitialData(initialValues);
+                setHasChanges(false);
+
                 setFileList([
                     {
                         uid: "-1",
-                        name: editData.fileName,
+                        name: editData.name,
                         status: "done",
-                        url: editData.path,
+                        url: editData.documentUrl,
                     },
                 ]);
             } else {
+                // Modal de agregar - configurar endpoint dinámico
+                if (studentData?.studentId) {
+                    setUploadEndpoint(`/documentacion/upload/${studentData.studentId}`);
+                }
                 form.resetFields();
+                form.setFieldsValue({ status: "pendiente" });
                 setFileList([]);
+                setInitialData(null);
+                setHasChanges(false);
             }
         }
-    }, [visible, isEditing, editData, form]);
+    }, [visible, isEditing, editData, studentData, form]);
 
-    const handleSubmit = () => {
-        form
-            .validateFields()
-            .then((values) => {
-                if (!isEditing && fileList.length === 0) {
-                    message.error("Por favor seleccione un archivo PDF");
+    const checkForChanges = (changedValues, allValues) => {
+        if (!isEditing || !initialData) {
+            setHasChanges(true);
+            return;
+        }
+
+        const hasChanged =
+            allValues.typeDocument !== initialData.typeDocument ||
+            allValues.status !== initialData.status ||
+            allValues.observation !== initialData.observation ||
+            fileList.length > 0 && fileList[0].originFileObj;
+
+        setHasChanges(hasChanged);
+    };
+
+    const handleSubmit = async () => {
+        try {
+            const values = await form.validateFields();
+
+            if (isEditing) {
+                const formData = new FormData();
+
+                formData.append("typeDocument", values.typeDocument);
+                formData.append("status", values.status);
+
+                if (values.status !== "aprobado") {
+                    formData.append("observation", values.observation || "");
+                } else {
+                    formData.append("observation", "");
+                }
+
+                if (fileList.length > 0 && fileList[0].originFileObj) {
+                    formData.append("file", fileList[0].originFileObj);
+                } else if (editData?.documentUrl) {
+                    try {
+                        const response = await fetch(editData.documentUrl);
+                        const blob = await response.blob();
+                        const file = new File([blob], editData.name, { type: editData.type });
+                        formData.append("file", file);
+                    } catch (fetchError) {
+                        message.error("Error al procesar el archivo original");
+                        return;
+                    }
+                }
+
+                setUpdating(true);
+                await axios.patch(
+                    `${baseURL}/documentacion/${editData.id_documentacion}/estado`,
+                    formData,
+                    {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                        },
+                    }
+                );
+                setUpdating(false);
+                message.success("Documento actualizado correctamente");
+            } else {
+                // Lógica de creación
+                if (fileList.length === 0) {
+                    message.error("Por favor seleccione un archivo");
                     return;
                 }
 
-                const documentData = {
-                    ...values,
-                    fileName: fileList[0]?.name || editData?.fileName,
-                    fileSize: fileList[0]?.size
-                        ? `${(fileList[0].size / (1024 * 1024)).toFixed(1)} MB`
-                        : editData?.fileSize,
-                    path: fileList[0]?.url || editData?.path || "/documents/temp.pdf",
-                };
+                if (!studentData?.studentId) {
+                    message.error("No se encontró el ID del estudiante");
+                    return;
+                }
 
-                setTimeout(() => {
-                    onSave(documentData);
-                }, 600);
-            })
-            .catch(() => {
-                message.error("Por favor complete todos los campos requeridos");
-            });
+                const formData = new FormData();
+
+                formData.append("file", fileList[0].originFileObj || fileList[0]);
+                formData.append("typeDocument", values.typeDocument);
+                formData.append("status", values.status);
+
+                if (values.status !== "aprobado" && values.observation) {
+                    formData.append("observation", values.observation);
+                }
+
+                setUploading(true);
+                await axios.post(
+                    `${baseURL}/documentacion/upload/${studentData.studentId}`,
+                    formData,
+                    {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                        },
+                    }
+                );
+                setUploading(false);
+                message.success("Documento agregado correctamente");
+            }
+
+            form.resetFields();
+            setFileList([]);
+            onSave();
+        } catch (error) {
+            setUploading(false);
+            setUpdating(false);
+            console.error("Error completo:", error);
+            if (error.errorFields) {
+                return;
+            }
+            message.error(
+                error.response?.data?.message ||
+                error.message ||
+                "No se pudo guardar el documento"
+            );
+        }
     };
 
     const uploadProps = {
         beforeUpload: (file) => {
-            const isPDF = file.type === "application/pdf";
-            if (!isPDF) {
-                message.error("Solo se permiten archivos PDF");
+            const isValidType =
+                file.type === "application/pdf" ||
+                file.type === "image/jpeg" ||
+                file.type === "image/jpg" ||
+                file.type === "image/png";
+
+            if (!isValidType) {
+                message.error("Solo se permiten archivos PDF, JPG, JPEG o PNG");
                 return Upload.LIST_IGNORE;
             }
-            const isLt10M = file.size / 1024 / 1024 < 5;
-            if (!isLt10M) {
+
+            const isLt5M = file.size / 1024 / 1024 < 5;
+            if (!isLt5M) {
                 message.error("El archivo debe ser menor a 5MB");
                 return Upload.LIST_IGNORE;
             }
+
             setFileList([file]);
+            checkForChanges(null, form.getFieldsValues());
             return false;
         },
         onRemove: () => {
             setFileList([]);
+            checkForChanges(null, form.getFieldsValues());
         },
         fileList,
         maxCount: 1,
-        accept: ".pdf",
+        accept: ".pdf,.jpg,.jpeg,.png",
+    };
+
+    const handleCancel = () => {
+        form.resetFields();
+        setFileList([]);
+        setHasChanges(false);
+        setInitialData(null);
+        onClose();
     };
 
     if (!visible) return null;
@@ -110,11 +235,11 @@ const StudentDocumentationModal_Admin = ({
             {/* Backdrop */}
             <div
                 className="fixed inset-0 bg-black opacity-50 z-50 transition-opacity"
-                onClick={onClose}
+                onClick={handleCancel}
             />
 
             {/* Modal */}
-            <div className="fixed inset-0 z-50 flex items-center backdrop-blur-md justify-center p-4">
+            <div className="fixed inset-0 z-50 flex items-center backdrop-blur-md justify-center p-4 overflow-y-auto">
                 <div
                     className="bg-white dark:bg-zinc-900 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col"
                     onClick={(e) => e.stopPropagation()}
@@ -125,25 +250,35 @@ const StudentDocumentationModal_Admin = ({
                             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
                                 {isEditing ? "Editar documento" : "Agregar documento"}
                             </h2>
-                            {/* {studentData && (
+                            {studentData && (
                                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                                    Estudiante: {studentData.studentName}
+                                    Estudiante: {studentData.name}
                                 </p>
-                            )} */}
+                            )}
+                            {isEditing && editData && (
+                                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                                    Estudiante: {editData.user?.name || editData.userEmail}
+                                </p>
+                            )}
                         </div>
                         <button
-                            onClick={onClose}
-                            className="text-gray-400 hover:text-lime-200! transition-colors"
+                            onClick={handleCancel}
+                            className="text-gray-400 hover:text-gray-600 transition-colors"
                         >
                             <X size={24} />
                         </button>
                     </div>
 
                     {/* Body */}
-                    <div className="flex-1 overflow-y-auto p-4">
-                        <Form form={form} layout="vertical" autoComplete="off">
+                    <div className="flex-1 overflow-y-auto p-5">
+                        <Form
+                            form={form}
+                            layout="vertical"
+                            autoComplete="off"
+                            onValuesChange={checkForChanges}
+                        >
                             <Form.Item
-                                name="documentType"
+                                name="typeDocument"
                                 label="Tipo de documento"
                                 rules={[
                                     {
@@ -151,7 +286,6 @@ const StudentDocumentationModal_Admin = ({
                                         message: "El tipo de documento es requerido",
                                     },
                                 ]}
-                                hasFeedback
                             >
                                 <Select
                                     size="large"
@@ -162,9 +296,13 @@ const StudentDocumentationModal_Admin = ({
                             </Form.Item>
 
                             <Form.Item
-                                label="Archivo PDF"
+                                label="Archivo"
                                 required={!isEditing}
-                                help="Solo archivos PDF, máximo 5MB"
+                                help={
+                                    isEditing
+                                        ? "PDF, JPG, JPEG o PNG, máx. 5MB (opcional, solo si deseas cambiar el archivo)"
+                                        : "PDF, JPG, JPEG o PNG, máximo 5MB"
+                                }
                             >
                                 <Upload.Dragger {...uploadProps}>
                                     <p className="ant-upload-drag-icon">
@@ -173,7 +311,9 @@ const StudentDocumentationModal_Admin = ({
                                     <p className="ant-upload-text">
                                         Haz clic o arrastra el archivo aquí
                                     </p>
-                                    <p className="ant-upload-hint">Solo archivos PDF (máx. 5MB)</p>
+                                    <p className="ant-upload-hint">
+                                        PDF, JPG, JPEG o PNG (máx. 5MB)
+                                    </p>
                                 </Upload.Dragger>
                             </Form.Item>
 
@@ -181,13 +321,18 @@ const StudentDocumentationModal_Admin = ({
                                 name="status"
                                 label="Estado"
                                 rules={[{ required: true, message: "El estado es requerido" }]}
-                                hasFeedback
                             >
                                 <Select
                                     size="large"
                                     placeholder="Seleccione un estado"
                                     options={statusOptions}
                                     allowClear
+                                    onChange={(value) => {
+                                        // Limpiar observación si se selecciona "aprobado"
+                                        if (value === "aprobado") {
+                                            form.setFieldsValue({ observation: "" });
+                                        }
+                                    }}
                                 />
                             </Form.Item>
 
@@ -197,55 +342,45 @@ const StudentDocumentationModal_Admin = ({
                                     prevValues.status !== currentValues.status
                                 }
                             >
-                                {({ getFieldValue }) =>
-                                    getFieldValue("status") === "Rechazado" ? (
-                                        <FormInput
-                                            name="rejectionReasons"
-                                            label="Motivos de rechazo"
-                                            placeholder="Especifique los motivos del rechazo"
-                                            rules={[
-                                                {
-                                                    required: true,
-                                                    message: "Los motivos de rechazo son requeridos",
-                                                },
-                                            ]}
-                                            inputProps={{
-                                                type: "textarea",
-                                                rows: 3,
-                                            }}
-                                        />
-                                    ) : null
-                                }
+                                {({ getFieldValue }) => {
+                                    const status = getFieldValue("status");
+                                    return status && status !== "aprobado" ? (
+                                        <Form.Item name="observation" label="Observación">
+                                            <TextArea
+                                                placeholder="Agregar observaciones sobre el documento (opcional)"
+                                                rows={3}
+                                                size="large"
+                                            />
+                                        </Form.Item>
+                                    ) : null;
+                                }}
                             </Form.Item>
 
-                            <FormInput
-                                name="reviewedBy"
-                                label="Revisado por"
-                                placeholder="Nombre del revisor"
-                                rules={[
-                                    { required: true, message: "El revisor es requerido" },
-                                ]}
-                            />
+                            {!hasChanges && (
+                                <div className="text-sm text-blue-600 dark:text-blue-400">
+                                    No hay cambios para guardar
+                                </div>
+                            )}
                         </Form>
                     </div>
 
                     {/* Footer */}
                     <div className="flex items-center justify-end gap-3 p-4 border-t border-gray-200 dark:border-zinc-700">
                         <Button
-                            size="middle"
+                            onClick={handleCancel}
+                            size="large"
+                            type="primary"
                             danger
-                            ghost
-                            onClick={onClose}
-                            className="h-8 px-4 rounded-lg"
                         >
                             Cancelar
                         </Button>
                         <Button
-                            size="middle"
                             type="primary"
                             onClick={handleSubmit}
-                            style={{ backgroundColor: "#52c41a", borderColor: "#52c41a" }}
-                            className="h-8 px-4 rounded-lg"
+                            size="large"
+                            loading={uploading || updating}
+                            disabled={isEditing && !hasChanges}
+                            className="bg-green-600 hover:bg-green-700"
                         >
                             {isEditing ? "Actualizar" : "Guardar"}
                         </Button>
