@@ -14,7 +14,7 @@ export const NotificationProvider = ({ children }) => {
     placement = "topRight",
   }) => {
     api[type]({
-      message: title,
+      title: title,
       description,
       duration,
       placement,
