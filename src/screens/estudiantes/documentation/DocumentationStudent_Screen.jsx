@@ -1,40 +1,63 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { Upload, Button, Card, notification, Spin } from "antd";
+import React, { useEffect, useState, useMemo } from "react";
+import { Upload, Button, Card, notification, Spin, Alert } from "antd";
 import { UploadOutlined } from "@ant-design/icons";
-import { createClient } from "@supabase/supabase-js";
+import { useApi } from "../../../hooks/useApi";
+import { useNotification } from "../../../components/notification/NotificationProvider";
 
-const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_ANON_KEY,
-);
+const DOCUMENT_TYPES = {
+  INE_FRONT: "ine_delantera",
+  INE_BACK: "ine_trasera",
+  ADDRESS: "cfe",
+  PASSPORT: "pasaporte",
+};
 
-const BUCKET = import.meta.env.VITE_SUPABASE_BUCKET;
+// Configuración de cada tipo de documento
+const DOCUMENT_CONFIG = {
+  INE_FRONT: {
+    title: "INE Delantera",
+    required: true,
+    buttonText: "Subir INE Delantera",
+  },
+  INE_BACK: {
+    title: "INE Trasera",
+    required: true,
+    buttonText: "Subir INE Trasera",
+  },
+  ADDRESS: {
+    title: "Comprobante de Domicilio (CFE)",
+    required: true,
+    buttonText: "Subir Comprobante",
+  },
+  PASSPORT: {
+    title: "Pasaporte (Opcional)",
+    required: false,
+    buttonText: "Subir Pasaporte",
+  },
+};
 
 export default function DocumentationStudent_Screen() {
-  const [ineFrontFile, setIneFrontFile] = useState([]);
-  const [ineBackFile, setIneBackFile] = useState([]);
-  const [addressFile, setAddressFile] = useState([]);
-  const [passportFile, setPassportFile] = useState([]);
+  const { notify } = useNotification();
+  // Estado para cada tipo de documento
+  const [documents, setDocuments] = useState({
+    INE_FRONT: { fileList: [], existingDoc: null },
+    INE_BACK: { fileList: [], existingDoc: null },
+    ADDRESS: { fileList: [], existingDoc: null },
+    PASSPORT: { fileList: [], existingDoc: null },
+  });
 
   const [status, setStatus] = useState(null);
   const [observation, setObservation] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
-  const notify = (type, message, description) => {
-    notification[type]({
-      message,
-      description,
-      placement: "topRight",
-    });
-  };
+  // Hooks de API
+  const {
+    data: documentsData,
+    loading: loadingDocs,
+    fetchData: fetchDocuments,
+  } = useApi("/documentacion", {}, true);
 
-  const isFormComplete = useMemo(
-    () =>
-      ineFrontFile.length === 1 &&
-      ineBackFile.length === 1 &&
-      addressFile.length === 1,
-    [ineFrontFile, ineBackFile, addressFile],
-  );
+  const { postData } = useApi("/documentacion/upload", {}, false);
+  const { patchData } = useApi("/documentacion", {}, false);
 
   const validateFiles = (file) => {
     const validTypes = [
@@ -44,218 +67,315 @@ export default function DocumentationStudent_Screen() {
       "application/pdf",
     ];
 
+    const maxSize = 5 * 1024 * 1024;
+
     if (!validTypes.includes(file.type)) {
-      notify("error", "Archivo inválido", "Solo PNG, JPG o PDF");
+      notify({
+        type: "error",
+        title: "Archivo inválido",
+        description: "Solo se permiten PNG, JPG o PDF",
+      });
       return Upload.LIST_IGNORE;
     }
+
+    if (file.size > maxSize) {
+      notify({
+        type: "error",
+        title: "Archivo muy grande",
+        description: "El tamaño máximo es 5MB",
+      });
+      return Upload.LIST_IGNORE;
+    }
+
     return false;
   };
 
-  const mapFile = (doc) => ({
-    uid: doc.id,
-    name: doc.file_path.split("/").pop(),
-    status: "done",
-    url: supabase.storage.from(BUCKET).getPublicUrl(doc.file_path).data
-      .publicUrl,
-  });
-
-  const loadDocumentation = async () => {
-    const { data } = await supabase.auth.getUser();
-    const user = data?.user;
-    if (!user) return;
-
-    const { data: docs } = await supabase
-      .from("student_documentation")
-      .select("*")
-      .eq("user_id", user.id);
-
-    if (!docs || docs.length === 0) return;
-
-    setStatus(docs[0].status);
-    setObservation(docs[0].observation || "");
-
-    setIneFrontFile(
-      docs.filter((d) => d.type_document === "INE_FRONT").map(mapFile),
-    );
-    setIneBackFile(
-      docs.filter((d) => d.type_document === "INE_BACK").map(mapFile),
-    );
-    setAddressFile(
-      docs.filter((d) => d.type_document === "ADDRESS").map(mapFile),
-    );
-    setPassportFile(
-      docs.filter((d) => d.type_document === "PASSPORT").map(mapFile),
-    );
-  };
-
   useEffect(() => {
-    loadDocumentation();
-  }, []);
+    if (documentsData && Array.isArray(documentsData)) {
+      const newDocuments = {
+        INE_FRONT: { fileList: [], existingDoc: null },
+        INE_BACK: { fileList: [], existingDoc: null },
+        ADDRESS: { fileList: [], existingDoc: null },
+        PASSPORT: { fileList: [], existingDoc: null },
+      };
 
-  const uploadSingleFile = async (file, type, userId) => {
-    const filePath = `${userId}/${type}-${Date.now()}-${file.name}`;
+      documentsData.forEach((doc) => {
+        const docTypeFromBackend = doc.type_document || doc.typeDocument;
+        const docTypeKey = Object.keys(DOCUMENT_TYPES).find(
+          (key) => DOCUMENT_TYPES[key] === docTypeFromBackend,
+        );
 
-    const { error: uploadError } = await supabase.storage
-      .from(BUCKET)
-      .upload(filePath, file, { upsert: true });
-
-    if (uploadError) throw uploadError;
-
-    const { error: dbError } = await supabase
-      .from("student_documentation")
-      .insert({
-        user_id: userId,
-        type_document: type,
-        file_path: filePath,
-        status: "PENDIENTE",
-        observation: null,
+        if (docTypeKey) {
+          newDocuments[docTypeKey] = {
+            fileList: [
+              {
+                uid: doc.id,
+                name:
+                  doc.name || doc.file_name || doc.fileName || "documento.pdf",
+                status: "done",
+                url:
+                  doc.documentUrl ||
+                  doc.document_url ||
+                  doc.file_url ||
+                  doc.fileUrl,
+              },
+            ],
+            existingDoc: doc,
+          };
+        }
       });
 
-    if (dbError) throw dbError;
+      setDocuments(newDocuments);
+
+      if (documentsData.length > 0) {
+        setStatus(documentsData[0].status);
+        setObservation(documentsData[0].observation || "");
+      }
+    }
+  }, [documentsData]);
+
+  const handleFileChange = (docType, { fileList }) => {
+    setDocuments((prev) => ({
+      ...prev,
+      [docType]: {
+        ...prev[docType],
+        fileList: fileList.slice(-1),
+      },
+    }));
   };
 
-  const uploadDocumentation = async () => {
-    if (!isFormComplete) return;
+  const isFormComplete = useMemo(() => {
+    return Object.entries(DOCUMENT_CONFIG).every(([type, config]) => {
+      if (!config.required) return true;
+      const doc = documents[type];
+      return doc.fileList.length > 0;
+    });
+  }, [documents]);
 
-    setLoading(true);
+  const hasChanges = useMemo(() => {
+    return Object.entries(documents).some(([type, doc]) => {
+      return (
+        doc.fileList.length > 0 && doc.fileList[0].originFileObj !== undefined
+      );
+    });
+  }, [documents]);
+
+  const handleSubmit = async () => {
+    if (!isFormComplete) {
+      notify({
+        type: "warning",
+        title: "Formulario incompleto",
+        description: "Completa todos los campos requeridos",
+      });
+
+      return;
+    }
+
+    setUploading(true);
 
     try {
-      const { data } = await supabase.auth.getUser();
-      const user = data?.user;
+      const promises = [];
 
-      if (!user) {
-        notify("error", "Sesión expirada", "Inicia sesión nuevamente");
+      for (const [docTypeKey, doc] of Object.entries(documents)) {
+        if (doc.fileList.length === 0) continue;
+
+        const file = doc.fileList[0];
+
+        if (file.originFileObj) {
+          const formData = new FormData();
+          formData.append("file", file.originFileObj);
+
+          const typeDocumentValue = DOCUMENT_TYPES[docTypeKey];
+          formData.append("typeDocument", typeDocumentValue);
+
+          for (let [key, value] of formData.entries()) {
+            if (value instanceof File) {
+            } else {
+              console.log(`  ${key}: ${value}`);
+            }
+          }
+
+          if (doc.existingDoc && doc.existingDoc.id) {
+            promises.push(
+              patchData(formData, doc.existingDoc.id).catch((err) => {
+                notify({
+                  type: "error",
+                  title: "Error al actualizar documento",
+                  description: "Ocurrió un error al actualizar el documento",
+                });
+                throw err;
+              }),
+            );
+          } else {
+            promises.push(
+              postData(formData, false).catch((err) => {
+                notify({
+                  type: "error",
+                  title: "Error al crear documento",
+                  description: "Ocurrió un error al crear el documento",
+                });
+                throw err;
+              }),
+            );
+          }
+        }
+      }
+
+      if (promises.length === 0) {
+        notify({
+          type: "info",
+          title: "Sin cambios",
+          description: "No hay documentos nuevos para guardar",
+        });
         return;
       }
 
-      await supabase
-        .from("student_documentation")
-        .delete()
-        .eq("user_id", user.id);
+      await Promise.all(promises);
 
-      await uploadSingleFile(
-        ineFrontFile[0].originFileObj,
-        "INE_FRONT",
-        user.id,
-      );
-      await uploadSingleFile(ineBackFile[0].originFileObj, "INE_BACK", user.id);
-      await uploadSingleFile(addressFile[0].originFileObj, "ADDRESS", user.id);
+      notify({
+        type: "success",
+        title: "Documentación guardada",
+        description: "Tus documentos han sido actualizados correctamente",
+      });
 
-      if (passportFile.length === 1) {
-        await uploadSingleFile(
-          passportFile[0].originFileObj,
-          "PASSPORT",
-          user.id,
-        );
-      }
-
-      setStatus("PENDIENTE");
-      setObservation("");
-
-      notify(
-        "success",
-        "Documentación enviada",
-        "Tus documentos están en revisión",
-      );
-
-      await loadDocumentation();
+      await fetchDocuments();
     } catch (err) {
-      console.error(err);
-      notify("error", "Error", "No se pudo subir la documentación");
+      notify({
+        type: "error",
+        title: "Error al guardar",
+        description: err.message || "No se pudo guardar la documentación",
+      });
     } finally {
-      setLoading(false);
+      setUploading(false);
     }
   };
 
-  const renderStatus = () => {
-    if (!status) return null;
+  const renderDocumentStatus = (docType) => {
+    const doc = documents[docType];
+    if (!doc.existingDoc || !doc.existingDoc.status) return null;
 
-    const styles = {
-      PENDIENTE: "bg-yellow-100 text-yellow-800",
-      APROBADO: "bg-green-100 text-green-800",
-      RECHAZADO: "bg-red-100 text-red-800",
+    const docStatus = doc.existingDoc.status;
+
+    const statusConfig = {
+      pendiente: {
+        color: "bg-yellow-50 text-yellow-700 border-yellow-200",
+        text: "Pendiente",
+      },
+
+      aprobado: {
+        color: "bg-green-50 text-green-700 border-green-200",
+        text: "Aprobado",
+      },
+
+      rechazado: {
+        color: "bg-red-50 text-red-700 border-red-200",
+        text: "Rechazado",
+      },
+    };
+
+    const config = statusConfig[docStatus] || {
+      color: "bg-gray-50 text-gray-700 border-gray-200",
+      text: docStatus,
     };
 
     return (
       <span
-        className={`px-4 py-2 rounded-full text-sm font-semibold ${styles[status]}`}
+        className={`px-3 py-1 rounded-md text-xs font-medium border ${config.color}`}
       >
-        {status}
+        {config.text}
       </span>
     );
   };
 
+  const renderDocumentObservation = (docType) => {
+    const doc = documents[docType];
+    if (!doc.existingDoc || !doc.existingDoc.observation) return null;
+
+    const docStatus = doc.existingDoc.status;
+    const isRejected = docStatus === "rechazado";
+
+    return (
+      <Alert
+        title={isRejected ? "Motivo del rechazo" : "Observación"}
+        description={doc.existingDoc.observation}
+        type={isRejected ? "error" : "warning"}
+        // showIcon
+        className="mt-2"
+        // closable
+      />
+    );
+  };
+
   return (
-    <Spin spinning={loading}>
-      <div className="space-y-8">
-        <h2 className="text-2xl font-semibold">Documentación del Estudiante</h2>
+    <Spin spinning={loadingDocs || uploading}>
+      <div className="space-y-6 max-w-4xl mx-auto p-6">
+        <div className="flex justify-between items-center">
+          <h2 className="text-2xl font-semibold text-gray-800">
+            Documentación del Estudiante
+          </h2>
+        </div>
 
-        {renderStatus()}
-
-        <Card title="INE Delantera">
-          <Upload
-            beforeUpload={validateFiles}
-            fileList={ineFrontFile}
-            onChange={({ fileList }) => setIneFrontFile(fileList.slice(0, 1))}
-            disabled={status === "APROBADO"}
-          >
-            <Button icon={<UploadOutlined />}>Subir INE Delantera</Button>
-          </Upload>
-        </Card>
-
-        <Card title="INE Trasera">
-          <Upload
-            beforeUpload={validateFiles}
-            fileList={ineBackFile}
-            onChange={({ fileList }) => setIneBackFile(fileList.slice(0, 1))}
-            disabled={status === "APROBADO"}
-          >
-            <Button icon={<UploadOutlined />}>Subir INE Trasera</Button>
-          </Upload>
-        </Card>
-
-        <Card title="Comprobante de Domicilio">
-          <Upload
-            beforeUpload={validateFiles}
-            fileList={addressFile}
-            onChange={({ fileList }) => setAddressFile(fileList.slice(0, 1))}
-            disabled={status === "APROBADO"}
-          >
-            <Button icon={<UploadOutlined />}>Subir Comprobante</Button>
-          </Upload>
-        </Card>
-
-        <Card title="Pasaporte (Opcional)">
-          <Upload
-            beforeUpload={validateFiles}
-            fileList={passportFile}
-            onChange={({ fileList }) => setPassportFile(fileList.slice(0, 1))}
-            disabled={status === "APROBADO"}
-          >
-            <Button icon={<UploadOutlined />}>Subir Pasaporte</Button>
-          </Upload>
-        </Card>
-
-        {status !== "APROBADO" && (
-          <div className="flex justify-end">
-            <Button
-              size="large"
-              disabled={!isFormComplete}
-              onClick={uploadDocumentation}
-              style={{
-                backgroundColor: isFormComplete ? "#84cc16" : "#d9f99d",
-                color: "#fff",
-              }}
+        <div className="space-y-4">
+          {Object.entries(DOCUMENT_CONFIG).map(([docType, config]) => (
+            <Card
+              key={docType}
+              title={
+                <div className="flex items-center justify-between">
+                  <span>{config.title}</span>
+                  {renderDocumentStatus(docType)}
+                </div>
+              }
+              className="shadow-sm"
             >
-              Guardar documentación
-            </Button>
-          </div>
-        )}
+              <Upload
+                beforeUpload={validateFiles}
+                fileList={documents[docType].fileList}
+                onChange={(info) => handleFileChange(docType, info)}
+                maxCount={1}
+                accept=".png,.jpg,.jpeg,.pdf"
+              >
+                <Button icon={<UploadOutlined />}>{config.buttonText}</Button>
+              </Upload>
+              {config.required && (
+                <p className="text-xs text-gray-500 mt-2">
+                  * Campo obligatorio
+                </p>
+              )}
+              {renderDocumentObservation(docType)}
+            </Card>
+          ))}
+        </div>
 
-        {status === "RECHAZADO" && observation && (
-          <p className="text-sm text-red-600">
-            <strong>Motivo del rechazo:</strong> {observation}
-          </p>
+        <div className="flex justify-end gap-3">
+          <Button
+            size="large"
+            onClick={() => fetchDocuments()}
+            disabled={uploading}
+          >
+            Recargar
+          </Button>
+          <Button
+            size="large"
+            type="primary"
+            disabled={!isFormComplete || !hasChanges}
+            onClick={handleSubmit}
+            loading={uploading}
+            style={{
+              backgroundColor:
+                isFormComplete && hasChanges ? "#84cc16" : undefined,
+            }}
+          >
+            {hasChanges ? "Guardar cambios" : "Guardar documentación"}
+          </Button>
+        </div>
+
+        {!hasChanges && isFormComplete && (
+          <Alert
+            title="No hay cambios pendientes"
+            description="Todos los documentos están guardados. Puedes actualizar cualquier archivo y guardar los cambios."
+            type="info"
+            showIcon
+          />
         )}
       </div>
     </Spin>

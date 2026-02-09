@@ -30,13 +30,32 @@ export function useApi(endpoint, options, autoFetch = true) {
     }
   }, [endpoint]); // Solo depende de endpoint
 
+  // Función helper para preparar config según el tipo de body
+  const prepareConfig = (body) => {
+    const baseConfig = { ...optionsRef.current };
+
+    // Si es FormData, NO establecer Content-Type (Axios lo hace automáticamente)
+    if (body instanceof FormData) {
+      // Eliminar Content-Type si existe para que Axios lo configure correctamente
+      if (baseConfig.headers) {
+        const { "Content-Type": _, ...restHeaders } = baseConfig.headers;
+        baseConfig.headers = restHeaders;
+      }
+      // Axios detectará automáticamente FormData y establecerá:
+      // Content-Type: multipart/form-data; boundary=----WebKitFormBoundary...
+    }
+
+    return baseConfig;
+  };
+
   // POST
   const postData = useCallback(
     async (body, shouldRefetch = true) => {
       setLoading(true);
       setError(null);
       try {
-        const response = await api.post(endpoint, body, optionsRef.current);
+        const config = prepareConfig(body);
+        const response = await api.post(endpoint, body, config);
 
         // Solo hacer fetchData si es necesario
         if (shouldRefetch && autoFetch) {
@@ -62,8 +81,9 @@ export function useApi(endpoint, options, autoFetch = true) {
       setError(null);
       try {
         const url = id ? `${endpoint}/${id}` : endpoint;
+        const config = prepareConfig(body);
 
-        const response = await api.patch(url, body, optionsRef.current);
+        const response = await api.patch(url, body, config);
 
         // Recargar datos después de actualizar
         await fetchData();
