@@ -1,8 +1,6 @@
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { App, Button, Input, Space, Table, Tag, Tooltip } from "antd";
 import {
-    PlusOutlined,
-    FileTextOutlined,
     SearchOutlined,
     EditOutlined,
     DeleteOutlined,
@@ -11,24 +9,52 @@ import {
     FileAddOutlined,
 } from "@ant-design/icons";
 import Highlighter from "react-highlight-words";
-import dayjs from "dayjs";
-import "dayjs/locale/es";
-import { initialStudentsData } from "../StudentsData";
-import StudentDocumentationModal_Admin from "./modals/StudentDocumentationModal_Admin";
 import { FileText } from "lucide-react";
-dayjs.locale("es");
+import StudentDocumentationModal_Admin from "./modals/StudentDocumentationModal_Admin";
+import { useApi } from "../../../../hooks/useApi";
+import { useDeleteConfirmation } from "../../../../hooks/useDeleteConfirmation";
 
 export default function StudentDocumentationScreen_Admin() {
     const [searchText, setSearchText] = useState("");
     const [searchedColumn, setSearchedColumn] = useState("");
     const searchInput = useRef(null);
     const { message, modal } = App.useApp();
-    const [documentsData, setDocumentsData] = useState(
-        initialStudentsData
-    );
     const [modalState, setModalState] = useState({ add: false, edit: false });
     const [selectedDocument, setSelectedDocument] = useState(null);
     const [selectedStudent, setSelectedStudent] = useState(null);
+
+    // Consumir API
+    const {
+        data: documentsResponse,
+        loading: loadingDocuments,
+        fetchData: fetchDocuments,
+        deleteData: deleteDocument,
+    } = useApi("/documentacion", {}, true);
+
+    const documentsData = documentsResponse || [];
+
+    // Agrupar documentos por estudiante
+    const groupedByStudent = documentsData.reduce((acc, doc) => {
+        const email = doc.userEmail;
+        if (!acc[email]) {
+            acc[email] = {
+                key: email,
+                studentId: doc.user?.id,
+                email: email,
+                name: doc.user?.name || "N/A",
+                code: doc.user?.code || "N/A",
+                phone: doc.user?.phone || "N/A",
+                documents: [],
+            };
+        }
+        acc[email].documents.push({
+            key: doc.id_documentacion,
+            ...doc,
+        });
+        return acc;
+    }, {});
+
+    const studentsData = Object.values(groupedByStudent);
 
     const openModal = (type, document = null, student = null) => {
         setModalState({ add: false, edit: false, [type]: true });
@@ -42,87 +68,46 @@ export default function StudentDocumentationScreen_Admin() {
         setSelectedStudent(null);
     };
 
-    const handleSaveDocument = (values) => {
-        if (modalState.edit && selectedDocument && selectedStudent) {
-            // Editar documento existente
-            setDocumentsData((prev) =>
-                prev.map((student) => {
-                    if (student.studentId === selectedStudent.studentId) {
-                        return {
-                            ...student,
-                            documents: student.documents.map((doc) =>
-                                doc.id === selectedDocument.id
-                                    ? {
-                                        ...doc,
-                                        ...values,
-                                        reviewDate: dayjs().format("YYYY-MM-DD"),
-                                    }
-                                    : doc
-                            ),
-                        };
-                    }
-                    return student;
-                })
-            );
-            message.success("Documento actualizado correctamente");
-            closeModal("edit");
-        } else if (selectedStudent) {
-            // Agregar nuevo documento
-            const newDocId =
-                Math.max(
-                    ...documentsData.flatMap((s) => s.documents.map((d) => d.id)),
-                    0
-                ) + 1;
-
-            setDocumentsData((prev) =>
-                prev.map((student) => {
-                    if (student.studentId === selectedStudent.studentId) {
-                        return {
-                            ...student,
-                            documents: [
-                                ...student.documents,
-                                {
-                                    key: `${student.studentId}-${newDocId}`,
-                                    id: newDocId,
-                                    studentId: student.studentId,
-                                    ...values,
-                                    uploadDate: dayjs().format("YYYY-MM-DD"),
-                                    reviewDate: null,
-                                    reviewedBy: null,
-                                },
-                            ],
-                        };
-                    }
-                    return student;
-                })
-            );
-            message.success("Documento agregado correctamente");
-            closeModal("add");
-        }
+    const handleSaveDocument = async () => {
+        await fetchDocuments();
+        closeModal("add");  
+        closeModal("edit");
     };
 
-    const handleDelete = (record, student) => {
-        modal.confirm({
-            title: "¿Estás seguro?",
-            content: `Se eliminará el documento: ${record.documentType}`,
-            okText: "Aceptar",
-            okType: "danger",
-            cancelText: "Cancelar",
-            onOk: () => {
-                setDocumentsData((prev) =>
-                    prev.map((s) => {
-                        if (s.studentId === student.studentId) {
-                            return {
-                                ...s,
-                                documents: s.documents.filter((doc) => doc.id !== record.id),
-                            };
-                        }
-                        return s;
-                    })
-                );
-                message.success("Documento eliminado correctamente");
-            },
+    const showDeleteConfirm = useDeleteConfirmation({
+        onDelete: deleteDocument,
+    });
+
+    const handleDelete = (record) => {
+        showDeleteConfirm({
+            title: "¿Estás seguro de eliminar este documento?",
+            itemName: record.name,
+            entityName: "el documento",
+            recordId: record.id_documentacion,
+            successTitle: "Documento eliminado",
+            onSuccess: fetchDocuments,
         });
+    };
+
+    const handleViewDocument = (documentUrl) => {
+        window.open(documentUrl, "_blank");
+    };
+
+    const handleDownload = async (documentUrl, fileName) => {
+        try {
+            const response = await fetch(documentUrl);
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+            message.error("Error al descargar el documento");
+        }
     };
 
     const handleSearch = (selectedKeys, confirm, dataIndex) => {
@@ -192,10 +177,17 @@ export default function StudentDocumentationScreen_Admin() {
             </div>
         ),
         filterIcon: (filtered) => (
-            <SearchOutlined style={{ color: filtered ? "#9cd522" : undefined }} />
+            <SearchOutlined style={{ color: filtered ? "#0B733E" : undefined }} />
         ),
-        onFilter: (value, record) =>
-            record[dataIndex]?.toString().toLowerCase().includes(value.toLowerCase()),
+        onFilter: (value, record) => {
+            const nestedValue = dataIndex.includes(".")
+                ? dataIndex.split(".").reduce((obj, key) => obj?.[key], record)
+                : record[dataIndex];
+            return nestedValue
+                ?.toString()
+                .toLowerCase()
+                .includes(value.toLowerCase());
+        },
         filterDropdownProps: {
             onOpenChange(open) {
                 if (open) {
@@ -206,7 +198,7 @@ export default function StudentDocumentationScreen_Admin() {
         render: (text) =>
             searchedColumn === dataIndex ? (
                 <Highlighter
-                    highlightStyle={{ backgroundColor: "#C7DC5B", padding: 0 }}
+                    highlightStyle={{ backgroundColor: "#ffc069", padding: 0 }}
                     searchWords={[searchText]}
                     autoEscape
                     textToHighlight={text ? text.toString() : ""}
@@ -218,36 +210,66 @@ export default function StudentDocumentationScreen_Admin() {
 
     const getStatusColor = (status) => {
         switch (status) {
-            case "Aprobado":
+            case "aprobado":
                 return "green";
-            case "Pendiente":
+            case "pendiente":
                 return "orange";
-            case "Rechazado":
+            case "rechazado":
                 return "red";
             default:
                 return "default";
         }
     };
 
-    // Columnas para documentos (expandible)
-    const documentColumns = (student) => [
+    const getStatusLabel = (status) => {
+        switch (status) {
+            case "aprobado":
+                return "Aprobado";
+            case "pendiente":
+                return "Pendiente";
+            case "rechazado":
+                return "Rechazado";
+            default:
+                return status;
+        }
+    };
+
+    const getDocumentTypeLabel = (type) => {
+        const types = {
+            ine_delantera: "INE (Delantera)",
+            ine_trasera: "INE (Trasera)",
+            pasaporte: "Pasaporte",
+            cfe: "CFE",
+        };
+        return types[type] || type;
+    };
+
+    const formatFileSize = (bytes) => {
+        if (!bytes) return "N/A";
+        return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+    };
+
+    // Columnas para documentos (tabla expandible)
+    const documentColumns = [
         {
             title: "Tipo de documento",
-            dataIndex: "documentType",
-            key: "documentType",
+            dataIndex: "typeDocument",
+            key: "typeDocument",
             align: "center",
+            render: (type) => getDocumentTypeLabel(type),
         },
         {
             title: "Nombre del archivo",
-            dataIndex: "fileName",
-            key: "fileName",
+            dataIndex: "name",
+            key: "name",
             align: "center",
         },
         {
             title: "Tamaño",
-            dataIndex: "fileSize",
-            key: "fileSize",
+            dataIndex: "size",
+            key: "size",
             align: "center",
+            render: (size) => formatFileSize(size),
         },
         {
             title: "Estado",
@@ -256,23 +278,16 @@ export default function StudentDocumentationScreen_Admin() {
             align: "center",
             render: (status) => (
                 <Tag color={getStatusColor(status)} style={{ fontSize: "13px" }}>
-                    {status}
+                    {getStatusLabel(status)}
                 </Tag>
             ),
         },
         {
-            title: "Fecha de carga",
-            dataIndex: "uploadDate",
-            key: "uploadDate",
+            title: "Observación",
+            dataIndex: "observation",
+            key: "observation",
             align: "center",
-            render: (date) => dayjs(date).locale("es").format("DD MMM YYYY"),
-        },
-        {
-            title: "Revisado por",
-            dataIndex: "reviewedBy",
-            key: "reviewedBy",
-            align: "center",
-            render: (reviewer) => reviewer || "-",
+            render: (observation) => observation || "-",
         },
         {
             title: "Acciones",
@@ -286,7 +301,7 @@ export default function StudentDocumentationScreen_Admin() {
                             type="link"
                             icon={<EyeOutlined />}
                             style={{ color: "#1890ff" }}
-                            onClick={() => console.log("Ver documento:", record.fileName)}
+                            onClick={() => handleViewDocument(record.documentUrl)}
                         />
                     </Tooltip>
                     <Tooltip title="Descargar" color="cyan">
@@ -294,7 +309,7 @@ export default function StudentDocumentationScreen_Admin() {
                             type="link"
                             icon={<DownloadOutlined />}
                             style={{ color: "#13c2c2" }}
-                            onClick={() => console.log("Descargar:", record.fileName)}
+                            onClick={() => handleDownload(record.documentUrl, record.name)}
                         />
                     </Tooltip>
                     <Tooltip title="Editar" color="green">
@@ -302,7 +317,7 @@ export default function StudentDocumentationScreen_Admin() {
                             type="link"
                             icon={<EditOutlined />}
                             style={{ color: "#52c41a" }}
-                            onClick={() => openModal("edit", record, student)}
+                            onClick={() => openModal("edit", record)}
                         />
                     </Tooltip>
                     <Tooltip title="Eliminar" color="red">
@@ -310,7 +325,7 @@ export default function StudentDocumentationScreen_Admin() {
                             type="link"
                             danger
                             icon={<DeleteOutlined />}
-                            onClick={() => handleDelete(record, student)}
+                            onClick={() => handleDelete(record)}
                         />
                     </Tooltip>
                 </Space>
@@ -324,13 +339,8 @@ export default function StudentDocumentationScreen_Admin() {
             title: "Nombre del estudiante",
             key: "studentName",
             ...getColumnSearchProps("name"),
-            sorter: (a, b) => {
-                const nameA = `${a.name} ${a.paternalLastName} ${a.maternalLastName}`;
-                const nameB = `${b.name} ${b.paternalLastName} ${b.maternalLastName}`;
-                return nameA.localeCompare(nameB);
-            },
-            render: (_, record) =>
-                `${record.name} ${record.paternalLastName} ${record.maternalLastName}`,
+            sorter: (a, b) => a.name.localeCompare(b.name),
+            render: (_, record) => record.name,
         },
         {
             title: "Correo",
@@ -338,6 +348,13 @@ export default function StudentDocumentationScreen_Admin() {
             key: "email",
             align: "center",
             ...getColumnSearchProps("email"),
+        },
+        {
+            title: "Teléfono",
+            dataIndex: "phone",
+            key: "phone",
+            align: "center",
+            render: (phone) => phone || "N/A",
         },
         {
             title: "# Documentos",
@@ -355,7 +372,7 @@ export default function StudentDocumentationScreen_Admin() {
             title: "Acciones",
             key: "actions",
             align: "center",
-            width: 120,
+            width: 100,
             render: (_, record) => (
                 <Space size="small">
                     <Tooltip title="Agregar documento" color="green">
@@ -392,23 +409,22 @@ export default function StudentDocumentationScreen_Admin() {
 
             {/* Tabla */}
             <div className="p-2">
-                <div className="bg-white dark:bg-[#141414] rounded-md shadow-lg p-4 md:p-6 min-h-125">
+                <div className="bg-white dark:bg-[#141414] rounded-md shadow-lg p-4 md:p-6">
                     <Table
                         columns={studentColumns}
-                        dataSource={documentsData}
+                        dataSource={studentsData}
+                        loading={loadingDocuments}
                         scroll={{ x: "max-content" }}
                         pagination={{
                             pageSize: 10,
                             showTotal: (total) => `Total ${total} estudiantes`,
+                            showSizeChanger: false,
                         }}
                         expandable={{
                             expandedRowRender: (record) => (
                                 <div className="p-4 bg-lime-500/20 rounded">
-                                    {/* <h4 className="text-base font-semibold mb-3 dark:text-white">
-                                        Documentos de {record.studentName}
-                                    </h4> */}
                                     <Table
-                                        columns={documentColumns(record)}
+                                        columns={documentColumns}
                                         dataSource={record.documents}
                                         pagination={false}
                                         size="small"
@@ -421,7 +437,9 @@ export default function StudentDocumentationScreen_Admin() {
                             rowExpandable: (record) => record.documents?.length >= 0,
                         }}
                         locale={{
-                            emptyText: "No hay estudiantes registrados.",
+                            emptyText: loadingDocuments
+                                ? null
+                                : "No hay estudiantes con documentos registrados.",
                         }}
                     />
                 </div>
@@ -441,7 +459,6 @@ export default function StudentDocumentationScreen_Admin() {
                 visible={modalState.edit}
                 onClose={() => closeModal("edit")}
                 onSave={handleSaveDocument}
-                studentData={selectedStudent}
                 editData={selectedDocument}
                 isEditing={true}
             />
