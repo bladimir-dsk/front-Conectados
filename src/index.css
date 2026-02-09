@@ -10,3 +10,46 @@ html {
     margin: 0;
     padding: 0;
 }
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+
+/* Scrollbar base */
+*::-webkit-scrollbar {
+    width: 10px;
+}
+
+
+/* ==== MODO CLARO ==== */
+:root {
+    --scroll-track: #e5e7eb;
+    /* gris claro */
+    --scroll-thumb: #73b012;
+}
+
+/* ==== MODO OSCURO ==== */
+.dark {
+    --scroll-track: #27272a;
+    /* gris oscuro */
+    --scroll-thumb: #73b012;
+}
+
+/* Chrome, Edge, Opera */
+*::-webkit-scrollbar-track {
+    background: var(--scroll-track);
+}
+
+*::-webkit-scrollbar-thumb {
+    background: var(--scroll-thumb);
+    border-radius: 8px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+    background: var(--scroll-thumb);
+}
+
+/* Firefox */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: var(--scroll-thumb) var(--scroll-track);
+}
