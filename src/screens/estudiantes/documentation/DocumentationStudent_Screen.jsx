@@ -301,48 +301,50 @@ export default function DocumentationStudent_Screen() {
         type={isRejected ? "error" : "warning"}
         // showIcon
         className="mt-2"
-        // closable
+      // closable
       />
     );
   };
 
   return (
     <Spin spinning={loadingDocs || uploading}>
-      <div className="space-y-6 max-w-4xl mx-auto p-6">
+      <div className="space-y-6 mx-auto p-5">
         <div className="flex justify-between items-center">
-          <h2 className="text-2xl font-semibold text-gray-800">
-            Documentación del Estudiante
+          <h2 className="text-xl font-semibold text-black dark:text-white">
+            Documentación del estudiante
           </h2>
         </div>
 
         <div className="space-y-4">
           {Object.entries(DOCUMENT_CONFIG).map(([docType, config]) => (
-            <Card
-              key={docType}
-              title={
-                <div className="flex items-center justify-between">
-                  <span>{config.title}</span>
-                  {renderDocumentStatus(docType)}
-                </div>
-              }
-              className="shadow-sm"
-            >
-              <Upload
-                beforeUpload={validateFiles}
-                fileList={documents[docType].fileList}
-                onChange={(info) => handleFileChange(docType, info)}
-                maxCount={1}
-                accept=".png,.jpg,.jpeg,.pdf"
+            <div>
+              <Card
+                key={docType}
+                title={
+                  <div className="flex items-center justify-between">
+                    <span>{config.title}</span>
+                    {renderDocumentStatus(docType)}
+                  </div>
+                }
+                className="shadow-sm"
               >
-                <Button icon={<UploadOutlined />}>{config.buttonText}</Button>
-              </Upload>
-              {config.required && (
-                <p className="text-xs text-gray-500 mt-2">
-                  * Campo obligatorio
-                </p>
-              )}
-              {renderDocumentObservation(docType)}
-            </Card>
+                <Upload
+                  beforeUpload={validateFiles}
+                  fileList={documents[docType].fileList}
+                  onChange={(info) => handleFileChange(docType, info)}
+                  maxCount={1}
+                  accept=".png,.jpg,.jpeg,.pdf"
+                >
+                  <Button icon={<UploadOutlined />}>{config.buttonText}</Button>
+                </Upload>
+                {config.required && (
+                  <p className="text-xs text-gray-500 mt-2">
+                    * Campo obligatorio
+                  </p>
+                )}
+                {renderDocumentObservation(docType)}
+              </Card>
+            </div>
           ))}
         </div>
 
