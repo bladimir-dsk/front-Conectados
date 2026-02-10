@@ -99,9 +99,8 @@ const RoomCard = ({
           Disponible
         </Tag>
         <button
-          className={`bg-white/20 backdrop-blur-sm rounded-full p-1.5 cursor-pointer transition-colors ${
-            isFav ? "text-red-400" : "text-white"
-          }`}
+          className={`bg-white/20 backdrop-blur-sm rounded-full p-1.5 cursor-pointer transition-colors ${isFav ? "text-red-400" : "text-white"
+            }`}
           onClick={() => onToggleFavorite(room.id)}
           aria-label={isFav ? "Quitar de favoritos" : "Agregar a favoritos"}
         >
@@ -229,9 +228,8 @@ const RoomDetailsModal = ({
                       fill={userRating >= star ? "#84cc16" : "none"}
                       color={userRating >= star ? "#84cc16" : "#d1d5db"}
                       onClick={() => onRate(room.id, star)}
-                      aria-label={`Calificar con ${star} estrella${
-                        star !== 1 ? "s" : ""
-                      }`}
+                      aria-label={`Calificar con ${star} estrella${star !== 1 ? "s" : ""
+                        }`}
                     />
                   ))}
                 </div>
@@ -507,11 +505,10 @@ const ReservationModal = ({
             ].map((type) => (
               <div
                 key={type.key}
-                className={`p-3 border rounded-lg cursor-pointer transition-all flex flex-col items-center justify-center text-center ${
-                  rentType === type.key
+                className={`p-3 border rounded-lg cursor-pointer transition-all flex flex-col items-center justify-center text-center ${rentType === type.key
                     ? "border-lime-600 bg-lime-50"
                     : "border-gray-200 hover:border-gray-300"
-                }`}
+                  }`}
                 onClick={() => onRentTypeChange(type.key)}
               >
                 <div className="mb-2">{type.icon}</div>
@@ -534,11 +531,10 @@ const ReservationModal = ({
                 {[1, 2, 3].map((num) => (
                   <div
                     key={num}
-                    className={`p-3 border rounded-lg text-center cursor-pointer transition-all ${
-                      selectedRooms === num
+                    className={`p-3 border rounded-lg text-center cursor-pointer transition-all ${selectedRooms === num
                         ? "border-lime-600 bg-lime-50"
                         : "border-gray-200 hover:border-gray-300"
-                    }`}
+                      }`}
                     onClick={() => onSelectedRoomsChange(num)}
                   >
                     <div className="text-sm font-bold text-gray-800">{num}</div>
@@ -558,11 +554,10 @@ const ReservationModal = ({
                 {["Cama 1", "Cama 2"].map((cama) => (
                   <div
                     key={cama}
-                    className={`p-3 border rounded-lg text-center cursor-pointer transition-all ${
-                      selectedBed === cama
+                    className={`p-3 border rounded-lg text-center cursor-pointer transition-all ${selectedBed === cama
                         ? "border-lime-600 bg-lime-50"
                         : "border-gray-200 hover:border-gray-300"
-                    }`}
+                      }`}
                     onClick={() => onSelectedBedChange(cama)}
                   >
                     <div className="text-sm font-medium text-gray-800">
@@ -587,11 +582,10 @@ const ReservationModal = ({
             ].map((option) => (
               <div
                 key={option.months}
-                className={`p-3 border rounded-lg text-center cursor-pointer transition-all ${
-                  rentPeriod === option.months
+                className={`p-3 border rounded-lg text-center cursor-pointer transition-all ${rentPeriod === option.months
                     ? "border-lime-600 bg-lime-50"
                     : "border-gray-200 hover:border-gray-300"
-                }`}
+                  }`}
                 onClick={() => onRentPeriodChange(option.months)}
               >
                 <div className="text-sm font-bold text-gray-800">
@@ -644,11 +638,10 @@ const ReservationModal = ({
                   {extraServices.map((service, index) => (
                     <div
                       key={index}
-                      className={`p-3 border rounded-lg cursor-pointer transition-all flex flex-col items-center text-center ${
-                        selectedServices.includes(service.name)
+                      className={`p-3 border rounded-lg cursor-pointer transition-all flex flex-col items-center text-center ${selectedServices.includes(service.name)
                           ? "border-lime-600 bg-lime-50"
                           : "border-gray-200 hover:border-gray-300"
-                      }`}
+                        }`}
                       onClick={() => handleServiceToggle(service.name)}
                     >
                       <div className="text-lime-600 mb-2">{service.icon}</div>
@@ -1009,13 +1002,13 @@ export default function DashboardStudent_Screen() {
     );
   }, [filteredRooms, currentPage, pageSize]);
 
-  useEffect(() => {}, [dateRange, guests]);
+  useEffect(() => { }, [dateRange, guests]);
 
   return (
     <ConfigProvider locale={esES}>
-      <div className="min-h-screen bg-gray-50 flex justify-center w-full mb-0">
+      <div className="min-h-screen flex justify-center w-full mb-0">
         <div className="w-full max-w-7xl px-4 py-8 mb-0">
-          <div className="relative mx-auto mb-2 bg-white rounded-2xl border border-gray-200 h-14 max-w-lg flex items-center shadow-sm">
+          <div className="relative mx-auto mb-2 rounded-2xl border border-gray-200 dark:border-zinc-700 h-14 max-w-lg flex items-center shadow-sm bg-white dark:bg-zinc-900">
             <div className="flex-1 flex justify-center items-center gap-6 px-4">
               <Popover
                 trigger="click"
@@ -1027,33 +1020,32 @@ export default function DashboardStudent_Screen() {
                     onChange={setDateRange}
                     allowClear={false}
                   />
-                }
-              >
+                }>
                 <div className="flex items-center gap-3 cursor-pointer">
-                  <CalendarDays size={18} className="text-gray-600" />
+                  <CalendarDays size={18} className="text-gray-500 dark:text-gray-400" />
                   <div className="flex flex-col">
-                    <span className="text-xs text-gray-500 font-medium">
+                    <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">
                       FECHAS
                     </span>
-                    <span className="text-sm font-medium text-gray-800">
+                    <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
                       {dateRange && dateRange[0] && dateRange[1] ? (
                         `${dayjs(dateRange[0]).format("DD MMM")} - ${dayjs(
                           dateRange[1],
                         ).format("DD MMM")}`
                       ) : (
-                        <span className="text-gray-400">Seleccionar</span>
+                        <span className="text-gray-400 dark:text-gray-500">Seleccionar</span>
                       )}
                     </span>
                   </div>
                 </div>
               </Popover>
 
-              <div className="w-px h-6 bg-gray-300" />
+              <div className="w-px h-6 bg-gray-300 dark:bg-gray-600" />
 
               <div className="flex items-center gap-3">
-                <Users size={18} className="text-gray-600" />
+                <Users size={18} className="text-gray-500 dark:text-gray-400" />
                 <div className="flex flex-col">
-                  <span className="text-xs text-gray-500 font-medium">
+                  <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">
                     HUÉSPEDES
                   </span>
                   <div className="flex items-center">
@@ -1063,7 +1055,7 @@ export default function DashboardStudent_Screen() {
                       value={guests}
                       onChange={setGuests}
                       variant="borderless"
-                      className="w-12 text-base font-medium text-gray-800 p-0"
+                      className="w-12 text-base font-medium text-gray-800 dark:text-gray-200 p-0"
                       controls={false}
                     />
                   </div>
@@ -1072,14 +1064,14 @@ export default function DashboardStudent_Screen() {
             </div>
 
             <Button
-              className="absolute right-4 bg-lime-600 border-none rounded-full w-11 h-11 text-white hover:bg-lime-600 shadow-md"
+              className="absolute right-2 bg-lime-600! hover:bg-lime-700! border-lime-600! text-white! rounded-xl h-10 w-10 flex items-center justify-center"
               icon={<Search size={18} />}
               onClick={applyFilters}
               aria-label="Buscar habitaciones"
             />
           </div>
 
-          <div className="mb-3 text-sm text-gray-600">
+          <div className="mb-3 text-sm text-gray-700 dark:text-gray-400">
             Mostrando {filteredRooms.length} de {rooms.length} habitaciones
             {appliedFilters.dateRange &&
               appliedFilters.dateRange[0] &&
