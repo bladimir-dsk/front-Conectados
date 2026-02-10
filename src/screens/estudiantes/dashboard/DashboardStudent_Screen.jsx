@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-
+import { useApi } from "../../../hooks/useApi";
 import {
   Row,
   Col,
@@ -407,7 +407,7 @@ const ReservationModal = ({
             Documentos pendientes
           </h3>
           <p className="text-gray-600 text-sm mb-4">
-            Debes subir tus documentos primero.
+            Debe subir sus documentos o no han sido aprobados.
           </p>
           <Button
             type="default"
@@ -416,7 +416,7 @@ const ReservationModal = ({
               window.location.href = "/estudiante/documentation";
             }}
           >
-            Subir documentos
+            Ir a Mi Documentación
           </Button>
         </>
       )}
@@ -773,6 +773,7 @@ export default function DashboardStudent_Screen() {
   const [selectedBed, setSelectedBed] = useState("");
   const [rentPeriod, setRentPeriod] = useState(12);
   const [selectedServices, setSelectedServices] = useState([]);
+  const { fetchData } = useApi("/documentacion/status/approved", {}, false);
   const [prices, setPrices] = useState({
     subtotal: 0,
     iva: 0,
@@ -782,35 +783,17 @@ export default function DashboardStudent_Screen() {
 
   const navigate = useNavigate();
 
-  const checkDocuments = () => {
-    const ine = JSON.parse(localStorage.getItem("ineFiles") || "[]");
-    const address = JSON.parse(localStorage.getItem("addressFile") || "[]");
-
-    const valid =
-      Array.isArray(ine) &&
-      ine.length === 2 &&
-      Array.isArray(address) &&
-      address.length === 1;
-
-    setHasDocuments(valid);
+  const fetchDocumentStatus = async () => {
+    try {
+      const response = await fetchData();
+      const approved = response?.approved === true;
+      setHasDocuments(approved);
+      return approved;
+    } catch (error) {
+      setHasDocuments(false);
+      return false;
+    }
   };
-
-  useEffect(() => {
-    const handleStorageChange = () => {
-      const docs = localStorage.getItem("hasDocuments");
-      setHasDocuments(docs === "true");
-    };
-
-    handleStorageChange();
-
-    return () => {
-      window.removeEventListener("storage", handleStorageChange);
-    };
-  }, []);
-
-  useEffect(() => {
-    checkDocuments();
-  }, [reservationModalOpen]);
 
   const handleViewMap = (roomId) => {
     navigate(`/estudiante/search/${roomId}`, {
@@ -950,25 +933,16 @@ export default function DashboardStudent_Screen() {
       statusColor: "warning",
       tabKey: "enProceso",
     };
-
-    const existingReservations = JSON.parse(
-      localStorage.getItem("student_reservations") || "[]",
-    );
-    const updatedReservations = [...existingReservations, newReservation];
-    localStorage.setItem(
-      "student_reservations",
-      JSON.stringify(updatedReservations),
-    );
   };
 
-  const handleRequestRoom = (roomId) => {
+  const handleRequestRoom = async (roomId) => {
     const room = filteredRooms.find((r) => r.id === roomId);
     if (room) {
       setSelectedRoom(room);
       calculatePrices(room.price, rentPeriod, selectedServices);
     }
 
-    checkDocuments();
+    await fetchDocumentStatus();
     setReservationStep(1);
     setReservationModalOpen(true);
   };
