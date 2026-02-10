@@ -70,71 +70,28 @@ export default function LoginScreen() {
   };
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        background: "#f7fee7",
-        padding: isMobile ? 16 : 24,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-      }}
-    >
+    <div className="min-h-screen bg-gray-100 dark:bg-zinc-800 p-4 md:p-6 flex items-center justify-center">
       <div
-        style={{
-          width: "100%",
-          maxWidth: isMobile ? "100%" : 1000,
-          background: "white",
-          borderRadius: 20,
-          overflow: "hidden",
-          boxShadow: "0 10px 40px rgba(0,0,0,0.1)",
-          display: "flex",
-          flexDirection: isMobile ? "column" : "row",
-          minHeight: isMobile ? "auto" : 600,
-        }}
-      >
+        className={`w-full dark:bg-zinc-900 bg-white rounded-2xl overflow-hidden shadow-xl flex min-h-0
+          ${isMobile ? "max-w-full flex-col" : "max-w-250 flex-row min-h-150"}`}>
         {md && (
-          <div
-            style={{
-              flex: 1.2,
-              position: "relative",
-              minHeight: isMobile ? 300 : "auto",
-            }}
-          >
+          <div className="flex-[1.2] relative min-h-75 md:min-h-0">
             <img
               src="https://th.bing.com/th/id/OIG1.1S9SKh9A4xQsCUjoHW5M?pid=ImgDetMain&o=7&rm=3"
               alt="Login visual"
-              style={{
-                position: "absolute",
-                width: "100%",
-                height: "100%",
-                objectFit: "cover",
-              }}
+              className="absolute inset-0 w-full h-full object-cover"
             />
           </div>
         )}
 
         <div
-          style={{
-            flex: 1,
-            padding: isMobile ? 32 : 48,
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-          }}
-        >
-          <div style={{ textAlign: "center", marginBottom: 32 }}>
+          className={`flex-1 flex flex-col justify-center ${isMobile ? "p-8" : "p-12"}`}>
+          <div className="text-center mb-8">
             <h1
-              style={{
-                fontSize: isMobile ? 24 : 28,
-                fontWeight: "bold",
-                color: "#1a2e05",
-                marginBottom: 8,
-              }}
-            >
+              className={`font-bold text-black dark:text-white mb-2 ${isMobile ? "text-2xl" : "text-3xl"}`}>
               Inicio de sesión
             </h1>
-            <p style={{ color: "#64748b" }}>
+            <p className="text-slate-500 dark:text-gray-300">
               Ingresa tus credenciales para acceder
             </p>
           </div>
@@ -165,11 +122,10 @@ export default function LoginScreen() {
                 size: "large",
               }}
             />
-            <div style={{ textAlign: "right", marginBottom: 24 }}>
+            <div className="text-right mb-6">
               <Link
                 to="/forgot-password"
-                style={{ color: "#65a30d", fontWeight: 500 }}
-              >
+                className="text-lime-600! font-medium! hover:text-lime-700!">
                 ¿Olvidaste tu contraseña?
               </Link>
             </div>
@@ -181,23 +137,16 @@ export default function LoginScreen() {
                 block
                 size="large"
                 icon={<LogIn size={18} />}
-                style={{
-                  background: "#84cc16",
-                  border: "none",
-                  height: 48,
-                  fontWeight: 600,
-                }}
-              >
+                className="bg-lime-500! border-none! h-12! font-semibold! hover:bg-lime-600!">
                 Ingresar
               </Button>
             </Form.Item>
-            <div style={{ textAlign: "center", marginTop: 16 }}>
-              <p style={{ margin: 0 }}>
+            <div className="text-center mt-4">
+              <p className="m-0">
                 ¿No tienes una cuenta?{" "}
                 <Link
                   to="/register"
-                  style={{ color: "#65a30d", fontWeight: 600 }}
-                >
+                  className="text-lime-600! font-semibold! hover:text-lime-700!">
                   Regístrate
                 </Link>
               </p>
