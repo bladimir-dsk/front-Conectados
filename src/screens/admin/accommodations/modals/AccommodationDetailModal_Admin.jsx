@@ -301,7 +301,7 @@ const AccommodationDetailModal_Admin = ({ visible, onClose, data }) => {
                                             </div>
                                             <div className="p-3 bg-gray-50 dark:bg-zinc-800 rounded-lg">
                                                 <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
-                                                    Tipo de ingreso
+                                                    Tipo de renta
                                                 </p>
                                                 <Tag
                                                     color={getTypeIncomeColor(d.typeIncome)}

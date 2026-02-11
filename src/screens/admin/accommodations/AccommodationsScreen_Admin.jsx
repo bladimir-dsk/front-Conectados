@@ -380,14 +380,12 @@ export default function AccommodationsScreen_Admin() {
             onFilter: () => true,
         },
         {
-            title: "Tipo ingreso",
+            title: "Tipo de renta",
             dataIndex: "typeIncome",
             key: "typeIncome",
             align: "center",
             filters: [
                 { text: "Alojamiento completo", value: "ALOJAMIENTO_COMPLETO" },
-                { text: "Cuarto", value: "CUARTO" },
-                { text: "Cama", value: "CAMA" },
                 { text: "Espacio", value: "ESPACIO" },
             ],
             filteredValue: filtros.typeIncome.length > 0 ? filtros.typeIncome : null,

@@ -57,8 +57,6 @@ const TYPE_PROPERTY_OPTIONS = [
 
 const TYPE_INCOME_OPTIONS = [
     { value: "ALOJAMIENTO_COMPLETO", label: "Alojamiento completo" },
-    { value: "CUARTO", label: "Cuarto" },
-    { value: "CAMA", label: "Cama" },
     { value: "ESPACIO", label: "Espacio" },
 ];
 
@@ -391,7 +389,7 @@ const AccommodationModal_Admin = ({
                                     {/* Tipo de ingreso */}
                                     <Form.Item
                                         name="typeIncome"
-                                        label="Tipo de ingreso"
+                                        label="Tipo de renta"
                                         rules={[{ required: true, message: "Seleccione el tipo de ingreso" }]}>
                                         <Select
                                             size="large"
