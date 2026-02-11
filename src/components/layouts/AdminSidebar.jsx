@@ -50,6 +50,11 @@ export default function AdminSidebar({
       icon: <CircleUser size={18} />,
       label: "Propietarios",
     },
+        {
+      key: "/admin/alojamientos",
+      icon: <Home size={18} />,
+      label: "Alojamientos",
+    },
     {
       key: "/admin/servicios-alojamiento",
       icon: <Wrench size={18}/>,
@@ -63,11 +68,6 @@ export default function AdminSidebar({
         { key: "/admin/estudiantes/administracion", label: "Administración" },
         { key: "/admin/estudiantes/documentacion", label: "Documentación" }
       ]
-    },
-    {
-      key: "/admin/habitaciones",
-      icon: <Home size={18} />,
-      label: "Habitaciones",
     },
     {
       key: "/admin/usuarios",

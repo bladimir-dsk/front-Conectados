@@ -5,13 +5,14 @@ import ThemeProvider, { ThemeContext } from "./context/ThemeContext";
 import RouteApp from "./routes/RouteApp";
 import { ConfigProvider, theme, App as AntApp } from "antd";
 import esES from 'antd/locale/es_ES';
+import { LoadScript } from "@react-google-maps/api";
 
 function ThemeApp() {
   // Usar useContext para acceder a darkMode
   const { darkMode } = useContext(ThemeContext);
 
   return (
-    <ConfigProvider 
+    <ConfigProvider
       locale={esES}
       theme={{
         algorithm: darkMode ? theme.darkAlgorithm : theme.defaultAlgorithm,
@@ -19,10 +20,11 @@ function ThemeApp() {
           colorPrimary: '#84cc16',
           borderRadius: 6,
         },
-      }}
-    >
+      }}>
       <AntApp>
-        <RouteApp />
+        <LoadScript googleMapsApiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}>
+          <RouteApp />
+        </LoadScript>
       </AntApp>
     </ConfigProvider>
   );
