@@ -13,14 +13,6 @@ const api = axios.create({
 // Interceptor de peticiones - AGREGAR TOKEN AUTOMÁTICAMENTE
 api.interceptors.request.use(
   (config) => {
-    config.headers["Cache-Control"] = "no-cache, no-store, must-revalidate";
-    config.headers["Pragma"] = "no-cache";
-    config.headers["Expires"] = "0";
-
-    if (!(config.data instanceof FormData)) {
-      config.headers["Content-Type"] = "application/json";
-    }
-
     // Obtener token del localStorage
     const token = localStorage.getItem("token");
 

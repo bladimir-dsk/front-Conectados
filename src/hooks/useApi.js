@@ -28,26 +28,20 @@ export function useApi(endpoint, options = {}, autoFetch = true) {
     return config;
   };
 
-  const fetchData = useCallback(
-    async (config = {}) => {
-      setLoading(true);
-      setError(null);
-      try {
-        const res = await api.get(endpoint, {
-          ...optionsRef.current,
-          ...config,
-        });
-        setData(res.data);
-        return res.data;
-      } catch (err) {
-        setError(err.response?.data?.message || err.message);
-        throw err;
-      } finally {
-        setLoading(false);
-      }
-    },
-    [endpoint],
-  );
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await api.get(endpoint, optionsRef.current);
+      setData(res.data);
+      return res.data;
+    } catch (err) {
+      setError(err.response?.data?.message || err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, [endpoint]);
 
   const postData = useCallback(
     async (body, shouldRefetch = true) => {
