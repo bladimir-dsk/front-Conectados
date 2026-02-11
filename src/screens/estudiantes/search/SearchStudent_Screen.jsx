@@ -50,6 +50,7 @@ import {
 // Importar componentes de modales
 import RouteModal from "../../../components/modals/RouteModal";
 import ReservationModal from "../../../components/modals/ReservationModal";
+import { useApi } from "../../../hooks/useApi";
 
 const containerStyle = {
   width: "100%",
@@ -280,11 +281,30 @@ export default function SearchStudent_Screen() {
   const [rentPeriod, setRentPeriod] = useState(12);
   const [hasDocuments, setHasDocuments] = useState(false);
   const [selectedServices, setSelectedServices] = useState([]);
+  const { fetchData } = useApi("/documentacion/status/approved", {}, false);
   const [prices, setPrices] = useState({
     subtotal: 0,
     iva: 0,
     total: 0,
   });
+  const [loading, setLoading] = useState({
+    rooms: false,
+    reservation: false,
+  });
+
+  const fetchDocumentStatus = async () => {
+    try {
+      const response = await fetchData();
+      const approved = response?.approved === true;
+      setHasDocuments(approved);
+      return approved;
+    } catch (error) {
+      setHasDocuments(false);
+      return false;
+    }
+  };
+
+  const [error, setError] = useState(null);
 
   const location = useLocation();
   const { id } = useParams();
@@ -297,6 +317,13 @@ export default function SearchStudent_Screen() {
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
     libraries: ["places"],
   });
+
+  const handleServicesChange = (newServices) => {
+    setSelectedServices(newServices);
+    if (selectedRoom) {
+      calculatePrices(selectedRoom.price, rentPeriod, newServices);
+    }
+  };
 
   const checkDocuments = () => {
     const ine = JSON.parse(localStorage.getItem("ineFiles") || "[]");
@@ -398,12 +425,13 @@ export default function SearchStudent_Screen() {
     );
   };
 
-  const handleRequestRoom = (room) => {
+  const handleRequestRoom = async (room) => {
     checkDocuments();
     setSelectedRoom(room);
     if (room) {
       calculatePrices(room.price, rentPeriod, selectedServices);
     }
+    await fetchDocumentStatus();
     setReservationStep(1);
     setReservationModalOpen(true);
   };
@@ -553,6 +581,7 @@ export default function SearchStudent_Screen() {
             setReservationModalOpen(false);
             setReservationStep(1);
             setSelectedServices([]);
+            setError(null);
           }}
           step={reservationStep}
           onStepChange={setReservationStep}
@@ -572,14 +601,12 @@ export default function SearchStudent_Screen() {
             }
           }}
           selectedServices={selectedServices}
-          onSelectedServicesChange={(services) => {
-            setSelectedServices(services);
-            if (selectedRoom) {
-              calculatePrices(selectedRoom.price, rentPeriod, services);
-            }
-          }}
+          onSelectedServicesChange={handleServicesChange}
+          services={SERVICES}
           prices={prices}
           onSaveReservation={saveReservation}
+          loading={loading.reservation}
+          error={error}
         />
       </div>
     </ConfigProvider>
