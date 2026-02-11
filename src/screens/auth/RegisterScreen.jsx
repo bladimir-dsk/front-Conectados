@@ -80,57 +80,34 @@ export default function RegisterScreen() {
   };
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        background: "#f7fee7",
-        padding: isMobile ? 16 : 24,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-      }}
-    >
+    <div className="min-h-screen bg-gray-100 dark:bg-zinc-800 p-4 md:p-6 flex items-center justify-center">
       <div
-        style={{
-          width: "100%",
-          maxWidth: isMobile ? "100%" : 1100,
-          background: "white",
-          borderRadius: 20,
-          overflow: "hidden",
-          boxShadow: "0 10px 40px rgba(0,0,0,0.1)",
-          display: "flex",
-          flexDirection: isMobile ? "column" : "row",
-          minHeight: isMobile ? "auto" : 650,
-        }}
+        className={`w-full dark:bg-zinc-900 bg-white rounded-2xl overflow-hidden shadow-xl flex
+          ${isMobile ? "max-w-full flex-col" : "max-w-240 flex-row min-h-140"}`}
       >
+        {/* Formulario */}
         <div
-          style={{
-            flex: 1,
-            padding: isMobile ? 32 : 48,
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-          }}
+          className={`flex-1 flex flex-col justify-center ${isMobile ? "p-6" : "px-10 py-8"}`}
         >
-          <div style={{ textAlign: "center", marginBottom: 20 }}>
+          <div className="text-center mb-4">
             <h1
-              style={{
-                fontSize: isMobile ? 24 : 28,
-                fontWeight: "bold",
-                color: "#1a2e05",
-                marginBottom: 8,
-              }}
+              className={`font-bold text-black dark:text-white mb-1 ${isMobile ? "text-2xl" : "text-3xl"}`}
             >
               Crear cuenta
             </h1>
-            <p style={{ color: "#64748b" }}>
+            <p className="text-gray-500 dark:text-gray-300 text-sm">
               Completa el formulario para registrarte
             </p>
           </div>
 
-          <Form onFinish={handleSubmit} layout="vertical">
-            <div style={{ display: "flex", gap: 16, marginBottom: 8 }}>
-              <div style={{ flex: 1 }}>
+          <Form
+            onFinish={handleSubmit}
+            layout="vertical"
+            size="middle"
+            className="[&_.ant-form-item]:mb-2!"
+          >
+            <div className="flex gap-3">
+              <div className="flex-1">
                 <FormInput
                   name="firstLastName"
                   label="Primer apellido"
@@ -142,12 +119,9 @@ export default function RegisterScreen() {
                       message: "Solo se permiten letras",
                     },
                   ]}
-                  inputProps={{
-                    size: "large",
-                  }}
                 />
               </div>
-              <div style={{ flex: 1 }}>
+              <div className="flex-1">
                 <FormInput
                   name="secondLastName"
                   label="Segundo apellido"
@@ -158,91 +132,63 @@ export default function RegisterScreen() {
                       message: "Solo se permiten letras",
                     },
                   ]}
-                  inputProps={{
-                    size: "large",
-                  }}
                 />
               </div>
             </div>
 
-            <div style={{ marginBottom: 8 }}>
-              <FormInput
-                name="names"
-                label="Nombres"
-                placeholder="Juan Carlos"
-                rules={[
-                  { required: true, message: "Ingresa tus nombres" },
-                  {
-                    pattern: /^[A-Za-zÁÉÍÓÚáéíóúñÑ\s]+$/,
-                    message: "Solo se permiten letras",
-                  },
-                ]}
-                inputProps={{
-                  size: "large",
-                }}
-              />
-            </div>
+            <FormInput
+              name="names"
+              label="Nombres"
+              placeholder="Juan Carlos"
+              rules={[
+                { required: true, message: "Ingresa tus nombres" },
+                {
+                  pattern: /^[A-Za-zÁÉÍÓÚáéíóúñÑ\s]+$/,
+                  message: "Solo se permiten letras",
+                },
+              ]}
+            />
 
-            <div style={{ marginBottom: 8 }}>
-              <FormInput
-                name="email"
-                label="Correo electrónico"
-                placeholder="juan.gonzalez@gmail.com"
-                rules={[
-                  { required: true, message: "Ingresa tu email" },
-                  { type: "email", message: "Email no válido" },
-                ]}
-                inputProps={{
-                  size: "large",
-                }}
-              />
-            </div>
+            <FormInput
+              name="email"
+              label="Correo electrónico"
+              placeholder="juan.gonzalez@gmail.com"
+              rules={[
+                { required: true, message: "Ingresa tu email" },
+                { type: "email", message: "Email no válido" },
+              ]}
+            />
 
-            <div style={{ display: "flex", gap: 16, marginBottom: 8 }}>
-              <div style={{ flex: 1 }}>
-                <FormInput
-                  name="phone"
-                  label="Teléfono"
-                  placeholder="9991234567"
-                  rules={[
-                    { required: true, message: "Ingresa tu teléfono" },
-                    {
-                      pattern: /^\d+$/,
-                      message: "Solo se permiten números",
-                    },
-                    {
-                      len: 10,
-                      message: "Debe tener exactamente 10 dígitos",
-                    },
-                  ]}
-                  inputProps={{
-                    size: "large",
-                    maxLength: 10,
-                  }}
-                />
-              </div>
-              <div style={{ flex: 1 }}>
+            <div className="flex gap-3">
+              <div className="flex-1">
                 <FormInput
                   name="code"
                   label="Código"
                   placeholder="99"
                   rules={[
                     { required: true, message: "Ingresa tu código" },
-                    {
-                      pattern: /^\d{2}$/,
-                      message: "Debe tener exactamente 2 dígitos",
-                    },
+                    { pattern: /^\d{2}$/, message: "2 dígitos" },
                   ]}
-                  inputProps={{
-                    size: "large",
-                    maxLength: 2,
-                  }}
+                  inputProps={{ maxLength: 2 }}
+                />
+              </div>
+              <div className="flex-1">
+                <FormInput
+                  name="phone"
+                  label="Teléfono"
+                  placeholder="9991234567"
+                  rules={[
+                    { required: true, message: "Ingresa tu teléfono" },
+                    { pattern: /^\d+$/, message: "Solo números" },
+                    { len: 10, message: "Debe tener 10 dígitos" },
+                  ]}
+                  inputProps={{ maxLength: 10 }}
                 />
               </div>
             </div>
 
-            <div style={{ display: "flex", gap: 16, marginBottom: 8 }}>
-              <div style={{ flex: 1 }}>
+            <div className="flex gap-3">
+              <div className="flex-1">
                 <FormInput
                   name="password"
                   label="Contraseña"
@@ -251,13 +197,10 @@ export default function RegisterScreen() {
                     { required: true, message: "Ingresa tu contraseña" },
                     { min: 6, message: "Mínimo 6 caracteres" },
                   ]}
-                  inputProps={{
-                    type: "password",
-                    size: "large",
-                  }}
+                  inputProps={{ type: "password" }}
                 />
               </div>
-              <div style={{ flex: 1 }}>
+              <div className="flex-1">
                 <FormInput
                   name="confirmPassword"
                   label="Confirmar contraseña"
@@ -265,45 +208,32 @@ export default function RegisterScreen() {
                   rules={[
                     { required: true, message: "Confirma tu contraseña" },
                   ]}
-                  inputProps={{
-                    type: "password",
-                    size: "large",
-                  }}
+                  inputProps={{ type: "password" }}
                 />
               </div>
             </div>
 
-            <Form.Item style={{ marginTop: 16 }}>
+            <Form.Item className="mt-4! mb-0!">
               <Button
                 type="primary"
                 htmlType="submit"
                 loading={loading}
                 block
                 size="large"
-                icon={<UserPlus size={18} />}
-                style={{
-                  background: "#84cc16",
-                  border: "none",
-                  height: 48,
-                  fontWeight: 600,
-                }}
+                icon={<UserPlus size={16} />}
+                className="bg-lime-500! border-none! h-10! font-semibold! hover:bg-lime-600!"
               >
                 Registrarse
               </Button>
             </Form.Item>
 
-            <div
-              style={{
-                textAlign: "center",
-                color: "#64748b",
-                paddingTop: 20,
-                borderTop: "1px solid #e2e8f0",
-                marginTop: 20,
-              }}
-            >
-              <p style={{ margin: 0 }}>
+            <div className="text-center text-gra-500 pt-4 border-t border-slate-200 dark:border-gray-500 mt-4">
+              <p className="m-0 text-sm">
                 ¿Ya tienes una cuenta?{" "}
-                <Link to="/login" style={{ color: "#65a30d", fontWeight: 600 }}>
+                <Link
+                  to="/login"
+                  className="text-lime-600! font-semibold! hover:text-lime-700!"
+                >
                   Inicia sesión
                 </Link>
               </p>
@@ -311,23 +241,13 @@ export default function RegisterScreen() {
           </Form>
         </div>
 
+        {/* Imagen */}
         {md && (
-          <div
-            style={{
-              flex: 1.2,
-              position: "relative",
-              minHeight: isMobile ? 300 : "auto",
-            }}
-          >
+          <div className="flex-[1.1] relative">
             <img
               src="https://th.bing.com/th/id/OIG1.1S9SKh9A4xQsCUjoHW5M?pid=ImgDetMain&o=7&rm=3"
               alt="Registro visual"
-              style={{
-                position: "absolute",
-                width: "100%",
-                height: "100%",
-                objectFit: "cover",
-              }}
+              className="absolute inset-0 w-full h-full object-cover"
             />
           </div>
         )}

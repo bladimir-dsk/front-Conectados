@@ -30,6 +30,28 @@ export const SearchStudent = lazy(
 
 // Componentes privados (necesitan autenticacion) ADMIN
 
-export const AdminDashboard = lazy(() => import("../screens/admin/dashboard/DashboardScreen_Admin"))
-
+export const AdminDashboard = lazy(
+  () => import("../screens/admin/dashboard/DashboardScreen_Admin"),
+);
+export const AdminOwners = lazy(
+  () => import("../screens/admin/owners/OwnersScreen_Admin"),
+);
+export const AdminOwnersProperties = lazy(
+  () =>
+    import("../screens/admin/owners/properties/OwnersPropertiesScreen_Admin"),
+);
+export const AdminAccommodationsScreen = lazy(
+  () => import("../screens/admin/accommodations/AccommodationsScreen_Admin"),
+);
+export const AdminStudentAdministration = lazy(
+  () =>
+    import("../screens/admin/students/administration/StudentAdministrationScreen_Admin"),
+);
+export const AdminStudentDocumentation = lazy(
+  () =>
+    import("../screens/admin/students/documentation/StudentDocumentationScreen_Admin"),
+);
+export const AdminServices = lazy(
+  () => import("../screens/admin/services/ServicesScreen_Admin"),
+);
 // Componentes privados (necesitan autenticacion) PROPIETARIOS

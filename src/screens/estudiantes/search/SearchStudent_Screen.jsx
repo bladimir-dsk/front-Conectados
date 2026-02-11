@@ -1,6 +1,21 @@
 import React, { useState, useEffect } from "react";
-import GoogleMapReact from "google-map-react";
-import { Modal, Button, Tag } from "antd";
+import {
+  GoogleMap,
+  Marker,
+  DirectionsRenderer,
+  useJsApiLoader,
+} from "@react-google-maps/api";
+import { useLocation, useParams } from "react-router-dom";
+import {
+  Modal,
+  Button,
+  Tag,
+  Steps,
+  Divider,
+  Space,
+  ConfigProvider,
+} from "antd";
+import esES from "antd/locale/es_ES";
 import {
   MapPin,
   User,
@@ -9,113 +24,212 @@ import {
   DollarSign,
   Star,
   Wifi,
-  Droplet,
+  Droplets,
   Zap,
   Sparkles,
-  CookingPot,
-  WashingMachine,
-  Snowflake,
+  Utensils,
+  Shirt,
+  Wind,
   Tv,
+  Car,
+  Dumbbell,
+  Waves,
+  Coffee,
+  Sandwich,
+  Moon,
   ShieldCheck,
-  GraduationCap,
   X,
   Navigation,
   Map,
   Clock,
   CheckCircle,
-  XCircle,
+  CalendarDays,
+  Plus,
 } from "lucide-react";
-import { useLocation } from "react-router-dom";
 
-const servicesCatalog = [
-  { name: "Internet", icon: <Wifi size={16} />, price: 0 },
-  { name: "Agua", icon: <Droplet size={16} />, price: 0 },
-  { name: "Luz", icon: <Zap size={16} />, price: 0 },
-  { name: "Limpieza", icon: <Sparkles size={16} />, price: 15 },
-  { name: "Cocina", icon: <CookingPot size={16} />, price: 10 },
-  { name: "Lavadora", icon: <WashingMachine size={16} />, price: 0 },
-  { name: "Aire acondicionado", icon: <Snowflake size={16} />, price: 0 },
-  { name: "TV", icon: <Tv size={16} />, price: 0 },
-  { name: "Seguridad", icon: <ShieldCheck size={16} />, price: 0 },
-  { name: "Mantenimiento", icon: <Sparkles size={16} />, price: 0 },
+// Importar componentes de modales
+import RouteModal from "../../../components/modals/RouteModal";
+import ReservationModal from "../../../components/modals/ReservationModal";
+import { useApi } from "../../../hooks/useApi";
+
+const containerStyle = {
+  width: "100%",
+  height: "100%",
+};
+
+const IMAGE_URL = "https://s03.s3c.es/imag/_v0/1200x655/0/f/c/habitacion.jpg";
+
+const SERVICES = [
+  { name: "Internet", price: 0, icon: <Wifi size={16} /> },
+  { name: "Agua", price: 0, icon: <Droplets size={16} /> },
+  { name: "Luz", price: 20, icon: <Zap size={16} /> },
+  { name: "Limpieza", price: 15, icon: <Sparkles size={16} /> },
+  { name: "Cocina", price: 10, icon: <Utensils size={16} /> },
+  { name: "Lavadora", price: 5, icon: <Shirt size={16} /> },
+  { name: "Aire acondicionado", price: 25, icon: <Wind size={16} /> },
+  { name: "TV", price: 10, icon: <Tv size={16} /> },
+  { name: "Parqueadero", price: 30, icon: <Car size={16} /> },
+  { name: "Gimnasio", price: 20, icon: <Dumbbell size={16} /> },
+  { name: "Piscina", price: 25, icon: <Waves size={16} /> },
+  { name: "Desayuno", price: 12, icon: <Coffee size={16} /> },
+  { name: "Almuerzo", price: 18, icon: <Sandwich size={16} /> },
+  { name: "Cena", price: 22, icon: <Moon size={16} /> },
 ];
 
 const rooms = [
   {
     id: 1,
+    title: "Habitación Centro",
     name: "Habitación Centro",
-    price: 80,
-    lat: 20.96737,
-    lng: -89.59258,
+    price: 2500,
+    rating: 4.3,
+    available: true,
+    services: SERVICES,
+    lat: 20.9671,
+    lng: -89.6237,
+    image: IMAGE_URL,
+    address: "Calle 10 #123, Centro, Mérida, Yucatán",
     owner: "Juan Pérez",
     type: "Cuarto privado",
     beds: 1,
     gender: "Mixto",
-    address: "Centro Histórico, Mérida",
-    image: "https://s03.s3c.es/imag/_v0/1200x655/0/f/c/habitacion.jpg",
-    services: servicesCatalog,
-    available: true,
   },
   {
     id: 2,
-    name: "Habitación Montejo",
-    price: 70,
-    lat: 20.9845,
-    lng: -89.62109,
-    owner: "Ana López",
-    type: "Compartida",
-    beds: 2,
+    title: "Habitación Itzimná",
+    name: "Habitación Itzimná",
+    price: 3200,
+    rating: 4.5,
+    available: true,
+    services: SERVICES,
+    lat: 20.9802,
+    lng: -89.6103,
+    image: IMAGE_URL,
+    address: "Calle 25 #456, Itzimná, Mérida",
+    owner: "María García",
+    type: "Cuarto privado",
+    beds: 1,
     gender: "Femenino",
-    address: "Paseo de Montejo, Mérida",
-    image: "https://s03.s3c.es/imag/_v0/1200x655/0/f/c/habitacion.jpg",
-    services: servicesCatalog,
-    available: false,
   },
   {
     id: 3,
-    name: "Habitación Itzimná",
-    price: 75,
-    lat: 20.99079,
-    lng: -89.60028,
-    owner: "Carlos Ruiz",
-    type: "Privado",
-    beds: 1,
-    gender: "Masculino",
-    address: "Itzimná, Mérida",
-    image: "https://s03.s3c.es/imag/_v0/1200x655/0/f/c/habitacion.jpg",
-    services: servicesCatalog,
+    title: "Habitación Chuburná",
+    name: "Habitación Chuburná",
+    price: 2800,
+    rating: 4.2,
     available: true,
+    services: SERVICES,
+    lat: 20.9954,
+    lng: -89.6356,
+    image: IMAGE_URL,
+    address: "Calle 30 #789, Chuburná, Mérida",
+    owner: "Carlos López",
+    type: "Habitación compartida",
+    beds: 2,
+    gender: "Mixto",
   },
   {
     id: 4,
-    name: "Habitación Miraflores",
-    price: 90,
-    lat: 20.99798,
-    lng: -89.61602,
-    owner: "María Díaz",
-    type: "Privado",
-    beds: 1,
-    gender: "Mixto",
-    address: "Miraflores, Mérida",
-    image: "https://s03.s3c.es/imag/_v0/1200x655/0/f/c/habitacion.jpg",
-    services: servicesCatalog,
+    title: "Habitación Montejo",
+    name: "Habitación Montejo",
+    price: 3000,
+    rating: 4.4,
     available: true,
+    services: SERVICES,
+    lat: 21.0152,
+    lng: -89.6487,
+    image: IMAGE_URL,
+    address: "Paseo Montejo #101, Centro, Mérida",
+    owner: "Ana Rodríguez",
+    type: "Cuarto privado",
+    beds: 1,
+    gender: "Masculino",
   },
   {
     id: 5,
+    title: "Habitación Altabrisa",
     name: "Habitación Altabrisa",
-    price: 65,
-    lat: 21.02221,
-    lng: -89.56582,
-    owner: "Luis Torres",
-    type: "Privado",
+    price: 4200,
+    rating: 4.8,
+    available: true,
+    services: SERVICES,
+    lat: 21.0281,
+    lng: -89.5904,
+    image: IMAGE_URL,
+    address: "Altabrisa #202, Mérida",
+    owner: "Luis Hernández",
+    type: "Cuarto privado",
     beds: 1,
     gender: "Mixto",
-    address: "Altabrisa, Mérida",
-    image: "https://s03.s3c.es/imag/_v0/1200x655/0/f/c/habitacion.jpg",
-    services: servicesCatalog,
-    available: false,
   },
+  {
+    id: 6,
+    title: "Habitación Jardines",
+    name: "Habitación Jardines",
+    price: 3500,
+    rating: 4.1,
+    available: true,
+    services: SERVICES,
+    lat: 21.0403,
+    lng: -89.6109,
+    image: IMAGE_URL,
+    address: "Jardines del Norte #303, Mérida",
+    owner: "Sofía Martínez",
+    type: "Habitación compartida",
+    beds: 2,
+    gender: "Mixto",
+  },
+  {
+    id: 7,
+    title: "Habitación México Norte",
+    name: "Habitación México Norte",
+    price: 2700,
+    rating: 4.0,
+    available: true,
+    services: SERVICES,
+    lat: 20.9959,
+    lng: -89.6048,
+    image: IMAGE_URL,
+    address: "México Norte #404, Mérida",
+    owner: "Pedro Gómez",
+    type: "Cuarto privado",
+    beds: 1,
+    gender: "Femenino",
+  },
+  {
+    id: 8,
+    title: "Habitación Ginerés",
+    name: "Habitación Ginerés",
+    price: 3300,
+    rating: 4.3,
+    available: true,
+    services: SERVICES,
+    lat: 20.9584,
+    lng: -89.6082,
+    image: IMAGE_URL,
+    address: "Ginerés #505, Mérida",
+    owner: "Laura Díaz",
+    type: "Cuarto privado",
+    beds: 1,
+    gender: "Masculino",
+  },
+  ...Array.from({ length: 16 }).map((_, i) => ({
+    id: i + 9,
+    title: `Habitación Zona ${i + 9}`,
+    name: `Habitación ${i + 9}`,
+    price: 2600 + (i % 5) * 300,
+    rating: 4 + (i % 3) * 0.2,
+    available: true,
+    services: SERVICES,
+    lat: 20.96 + i * 0.003,
+    lng: -89.62 + i * 0.002,
+    image: IMAGE_URL,
+    address: `Calle ${i + 10} #${100 + i}, Mérida, Yucatán`,
+    owner: "Propietario verificado",
+    type: i % 2 === 0 ? "Cuarto privado" : "Habitación compartida",
+    beds: i % 2 === 0 ? 1 : 2,
+    gender: i % 3 === 0 ? "Femenino" : "Mixto",
+  })),
 ];
 
 const university = {
@@ -124,29 +238,19 @@ const university = {
   lng: -89.6273,
 };
 
-const RoomMarker = ({ onClick }) => (
-  <div
-    onClick={onClick}
-    className="-translate-x-1/2 -translate-y-full cursor-pointer"
-  >
-    <img src="/casa.png" className="w-8 h-8 drop-shadow-lg" />
-  </div>
-);
-
-const UniversityMarker = () => (
-  <div className="-translate-x-1/2 -translate-y-full">
-    <img src="/edificio-escolar.png" className="w-9 h-9 drop-shadow-lg" />
-  </div>
-);
-
-const RouteInfo = ({ duration }) => (
-  <div className="absolute top-24 right-5 z-20 bg-white rounded-2xl shadow-xl px-4 py-3 w-44">
-    <div className="flex items-center gap-3">
-      <Clock size={18} className="text-lime-600" />
-      <div>
-        <p className="text-xs text-gray-500">Tiempo estimado</p>
-        <p className="font-semibold text-gray-800">{duration}</p>
+const RouteInfo = ({ duration, onClear }) => (
+  <div className="absolute top-24 right-5 z-20 bg-white rounded-2xl shadow-xl px-4 py-3 w-52">
+    <div className="flex items-center justify-between">
+      <div className="flex items-center gap-3">
+        <Clock size={18} className="text-lime-600" />
+        <div>
+          <p className="text-xs text-gray-500">Tiempo estimado</p>
+          <p className="font-semibold text-gray-800">{duration}</p>
+        </div>
       </div>
+      <button onClick={onClear} className="text-gray-400 hover:text-gray-600">
+        <X size={14} />
+      </button>
     </div>
   </div>
 );
@@ -168,262 +272,343 @@ export default function SearchStudent_Screen() {
   const [openDetails, setOpenDetails] = useState(false);
   const [userRating, setUserRating] = useState({});
   const [showRoute, setShowRoute] = useState(false);
-  const [map, setMap] = useState(null);
-  const [maps, setMaps] = useState(null);
-  const [directionsRenderer, setDirectionsRenderer] = useState(null);
   const [routeDuration, setRouteDuration] = useState("");
+  const [reservationModalOpen, setReservationModalOpen] = useState(false);
+  const [reservationStep, setReservationStep] = useState(1);
+  const [rentType, setRentType] = useState("completo");
+  const [selectedRooms, setSelectedRooms] = useState(1);
+  const [selectedBed, setSelectedBed] = useState("");
+  const [rentPeriod, setRentPeriod] = useState(12);
+  const [hasDocuments, setHasDocuments] = useState(false);
+  const [selectedServices, setSelectedServices] = useState([]);
+  const { fetchData } = useApi("/documentacion/status/approved", {}, false);
+  const [prices, setPrices] = useState({
+    subtotal: 0,
+    iva: 0,
+    total: 0,
+  });
+  const [loading, setLoading] = useState({
+    rooms: false,
+    reservation: false,
+  });
+
+  const fetchDocumentStatus = async () => {
+    try {
+      const response = await fetchData();
+      const approved = response?.approved === true;
+      setHasDocuments(approved);
+      return approved;
+    } catch (error) {
+      setHasDocuments(false);
+      return false;
+    }
+  };
+
+  const [error, setError] = useState(null);
+
+  const location = useLocation();
+  const { id } = useParams();
+  const roomId = id || location.state?.roomId;
+
+  const [directions, setDirections] = useState(null);
+  const [roomCoords, setRoomCoords] = useState(null);
+
+  const { isLoaded } = useJsApiLoader({
+    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
+    libraries: ["places"],
+  });
+
+  const handleServicesChange = (newServices) => {
+    setSelectedServices(newServices);
+    if (selectedRoom) {
+      calculatePrices(selectedRoom.price, rentPeriod, newServices);
+    }
+  };
+
+  const checkDocuments = () => {
+    const ine = JSON.parse(localStorage.getItem("ineFiles") || "[]");
+    const address = JSON.parse(localStorage.getItem("addressFile") || "[]");
+
+    const valid =
+      Array.isArray(ine) &&
+      ine.length === 2 &&
+      Array.isArray(address) &&
+      address.length === 1;
+
+    setHasDocuments(valid);
+    localStorage.setItem("hasDocuments", valid.toString());
+    return valid;
+  };
+
+  useEffect(() => {
+    checkDocuments();
+
+    const handleStorageChange = () => {
+      checkDocuments();
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+    };
+  }, []);
+
+  const calculatePrices = (roomPrice, period, services) => {
+    const periodPrices = {
+      12: 100,
+      6: 200,
+      3: 300,
+    };
+
+    const servicesCost = services.reduce((total, serviceName) => {
+      const service = SERVICES.find((s) => s.name === serviceName);
+      return total + (service?.price || 0);
+    }, 0);
+
+    const periodPrice = periodPrices[period] || 0;
+    const subtotal = periodPrice + servicesCost;
+    const iva = subtotal * 0.16;
+    const total = subtotal + iva;
+
+    setPrices({
+      subtotal: Math.round(subtotal * 100) / 100,
+      iva: Math.round(iva * 100) / 100,
+      total: Math.round(total * 100) / 100,
+    });
+  };
+
+  const saveReservation = () => {
+    if (!selectedRoom) return;
+
+    const periodPrices = { 12: 100, 6: 200, 3: 300 };
+    const periodPrice = periodPrices[rentPeriod] || 0;
+    const servicesCost = selectedServices.reduce((total, serviceName) => {
+      const service = SERVICES.find((s) => s.name === serviceName);
+      return total + (service?.price || 0);
+    }, 0);
+
+    const subtotal = periodPrice + servicesCost;
+    const iva = subtotal * 0.16;
+    const total = subtotal + iva;
+
+    const newReservation = {
+      id: `RES-${Date.now()}`,
+      time: new Date().toLocaleTimeString("es-MX", {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+      date: new Date().toLocaleDateString("es-MX", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "2-digit",
+      }),
+      room: `${selectedRoom.name} (${rentType === "completo" ? "Completo" : `${selectedRooms} espacio(s)`})`,
+      days: rentPeriod * 30,
+      price: periodPrice,
+      tax: Math.round(iva * 100) / 100,
+      serviceFee: servicesCost,
+      total: Math.round(total * 100) / 100,
+      paymentMethod: "Stripe",
+      status: "En proceso",
+      statusColor: "warning",
+      tabKey: "enProceso",
+    };
+
+    const existingReservations = JSON.parse(
+      localStorage.getItem("student_reservations") || "[]",
+    );
+    const updatedReservations = [...existingReservations, newReservation];
+    localStorage.setItem(
+      "student_reservations",
+      JSON.stringify(updatedReservations),
+    );
+  };
+
+  const handleRequestRoom = async (room) => {
+    checkDocuments();
+    setSelectedRoom(room);
+    if (room) {
+      calculatePrices(room.price, rentPeriod, selectedServices);
+    }
+    await fetchDocumentStatus();
+    setReservationStep(1);
+    setReservationModalOpen(true);
+  };
+
+  const handleShowRoute = (room) => {
+    setRoomCoords({ lat: room.lat, lng: room.lng });
+    setDirections(null);
+    setShowRoute(true);
+    setOpenDetails(false);
+  };
+
+  useEffect(() => {
+    if (!id) return;
+
+    setDirections(null);
+    setRoomCoords(null);
+
+    const fetchRoom = async () => {
+      const response = await fetch(`http://localhost:3000/rooms/${id}`);
+      const data = await response.json();
+
+      setRoomCoords({
+        lat: data.latitude,
+        lng: data.longitude,
+      });
+    };
+
+    fetchRoom();
+  }, [id]);
+
+  useEffect(() => {
+    if (!isLoaded || !roomCoords || !showRoute) return;
+
+    const service = new window.google.maps.DirectionsService();
+
+    service.route(
+      {
+        origin: university,
+        destination: roomCoords,
+        travelMode: window.google.maps.TravelMode.DRIVING,
+      },
+      (result, status) => {
+        if (status === "OK") {
+          setDirections(result);
+          setRouteDuration(result.routes[0].legs[0].duration.text);
+        }
+      },
+    );
+  }, [isLoaded, roomCoords, showRoute]);
+
+  const roomIdFromDashboard = location.state?.roomId;
+
+  useEffect(() => {
+    if (roomId) {
+      const room = rooms.find((r) => r.id === Number(roomId));
+      if (room) {
+        setSelectedRoom(room);
+        setOpenDetails(true);
+      }
+    }
+  }, [roomId, rooms]);
 
   const handleRate = (roomId, value) => {
     setUserRating((prev) => ({ ...prev, [roomId]: value }));
   };
 
-  const handleApiLoaded = ({ map, maps }) => {
-    setMap(map);
-    setMaps(maps);
-    const renderer = new maps.DirectionsRenderer({
-      suppressMarkers: true,
-      polylineOptions: {
-        strokeColor: "#84cc16",
-        strokeOpacity: 0.85,
-        strokeWeight: 5,
-      },
-    });
-    renderer.setMap(map);
-    setDirectionsRenderer(renderer);
-  };
-
-  const showRouteOnMap = (room) => {
-    if (!map || !maps || !directionsRenderer) return;
-    const service = new maps.DirectionsService();
-    service.route(
-      {
-        origin: university,
-        destination: { lat: room.lat, lng: room.lng },
-        travelMode: maps.TravelMode.DRIVING,
-      },
-      (result, status) => {
-        if (status === maps.DirectionsStatus.OK) {
-          directionsRenderer.setDirections(result);
-          setShowRoute(true);
-          setRouteDuration(result.routes[0].legs[0].duration.text);
-          setOpenDetails(false);
-        }
-      },
-    );
-  };
-
-  const clearRoute = () => {
-    if (!directionsRenderer) return;
-    directionsRenderer.setDirections({ routes: [] });
-    setShowRoute(false);
-    setRouteDuration("");
-    map.setCenter({ lat: 20.99, lng: -89.6 });
-    map.setZoom(13);
-  };
-
   useEffect(() => {
-    return () => {
-      if (directionsRenderer) directionsRenderer.setMap(null);
-    };
-  }, [directionsRenderer]);
+    setDirections(null);
+    setRoomCoords(null);
+  }, [location.key]);
 
   return (
-    <div className="relative h-[calc(100vh-64px)]">
-      <GoogleMapReact
-        key="search-map"
-        bootstrapURLKeys={{ key: import.meta.env.VITE_GOOGLE_MAPS_API_KEY }}
-        defaultCenter={{ lat: 20.99, lng: -89.6 }}
-        defaultZoom={13}
-        yesIWantToUseGoogleMapApiInternals
-        onGoogleApiLoaded={handleApiLoaded}
-      >
-        <UniversityMarker lat={university.lat} lng={university.lng} />
-        {rooms.map((room) => (
-          <RoomMarker
-            key={room.id}
-            lat={room.lat}
-            lng={room.lng}
-            isSelected={selectedRoom?.id === room.id}
-            showRoute={showRoute && selectedRoom?.id === room.id}
-            onClick={() => {
-              setSelectedRoom(room);
-              setOpenDetails(true);
+    <ConfigProvider locale={esES}>
+      <div className="relative h-[calc(100vh-64px)]">
+        {isLoaded && (
+          <GoogleMap
+            mapContainerStyle={{ width: "100%", height: "100%" }}
+            center={{ lat: 20.99, lng: -89.6 }}
+            zoom={13}
+          >
+            <Marker
+              position={university}
+              icon={{
+                url: "/edificio-escolar.png",
+                scaledSize: new window.google.maps.Size(36, 36),
+              }}
+            />
+
+            {rooms.map((room) => (
+              <Marker
+                key={room.id}
+                position={{ lat: room.lat, lng: room.lng }}
+                icon={{
+                  url: "/casa.png",
+                  scaledSize: new window.google.maps.Size(32, 32),
+                }}
+                onClick={() => {
+                  setSelectedRoom(room);
+                  setOpenDetails(true);
+                  setRoomCoords({ lat: room.lat, lng: room.lng });
+                }}
+              />
+            ))}
+
+            {directions && (
+              <DirectionsRenderer
+                directions={directions}
+                options={{
+                  polylineOptions: {
+                    strokeColor: "#84cc16",
+                    strokeWeight: 5,
+                    strokeOpacity: 0.8,
+                  },
+                  suppressMarkers: true,
+                }}
+              />
+            )}
+          </GoogleMap>
+        )}
+
+        {showRoute && routeDuration && (
+          <RouteInfo
+            duration={routeDuration}
+            onClear={() => {
+              setDirections(null);
+              setShowRoute(false);
+              setRouteDuration("");
             }}
           />
-        ))}
-      </GoogleMapReact>
-
-      {showRoute && routeDuration && <RouteInfo duration={routeDuration} />}
-
-      <Modal
-        open={openDetails}
-        footer={null}
-        onCancel={() => setOpenDetails(false)}
-        centered
-        width={520}
-        closable={false}
-        mask={false}
-        styles={{ body: { padding: 0 } }}
-        className="[&_.ant-modal-content]:rounded-2xl"
-      >
-        {selectedRoom && (
-          <div className="max-h-[88vh] flex flex-col">
-            <div className="relative h-52 shrink-0">
-              <img
-                src={selectedRoom.image}
-                alt={selectedRoom.name}
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
-
-              <div className="absolute top-3 left-3 z-10">
-                <span className="bg-white text-lime-600 px-3 py-1 rounded-full text-sm font-medium shadow">
-                  {selectedRoom.available ? "Disponible" : "Ocupada"}
-                </span>
-              </div>
-
-              <button
-                onClick={() => setOpenDetails(false)}
-                className="absolute top-3 right-3 bg-black/40 hover:bg-black/60 text-white rounded-full p-2 z-10"
-              >
-                <X size={16} />
-              </button>
-
-              <div className="absolute bottom-4 left-4 right-4 z-10">
-                <h3 className="text-white font-bold text-xl truncate">
-                  {selectedRoom.name}
-                </h3>
-                <div className="flex items-center gap-1 text-lime-300 text-sm truncate">
-                  <MapPin size={14} />
-                  {selectedRoom.address}
-                </div>
-              </div>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              <div className="flex justify-between items-center">
-                <div className="flex items-center gap-2 text-gray-700">
-                  <User size={16} />
-                  {selectedRoom.owner}
-                </div>
-
-                <div className="text-right">
-                  <span className="text-xs text-gray-500 block mb-1">
-                    Calificar
-                  </span>
-                  <div className="flex gap-1">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <Star
-                        key={star}
-                        size={16}
-                        className="cursor-pointer"
-                        fill={
-                          userRating[selectedRoom.id] >= star
-                            ? "#84cc16"
-                            : "none"
-                        }
-                        color={
-                          userRating[selectedRoom.id] >= star
-                            ? "#84cc16"
-                            : "#d1d5db"
-                        }
-                        onClick={() => handleRate(selectedRoom.id, star)}
-                      />
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <Info
-                  icon={<Home size={16} />}
-                  label="Tipo"
-                  value={selectedRoom.type}
-                />
-                <Info
-                  icon={<Bed size={16} />}
-                  label="Camas"
-                  value={`${selectedRoom.beds} cama`}
-                />
-                <Info
-                  icon={<DollarSign size={16} />}
-                  label="Género"
-                  value={selectedRoom.gender}
-                />
-                <Info
-                  icon={<MapPin size={16} />}
-                  label="Ubicación"
-                  value={selectedRoom.address}
-                />
-              </div>
-
-              <div className="bg-lime-50 border border-lime-200 rounded-xl p-3">
-                <div className="flex items-center gap-2 mb-2">
-                  <Navigation size={16} className="text-lime-600" />
-                  <span className="font-medium text-sm">
-                    Ruta desde tu universidad
-                  </span>
-                </div>
-
-                <div className="flex justify-between items-center">
-                  <div className="text-sm">
-                    <div className="font-medium">{university.name}</div>
-                    <div className="text-gray-500 truncate">
-                      → {selectedRoom.address}
-                    </div>
-                  </div>
-
-                  <Button
-                    size="small"
-                    type="default"
-                    icon={<Map size={14} />}
-                    onClick={() => showRouteOnMap(selectedRoom)}
-                    className="!bg-lime-500 hover:!bg-lime-600 !border-lime-500 !text-white"
-                  >
-                    Ver ruta
-                  </Button>
-                </div>
-              </div>
-
-              <div>
-                <h4 className="font-medium mb-2">Servicios incluidos</h4>
-                <div className="space-y-2">
-                  {selectedRoom.services.map((service, i) => (
-                    <div key={i} className="flex justify-between text-sm">
-                      <span className="flex items-center gap-2">
-                        <span className="text-lime-500">{service.icon}</span>
-                        {service.name}
-                      </span>
-                      <span className="text-lime-600 font-medium">
-                        {service.price === 0
-                          ? "Incluido"
-                          : `+$${service.price}`}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <div className="p-4 border-t">
-              <Button
-                block
-                type="primary"
-                disabled={!selectedRoom.available}
-                className={`h-11 rounded-xl !text-white ${
-                  selectedRoom.available
-                    ? "!bg-lime-500 hover:!bg-lime-600 !border-lime-500"
-                    : "!bg-gray-400 !border-gray-400 cursor-not-allowed"
-                }`}
-              >
-                {selectedRoom.available
-                  ? "Solicitar habitación"
-                  : "Habitación ocupada"}
-              </Button>
-            </div>
-          </div>
         )}
-      </Modal>
-    </div>
+
+        <RouteModal
+          open={openDetails}
+          selectedRoom={selectedRoom}
+          userRating={userRating}
+          onRate={handleRate}
+          onClose={() => setOpenDetails(false)}
+          onShowRoute={handleShowRoute}
+          onRequestRoom={(room) => {
+            handleRequestRoom(room);
+            setOpenDetails(false);
+          }}
+        />
+        <ReservationModal
+          open={reservationModalOpen}
+          onClose={() => {
+            setReservationModalOpen(false);
+            setReservationStep(1);
+            setSelectedServices([]);
+            setError(null);
+          }}
+          step={reservationStep}
+          onStepChange={setReservationStep}
+          room={selectedRoom}
+          hasDocuments={hasDocuments}
+          rentType={rentType}
+          onRentTypeChange={setRentType}
+          selectedRooms={selectedRooms}
+          onSelectedRoomsChange={setSelectedRooms}
+          selectedBed={selectedBed}
+          onSelectedBedChange={setSelectedBed}
+          rentPeriod={rentPeriod}
+          onRentPeriodChange={(period) => {
+            setRentPeriod(period);
+            if (selectedRoom) {
+              calculatePrices(selectedRoom.price, period, selectedServices);
+            }
+          }}
+          selectedServices={selectedServices}
+          onSelectedServicesChange={handleServicesChange}
+          services={SERVICES}
+          prices={prices}
+          onSaveReservation={saveReservation}
+          loading={loading.reservation}
+          error={error}
+        />
+      </div>
+    </ConfigProvider>
   );
 }

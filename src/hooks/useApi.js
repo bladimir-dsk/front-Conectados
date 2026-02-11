@@ -1,117 +1,123 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import api from "../api/axiosConfig";
 
-export function useApi(endpoint, options, autoFetch = true) {
-    const [data, setData] = useState(null);
-    const [loading, setLoading] = useState(autoFetch);
-    const [error, setError] = useState(null);
+export function useApi(endpoint, options = {}, autoFetch = true) {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(autoFetch);
+  const [error, setError] = useState(null);
 
-    const optionsRef = useRef(options);
-    const hasFetchedRef = useRef(false);
+  const optionsRef = useRef(options);
+  const hasFetchedRef = useRef(false);
 
-    // Actualizar ref solo cuando cambien las opciones
-    useEffect(() => {
-        optionsRef.current = options;
-    }, [options]);
+  useEffect(() => {
+    optionsRef.current = options;
+  }, [options]);
 
-    // GET - estable sin dependencias externas
-    const fetchData = useCallback(async () => {
-        setLoading(true);
-        setError(null);
-        try {
-            const response = await api.get(endpoint, optionsRef.current);
-            setData(response.data);
-        } catch (err) {
-            const errorMessage = err.response?.data?.message || err.message || "Error desconocido";
-            setError(errorMessage);
-        } finally {
-            setLoading(false);
+  const getBaseEndpoint = useCallback(() => {
+    return endpoint.split("?")[0];
+  }, [endpoint]);
+
+  const prepareConfig = (body) => {
+    const config = { ...optionsRef.current };
+
+    if (body instanceof FormData && config.headers) {
+      const { "Content-Type": _, ...rest } = config.headers;
+      config.headers = rest;
+    }
+
+    return config;
+  };
+
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await api.get(endpoint, optionsRef.current);
+      setData(res.data);
+      return res.data;
+    } catch (err) {
+      setError(err.response?.data?.message || err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, [endpoint]);
+
+  const postData = useCallback(
+    async (body, shouldRefetch = true) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await api.post(
+          getBaseEndpoint(),
+          body,
+          prepareConfig(body),
+        );
+
+        if (shouldRefetch && autoFetch) {
+          await fetchData();
         }
-    }, [endpoint]); // Solo depende de endpoint
 
-    // POST
-    const postData = useCallback(async (body, shouldRefetch = true) => {
-        setLoading(true);
-        setError(null);
-        try {
-            const response = await api.post(endpoint, body, optionsRef.current);
+        return res.data;
+      } catch (err) {
+        setError(err.response?.data?.message || err.message);
+        throw err;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [getBaseEndpoint, fetchData, autoFetch],
+  );
 
-            // Solo hacer fetchData si es necesario
-            if (shouldRefetch && autoFetch) {
-                await fetchData();
-            }
+  const patchData = useCallback(
+    async (body, id) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const url = `${getBaseEndpoint()}/${id}`;
+        const res = await api.patch(url, body, prepareConfig(body));
+        await fetchData();
+        return res.data;
+      } catch (err) {
+        setError(err.response?.data?.message || err.message);
+        throw err;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [getBaseEndpoint, fetchData],
+  );
 
-            return response.data;
-        } catch (err) {
-            const errorMessage = err.response?.data?.message || err.message || "Error en POST";
-            setError(errorMessage);
-            throw err;
-        } finally {
-            setLoading(false);
-        }
-    }, [endpoint, fetchData, autoFetch]);
+  const deleteData = useCallback(
+    async (id) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await api.delete(
+          `${getBaseEndpoint()}/${id}`,
+          optionsRef.current,
+        );
+        await fetchData();
+        return res.data;
+      } catch (err) {
+        throw err;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [getBaseEndpoint, fetchData],
+  );
 
-    const patchData = useCallback(
-        async (body, id = null) => {
-            setLoading(true);
-            setError(null);
-            try {
-                const url = id ? `${endpoint}/${id}` : endpoint;
+  useEffect(() => {
+    if (autoFetch && !hasFetchedRef.current) {
+      hasFetchedRef.current = true;
+      fetchData();
+    }
+  }, [autoFetch, fetchData]);
 
-                const response = await api.patch(url, body, optionsRef.current);
+  useEffect(() => {
+    hasFetchedRef.current = false;
+  }, [endpoint]);
 
-                // Recargar datos después de actualizar
-                await fetchData();
-                return response.data;
-            } catch (err) {
-                const errorMessage = err.response?.data?.message || err.message || "Error en PATCH";
-                setError(errorMessage);
-                throw err;
-            } finally {
-                setLoading(false);
-            }
-        },
-        [endpoint, fetchData]
-    );
-
-    // DELETE
-    const deleteData = useCallback(
-        async (id) => {
-            setLoading(true);
-            setError(null);
-            try {
-                const response = await api.delete(`${endpoint}/${id}`, optionsRef.current);
-
-                // Recargar datos después de eliminar
-                await fetchData();
-                return response.data;
-            } catch (err) {
-
-                const errorMessage = err.response?.data?.message
-                    || err.response?.data?.error
-                    || err.message
-                    || "Error al eliminar";
-
-                throw new Error(errorMessage);
-            } finally {
-                setLoading(false);
-            }
-        },
-        [endpoint, fetchData]
-    );
-
-    useEffect(() => {
-        // Solo ejecutar si autoFetch está activo y no se ha ejecutado antes
-        if (autoFetch && !hasFetchedRef.current) {
-            hasFetchedRef.current = true;
-            fetchData();
-        }
-    }, [autoFetch, endpoint]); // Removido fetchData de las dependencias
-
-    // Resetear el flag cuando cambie el endpoint
-    useEffect(() => {
-        hasFetchedRef.current = false;
-    }, [endpoint]);
-
-    return { data, loading, error, fetchData, postData, patchData, deleteData };
+  return { data, loading, error, fetchData, postData, patchData, deleteData };
 }

@@ -1,31 +1,65 @@
-import React, { useState } from "react";
-import { Upload, Button, Card, notification } from "antd";
+import React, { useEffect, useState, useMemo } from "react";
+import { Upload, Button, Card, notification, Spin, Alert } from "antd";
 import { UploadOutlined } from "@ant-design/icons";
+import { useApi } from "../../../hooks/useApi";
+import { useNotification } from "../../../components/notification/NotificationProvider";
+
+const DOCUMENT_TYPES = {
+  INE_FRONT: "ine_delantera",
+  INE_BACK: "ine_trasera",
+  ADDRESS: "cfe",
+  PASSPORT: "pasaporte",
+};
+
+// Configuración de cada tipo de documento
+const DOCUMENT_CONFIG = {
+  INE_FRONT: {
+    title: "INE Delantera",
+    required: true,
+    buttonText: "Subir INE Delantera",
+  },
+  INE_BACK: {
+    title: "INE Trasera",
+    required: true,
+    buttonText: "Subir INE Trasera",
+  },
+  ADDRESS: {
+    title: "Comprobante de Domicilio (CFE)",
+    required: true,
+    buttonText: "Subir Comprobante",
+  },
+  PASSPORT: {
+    title: "Pasaporte (Opcional)",
+    required: false,
+    buttonText: "Subir Pasaporte",
+  },
+};
 
 export default function DocumentationStudent_Screen() {
-  const [ineFiles, setIneFiles] = useState([]);
-  const [addressFile, setAddressFile] = useState([]);
-  const [passportFile, setPassportFile] = useState([]);
-  const [saved, setSaved] = useState(false);
+  const { notify } = useNotification();
+  // Estado para cada tipo de documento
+  const [documents, setDocuments] = useState({
+    INE_FRONT: { fileList: [], existingDoc: null },
+    INE_BACK: { fileList: [], existingDoc: null },
+    ADDRESS: { fileList: [], existingDoc: null },
+    PASSPORT: { fileList: [], existingDoc: null },
+  });
 
-  const notify = (type, title, description) => {
-    notification[type]({
-      message: title,
-      description,
-      placement: "topRight",
-    });
-  };
+  const [status, setStatus] = useState(null);
+  const [observation, setObservation] = useState("");
+  const [uploading, setUploading] = useState(false);
 
-  const validateFiles = (file, limit, currentLength) => {
-    if (currentLength >= limit) {
-      notify(
-        "error",
-        "Límite alcanzado",
-        `Solo se permiten ${limit} archivo${limit > 1 ? "s" : ""}`,
-      );
-      return Upload.LIST_IGNORE;
-    }
+  // Hooks de API
+  const {
+    data: documentsData,
+    loading: loadingDocs,
+    fetchData: fetchDocuments,
+  } = useApi("/documentacion", {}, true);
 
+  const { postData } = useApi("/documentacion/upload", {}, false);
+  const { patchData } = useApi("/documentacion", {}, false);
+
+  const validateFiles = (file) => {
     const validTypes = [
       "image/png",
       "image/jpeg",
@@ -33,118 +67,319 @@ export default function DocumentationStudent_Screen() {
       "application/pdf",
     ];
 
+    const maxSize = 5 * 1024 * 1024;
+
     if (!validTypes.includes(file.type)) {
-      notify(
-        "error",
-        "Archivo incorrecto",
-        "Solo se permiten archivos PNG, JPG o PDF",
-      );
+      notify({
+        type: "error",
+        title: "Archivo inválido",
+        description: "Solo se permiten PNG, JPG o PDF",
+      });
       return Upload.LIST_IGNORE;
     }
 
-    return true;
+    if (file.size > maxSize) {
+      notify({
+        type: "error",
+        title: "Archivo muy grande",
+        description: "El tamaño máximo es 5MB",
+      });
+      return Upload.LIST_IGNORE;
+    }
+
+    return false;
   };
 
-  const saveFiles = () => {
-    if (ineFiles.length !== 2 || addressFile.length !== 1) {
-      notify(
-        "error",
-        "Documentación incompleta",
-        "Debes subir ambos lados del INE y el comprobante de domicilio",
+  useEffect(() => {
+    if (documentsData && Array.isArray(documentsData)) {
+      const newDocuments = {
+        INE_FRONT: { fileList: [], existingDoc: null },
+        INE_BACK: { fileList: [], existingDoc: null },
+        ADDRESS: { fileList: [], existingDoc: null },
+        PASSPORT: { fileList: [], existingDoc: null },
+      };
+
+      documentsData.forEach((doc) => {
+        const docTypeFromBackend = doc.type_document || doc.typeDocument;
+        const docTypeKey = Object.keys(DOCUMENT_TYPES).find(
+          (key) => DOCUMENT_TYPES[key] === docTypeFromBackend,
+        );
+
+        if (docTypeKey) {
+          newDocuments[docTypeKey] = {
+            fileList: [
+              {
+                uid: doc.id,
+                name:
+                  doc.name || doc.file_name || doc.fileName || "documento.pdf",
+                status: "done",
+                url:
+                  doc.documentUrl ||
+                  doc.document_url ||
+                  doc.file_url ||
+                  doc.fileUrl,
+              },
+            ],
+            existingDoc: doc,
+          };
+        }
+      });
+
+      setDocuments(newDocuments);
+
+      if (documentsData.length > 0) {
+        setStatus(documentsData[0].status);
+        setObservation(documentsData[0].observation || "");
+      }
+    }
+  }, [documentsData]);
+
+  const handleFileChange = (docType, { fileList }) => {
+    setDocuments((prev) => ({
+      ...prev,
+      [docType]: {
+        ...prev[docType],
+        fileList: fileList.slice(-1),
+      },
+    }));
+  };
+
+  const isFormComplete = useMemo(() => {
+    return Object.entries(DOCUMENT_CONFIG).every(([type, config]) => {
+      if (!config.required) return true;
+      const doc = documents[type];
+      return doc.fileList.length > 0;
+    });
+  }, [documents]);
+
+  const hasChanges = useMemo(() => {
+    return Object.entries(documents).some(([type, doc]) => {
+      return (
+        doc.fileList.length > 0 && doc.fileList[0].originFileObj !== undefined
       );
+    });
+  }, [documents]);
+
+  const handleSubmit = async () => {
+    if (!isFormComplete) {
+      notify({
+        type: "warning",
+        title: "Formulario incompleto",
+        description: "Completa todos los campos requeridos",
+      });
+
       return;
     }
 
-    setSaved(true);
-    notify(
-      "success",
-      "Archivos guardados correctamente",
-      "La documentación fue registrada con éxito",
+    setUploading(true);
+
+    try {
+      const promises = [];
+
+      for (const [docTypeKey, doc] of Object.entries(documents)) {
+        if (doc.fileList.length === 0) continue;
+
+        const file = doc.fileList[0];
+
+        if (file.originFileObj) {
+          const formData = new FormData();
+          formData.append("file", file.originFileObj);
+
+          const typeDocumentValue = DOCUMENT_TYPES[docTypeKey];
+          formData.append("typeDocument", typeDocumentValue);
+
+          for (let [key, value] of formData.entries()) {
+            if (value instanceof File) {
+            } else {
+              console.log(`  ${key}: ${value}`);
+            }
+          }
+
+          if (doc.existingDoc && doc.existingDoc.id) {
+            promises.push(
+              patchData(formData, doc.existingDoc.id).catch((err) => {
+                notify({
+                  type: "error",
+                  title: "Error al actualizar documento",
+                  description: "Ocurrió un error al actualizar el documento",
+                });
+                throw err;
+              }),
+            );
+          } else {
+            promises.push(
+              postData(formData, false).catch((err) => {
+                notify({
+                  type: "error",
+                  title: "Error al crear documento",
+                  description: "Ocurrió un error al crear el documento",
+                });
+                throw err;
+              }),
+            );
+          }
+        }
+      }
+
+      if (promises.length === 0) {
+        notify({
+          type: "info",
+          title: "Sin cambios",
+          description: "No hay documentos nuevos para guardar",
+        });
+        return;
+      }
+
+      await Promise.all(promises);
+
+      notify({
+        type: "success",
+        title: "Documentación guardada",
+        description: "Tus documentos han sido actualizados correctamente",
+      });
+
+      await fetchDocuments();
+    } catch (err) {
+      notify({
+        type: "error",
+        title: "Error al guardar",
+        description: err.message || "No se pudo guardar la documentación",
+      });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const renderDocumentStatus = (docType) => {
+    const doc = documents[docType];
+    if (!doc.existingDoc || !doc.existingDoc.status) return null;
+
+    const docStatus = doc.existingDoc.status;
+
+    const statusConfig = {
+      pendiente: {
+        color: "bg-yellow-50 text-yellow-700 border-yellow-200",
+        text: "Pendiente",
+      },
+
+      aprobado: {
+        color: "bg-green-50 text-green-700 border-green-200",
+        text: "Aprobado",
+      },
+
+      rechazado: {
+        color: "bg-red-50 text-red-700 border-red-200",
+        text: "Rechazado",
+      },
+    };
+
+    const config = statusConfig[docStatus] || {
+      color: "bg-gray-50 text-gray-700 border-gray-200",
+      text: docStatus,
+    };
+
+    return (
+      <span
+        className={`px-3 py-1 rounded-md text-xs font-medium border ${config.color}`}
+      >
+        {config.text}
+      </span>
     );
   };
 
-  const removeFile = (setter) => {
-    setter([]);
-    setSaved(false);
+  const renderDocumentObservation = (docType) => {
+    const doc = documents[docType];
+    if (!doc.existingDoc || !doc.existingDoc.observation) return null;
+
+    const docStatus = doc.existingDoc.status;
+    const isRejected = docStatus === "rechazado";
+
+    return (
+      <Alert
+        title={isRejected ? "Motivo del rechazo" : "Observación"}
+        description={doc.existingDoc.observation}
+        type={isRejected ? "error" : "warning"}
+        // showIcon
+        className="mt-2"
+      // closable
+      />
+    );
   };
 
-  const renderSaved = (files, setter) =>
-    files.map((file) => (
-      <div
-        key={file.uid}
-        className="flex items-center justify-between rounded-xl border px-4 py-3 mt-3 bg-white shadow-sm"
-      >
-        <span className="text-sm font-medium truncate">{file.name}</span>
-        <Button danger type="link" onClick={() => removeFile(setter)}>
-          Remover
-        </Button>
-      </div>
-    ));
-
   return (
-    <div className="space-y-8">
-      <h2 className="text-2xl font-semibold">Documentación del Estudiante</h2>
+    <Spin spinning={loadingDocs || uploading}>
+      <div className="space-y-6 mx-auto p-5">
+        <div className="flex justify-between items-center">
+          <h2 className="text-xl font-semibold text-black dark:text-white">
+            Documentación del estudiante
+          </h2>
+        </div>
 
-      <Card
-        title="INE / Identificación Oficial"
-        className="rounded-xl shadow-sm"
-      >
-        {!saved && (
-          <Upload
-            beforeUpload={(file) => validateFiles(file, 2, ineFiles.length)}
-            fileList={ineFiles}
-            onChange={({ fileList }) => setIneFiles(fileList.slice(0, 2))}
-            maxCount={2}
-          >
-            <Button icon={<UploadOutlined />}>Subir INE (Ambos lados)</Button>
-          </Upload>
-        )}
-        {saved && renderSaved(ineFiles, setIneFiles)}
-      </Card>
+        <div className="space-y-4">
+          {Object.entries(DOCUMENT_CONFIG).map(([docType, config]) => (
+            <div>
+              <Card
+                key={docType}
+                title={
+                  <div className="flex items-center justify-between">
+                    <span>{config.title}</span>
+                    {renderDocumentStatus(docType)}
+                  </div>
+                }
+                className="shadow-sm"
+              >
+                <Upload
+                  beforeUpload={validateFiles}
+                  fileList={documents[docType].fileList}
+                  onChange={(info) => handleFileChange(docType, info)}
+                  maxCount={1}
+                  accept=".png,.jpg,.jpeg,.pdf"
+                >
+                  <Button icon={<UploadOutlined />}>{config.buttonText}</Button>
+                </Upload>
+                {config.required && (
+                  <p className="text-xs text-gray-500 mt-2">
+                    * Campo obligatorio
+                  </p>
+                )}
+                {renderDocumentObservation(docType)}
+              </Card>
+            </div>
+          ))}
+        </div>
 
-      <Card title="Comprobante de Domicilio" className="rounded-xl shadow-sm">
-        {!saved && (
-          <Upload
-            beforeUpload={(file) => validateFiles(file, 1, addressFile.length)}
-            fileList={addressFile}
-            onChange={({ fileList }) => setAddressFile(fileList.slice(0, 1))}
-            maxCount={1}
-          >
-            <Button icon={<UploadOutlined />}>Subir Comprobante</Button>
-          </Upload>
-        )}
-        {saved && renderSaved(addressFile, setAddressFile)}
-      </Card>
-
-      <Card title="Pasaporte (Opcional)" className="rounded-xl shadow-sm">
-        {!saved && (
-          <Upload
-            beforeUpload={(file) => validateFiles(file, 1, passportFile.length)}
-            fileList={passportFile}
-            onChange={({ fileList }) => setPassportFile(fileList.slice(0, 1))}
-            maxCount={1}
-          >
-            <Button icon={<UploadOutlined />}>Subir Pasaporte</Button>
-          </Upload>
-        )}
-        {saved && renderSaved(passportFile, setPassportFile)}
-      </Card>
-
-      {!saved && (
-        <div className="flex justify-end mt-[30px]">
+        <div className="flex justify-end gap-3">
           <Button
             size="large"
-            onClick={saveFiles}
+            onClick={() => fetchDocuments()}
+            disabled={uploading}
+          >
+            Recargar
+          </Button>
+          <Button
+            size="large"
+            type="primary"
+            disabled={!isFormComplete || !hasChanges}
+            onClick={handleSubmit}
+            loading={uploading}
             style={{
-              backgroundColor: "#84cc16",
-              borderColor: "#84cc16",
-              color: "#fff",
+              backgroundColor:
+                isFormComplete && hasChanges ? "#84cc16" : undefined,
             }}
           >
-            Subir archivos
+            {hasChanges ? "Guardar cambios" : "Guardar documentación"}
           </Button>
         </div>
-      )}
-    </div>
+
+        {!hasChanges && isFormComplete && (
+          <Alert
+            title="No hay cambios pendientes"
+            description="Todos los documentos están guardados. Puedes actualizar cualquier archivo y guardar los cambios."
+            type="info"
+            showIcon
+          />
+        )}
+      </div>
+    </Spin>
   );
 }
