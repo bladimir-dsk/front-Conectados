@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useApi } from "../../../hooks/useApi";
 import {
@@ -19,14 +19,10 @@ import {
   Users,
   Wifi,
   MapPin,
-  DollarSign,
   Heart,
   Search,
   CalendarDays,
-  Home,
-  User,
   Star,
-  Bed,
   MapPin as MapPinIcon,
   Droplets,
   Zap,
@@ -45,13 +41,11 @@ import {
 import dayjs from "dayjs";
 import "dayjs/locale/es";
 
-// Importar componentes de modales
 import RoomDetailsModal from "../../../components/modals/RoomDetailsModal";
 import ReservationModal from "../../../components/modals/ReservationModal";
+import RoomCard from "../../../components/cards/RoomCard";
 
 const { RangePicker } = DatePicker;
-
-const IMAGE_URL = "https://s03.s3c.es/imag/_v0/1200x655/0/f/c/habitacion.jpg";
 
 const SERVICES = [
   { id: 1, name: "Internet", price: 0, icon: <Wifi size={16} /> },
@@ -70,85 +64,12 @@ const SERVICES = [
   { id: 14, name: "Cena", price: 22, icon: <Moon size={16} /> },
 ];
 
-const RoomCard = ({
-  room,
-  isFav,
-  onToggleFavorite,
-  onViewDetails,
-  onViewMap,
-}) => {
-  return (
-    <div className="relative h-[400px] rounded-2xl overflow-hidden shadow-lg group">
-      <img
-        src={IMAGE_URL}
-        alt={room.name}
-        className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-      />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-black/20" />
-      <div className="absolute top-3 left-3 right-3 flex justify-between items-start">
-        <Tag className="font-medium bg-white/20 backdrop-blur-sm border-0 text-white text-xs">
-          Disponible
-        </Tag>
-        <button
-          className={`bg-white/20 backdrop-blur-sm rounded-full p-1.5 cursor-pointer transition-colors ${
-            isFav ? "text-red-400" : "text-white"
-          }`}
-          onClick={() => onToggleFavorite(room.id)}
-          aria-label={isFav ? "Quitar de favoritos" : "Agregar a favoritos"}
-        >
-          <Heart size={16} fill={isFav ? "#ff4d4f" : "none"} />
-        </button>
-      </div>
-      <div className="absolute bottom-0 left-0 right-0 p-4">
-        <h3 className="text-lg font-bold text-white mb-1">{room.name}</h3>
-        <div className="flex items-center gap-1 mb-2">
-          <MapPin size={12} className="text-gray-300" />
-          <span className="text-gray-300 text-xs">Mérida, Yucatán</span>
-        </div>
-        <div className="flex justify-between items-center mb-3">
-          <div className="flex items-center gap-1">
-            <Star size={12} className="text-yellow-400" fill="#fbbf24" />
-            <span className="text-white font-medium text-sm">
-              {room.rating.toFixed(1)}
-            </span>
-            <span className="text-gray-300 text-xs">({room.reviews})</span>
-          </div>
-          <div className="flex items-baseline">
-            <span className="text-xl font-bold text-white">${room.price}</span>
-            <span className="text-gray-300 text-xs ml-1">/noche</span>
-          </div>
-        </div>
-        <div className="flex gap-2">
-          <Button
-            className="flex-1 !bg-transparent !border-white font-medium hover:!bg-transparent !text-white h-10 text-sm"
-            onClick={() => onViewDetails(room)}
-          >
-            Ver detalles
-          </Button>
-          <Button
-            icon={<MapPinIcon size={14} />}
-            className="flex-1 !bg-transparent !border-white font-medium hover:!bg-transparent !text-white h-10 text-sm"
-            onClick={() => onViewMap(room.id)}
-          >
-            Mapa
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
 export default function DashboardStudent_Screen() {
   const [favorites, setFavorites] = useState([]);
   const [dateRange, setDateRange] = useState(null);
   const [guests, setGuests] = useState(1);
-  const [appliedFilters, setAppliedFilters] = useState({
-    dateRange: null,
-    guests: 1,
-  });
   const [openDetails, setOpenDetails] = useState(false);
   const [selectedRoom, setSelectedRoom] = useState(null);
-  const [currentPage, setCurrentPage] = useState(1);
   const [userRating, setUserRating] = useState({});
   const [reservationModalOpen, setReservationModalOpen] = useState(false);
   const [reservationStep, setReservationStep] = useState(1);
@@ -157,7 +78,7 @@ export default function DashboardStudent_Screen() {
   const [selectedBed, setSelectedBed] = useState("");
   const [rentPeriod, setRentPeriod] = useState(12);
   const [selectedServices, setSelectedServices] = useState([]);
-  const { fetchData } = useApi("/documentacion/status/approved", {}, false);
+
   const [prices, setPrices] = useState({
     subtotal: 0,
     iva: 0,
@@ -172,9 +93,27 @@ export default function DashboardStudent_Screen() {
 
   const navigate = useNavigate();
 
+  const { fetchData: fetchDocumentsStatus } = useApi(
+    "/documentacion/status/approved",
+    {},
+    false,
+  );
+  const {
+    fetchData: fetchAccommodations,
+    loading: accommodationsLoading,
+    error: accommodationsError,
+  } = useApi("/alojamientos", {}, false);
+
+  const [accommodations, setAccommodations] = useState([]);
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 6,
+    total: 0,
+  });
+
   const fetchDocumentStatus = async () => {
     try {
-      const response = await fetchData();
+      const response = await fetchDocumentsStatus();
       const approved = response?.approved === true;
       setHasDocuments(approved);
       return approved;
@@ -190,62 +129,55 @@ export default function DashboardStudent_Screen() {
     });
   };
 
-  const pageSize = 6;
+  useEffect(() => {
+    const loadAccommodations = async () => {
+      setLoading((prev) => ({ ...prev, rooms: true }));
+      try {
+        const data = await fetchAccommodations({
+          params: {
+            page: pagination.current,
+            limit: pagination.pageSize,
+            startDate: dateRange?.[0]?.format("YYYY-MM-DD"),
+            endDate: dateRange?.[1]?.format("YYYY-MM-DD"),
+            guests,
+          },
+        });
 
-  const rooms = useMemo(() => {
-    return Array.from({ length: 24 }, (_, i) => ({
-      id: i + 1,
-      name: `Habitación ${i + 1}`,
-      price: 80 + (i % 5) * 20,
-      owner: "Juan Pérez",
-      gender: "Mixto",
-      type:
-        i % 3 === 0
-          ? "Cuarto privado"
-          : i % 3 === 1
-            ? "Habitación compartida"
-            : "Estudio",
-      beds: i % 2 === 0 ? 1 : 2,
-      address: "Calle 10 #123, Centro, Mérida, Yucatán",
-      rating: 4.0 + i * 0.05,
-      reviews: 10 + i,
-      maxGuests: Math.floor(Math.random() * 5) + 1,
-      availableDates: generateRandomAvailableDates(),
-    }));
-  }, []);
+        const items = data?.data ?? [];
+        const total = data?.meta?.total ?? 0;
 
-  function generateRandomAvailableDates() {
-    const availableDates = [];
-    const startDate = dayjs();
-    const endDate = dayjs().add(90, "day");
+        const mappedRooms = items.map((item) => ({
+          id: item.id,
+          name: item.name,
+          price: item.precio_completo,
+          address: `${item.address}, ${item.city}, ${item.country}`,
+          image: item.url || IMAGE_URL,
+          rating: item.rating ?? 0,
+          reviews: item.reviews ?? 0,
+        }));
 
-    let currentDate = startDate;
-    while (currentDate.isBefore(endDate)) {
-      if (Math.random() > 0.2) {
-        availableDates.push(currentDate.format("YYYY-MM-DD"));
+        setAccommodations(mappedRooms);
+        setPagination((prev) => ({ ...prev, total }));
+        setError(null);
+      } catch (err) {
+        setError("Error al cargar los alojamientos");
+      } finally {
+        setLoading((prev) => ({ ...prev, rooms: false }));
       }
-      currentDate = currentDate.add(1, "day");
+    };
+
+    loadAccommodations();
+  }, [pagination.current, pagination.pageSize, dateRange, guests]);
+
+  useEffect(() => {
+    setLoading((prev) => ({ ...prev, rooms: accommodationsLoading }));
+  }, [accommodationsLoading]);
+
+  useEffect(() => {
+    if (accommodationsError) {
+      setError("Error al cargar los alojamientos");
     }
-    return availableDates;
-  }
-
-  const isRoomAvailableInDateRange = (room, startDate, endDate) => {
-    if (!startDate || !endDate) return true;
-
-    const start = dayjs(startDate);
-    const end = dayjs(endDate);
-    let current = start;
-
-    while (current.isBefore(end) || current.isSame(end, "day")) {
-      const dateStr = current.format("YYYY-MM-DD");
-      if (!room.availableDates.includes(dateStr)) {
-        return false;
-      }
-      current = current.add(1, "day");
-    }
-
-    return true;
-  };
+  }, [accommodationsError]);
 
   const toggleFavorite = (id) => {
     setFavorites((prev) =>
@@ -304,9 +236,7 @@ export default function DashboardStudent_Screen() {
       };
 
       await new Promise((resolve) => setTimeout(resolve, 1500));
-
       console.log("Reservación guardada:", reservationData);
-
       setLoading((prev) => ({ ...prev, reservation: false }));
     } catch (err) {
       setError("Error al guardar la reservación");
@@ -315,7 +245,7 @@ export default function DashboardStudent_Screen() {
   };
 
   const handleRequestRoom = async (roomId) => {
-    const room = filteredRooms.find((r) => r.id === roomId);
+    const room = accommodations.find((r) => r.id === roomId);
     if (room) {
       setSelectedRoom(room);
       calculatePrices(room.price, rentPeriod, selectedServices);
@@ -326,60 +256,14 @@ export default function DashboardStudent_Screen() {
     setReservationModalOpen(true);
   };
 
-  const applyFilters = () => {
-    setAppliedFilters({
-      dateRange,
-      guests,
-    });
-    setCurrentPage(1);
+  const handlePaginationChange = (page, pageSize) => {
+    setPagination({ current: page, pageSize, total: pagination.total });
   };
 
-  const filteredRooms = useMemo(() => {
-    return rooms.filter((room) => {
-      if (room.maxGuests < appliedFilters.guests) {
-        return false;
-      }
-
-      if (
-        appliedFilters.dateRange &&
-        appliedFilters.dateRange[0] &&
-        appliedFilters.dateRange[1]
-      ) {
-        const [startDate, endDate] = appliedFilters.dateRange;
-        if (!isRoomAvailableInDateRange(room, startDate, endDate)) {
-          return false;
-        }
-      }
-
-      return true;
-    });
-  }, [rooms, appliedFilters]);
-
-  const currentRooms = useMemo(() => {
-    return filteredRooms.slice(
-      (currentPage - 1) * pageSize,
-      currentPage * pageSize,
-    );
-  }, [filteredRooms, currentPage, pageSize]);
-
-  const handleServicesChange = (newServices) => {
-    setSelectedServices(newServices);
-    if (selectedRoom) {
-      calculatePrices(selectedRoom.price, rentPeriod, newServices);
-    }
-  };
-
-  useEffect(() => {
-    setLoading((prev) => ({ ...prev, rooms: true }));
-    setTimeout(() => {
-      setLoading((prev) => ({ ...prev, rooms: false }));
-    }, 1000);
-  }, []);
-
-  if (loading.rooms && rooms.length === 0) {
+  if (loading.rooms && accommodations.length === 0) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <Spin size="large" tip="Cargando habitaciones..." />
+        <Spin size="large" tip="Cargando habitaciones..." fullscreen />
       </div>
     );
   }
@@ -390,7 +274,7 @@ export default function DashboardStudent_Screen() {
         <div className="w-full max-w-7xl px-4 py-8 mb-0">
           {error && (
             <Alert
-              message="Error"
+              title="Error"
               description={error}
               type="error"
               showIcon
@@ -459,27 +343,24 @@ export default function DashboardStudent_Screen() {
             <Button
               className="absolute right-4 bg-lime-600 border-none rounded-full w-11 h-11 text-white hover:bg-lime-600 shadow-md"
               icon={<Search size={18} />}
-              onClick={applyFilters}
+              onClick={() => {
+                setPagination((prev) => ({ ...prev, current: 1 }));
+              }}
               aria-label="Buscar habitaciones"
             />
           </div>
 
           <div className="mb-3 text-sm text-gray-600">
-            Mostrando {filteredRooms.length} de {rooms.length} habitaciones
-            {appliedFilters.dateRange &&
-              appliedFilters.dateRange[0] &&
-              appliedFilters.dateRange[1] && (
-                <span>
-                  {" "}
-                  para las fechas{" "}
-                  {dayjs(appliedFilters.dateRange[0]).format(
-                    "DD/MM/YYYY",
-                  )} - {dayjs(appliedFilters.dateRange[1]).format("DD/MM/YYYY")}
-                </span>
-              )}
-            {appliedFilters.guests > 1 && (
-              <span> con capacidad para {appliedFilters.guests} huéspedes</span>
+            Mostrando {accommodations.length} de {pagination.total} habitaciones
+            {dateRange && dateRange[0] && dateRange[1] && (
+              <span>
+                {" "}
+                para las fechas {dayjs(dateRange[0]).format(
+                  "DD/MM/YYYY",
+                )} - {dayjs(dateRange[1]).format("DD/MM/YYYY")}
+              </span>
             )}
+            {guests > 1 && <span> con capacidad para {guests} huéspedes</span>}
           </div>
 
           {loading.rooms ? (
@@ -489,7 +370,7 @@ export default function DashboardStudent_Screen() {
           ) : (
             <>
               <Row gutter={[24, 24]}>
-                {currentRooms.map((room) => (
+                {accommodations.map((room) => (
                   <Col key={room.id} xs={24} sm={12} lg={8} xl={8}>
                     <RoomCard
                       room={room}
@@ -502,7 +383,7 @@ export default function DashboardStudent_Screen() {
                 ))}
               </Row>
 
-              {filteredRooms.length === 0 && (
+              {accommodations.length === 0 && (
                 <div className="text-center py-12">
                   <Search size={48} className="mx-auto text-gray-300 mb-4" />
                   <h3 className="text-lg font-semibold text-gray-700 mb-2">
@@ -518,12 +399,13 @@ export default function DashboardStudent_Screen() {
 
               <div className="flex justify-center mt-12">
                 <Pagination
-                  current={currentPage}
-                  pageSize={pageSize}
-                  total={filteredRooms.length}
-                  onChange={setCurrentPage}
-                  showSizeChanger={false}
-                  showQuickJumper
+                  current={pagination.current}
+                  pageSize={pagination.pageSize}
+                  total={pagination.total}
+                  onChange={handlePaginationChange}
+                  showSizeChanger
+                  onShowSizeChange={handlePaginationChange}
+                  pageSizeOptions={["6", "12", "18", "24"]}
                   className="[&_.ant-pagination-item]:rounded-full [&_.ant-pagination-item-active]:bg-lime-600 [&_.ant-pagination-item-active]:border-lime-600 [&_.ant-pagination-item-active_a]:text-white"
                 />
               </div>
@@ -567,7 +449,7 @@ export default function DashboardStudent_Screen() {
               }
             }}
             selectedServices={selectedServices}
-            onSelectedServicesChange={handleServicesChange}
+            onSelectedServicesChange={setSelectedServices}
             services={SERVICES}
             prices={prices}
             onSaveReservation={saveReservation}
