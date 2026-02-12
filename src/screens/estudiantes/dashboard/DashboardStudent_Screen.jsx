@@ -4,7 +4,6 @@ import { useApi } from "../../../hooks/useApi";
 import {
   Row,
   Col,
-  Tag,
   Button,
   InputNumber,
   DatePicker,
@@ -18,12 +17,8 @@ import esES from "antd/locale/es_ES";
 import {
   Users,
   Wifi,
-  MapPin,
-  Heart,
   Search,
   CalendarDays,
-  Star,
-  MapPin as MapPinIcon,
   Droplets,
   Zap,
   Sparkles,
@@ -46,6 +41,7 @@ import ReservationModal from "../../../components/modals/ReservationModal";
 import RoomCard from "../../../components/cards/RoomCard";
 
 const { RangePicker } = DatePicker;
+const IMAGE_URL = "https://s03.s3c.es/imag/_v0/1200x655/0/f/c/habitacion.jpg";
 
 const SERVICES = [
   { id: 1, name: "Internet", price: 0, icon: <Wifi size={16} /> },
@@ -64,6 +60,24 @@ const SERVICES = [
   { id: 14, name: "Cena", price: 22, icon: <Moon size={16} /> },
 ];
 
+const ICON_MAP = {
+  "fat-wifi": <Wifi size={16} />,
+  "fat-droplets": <Droplets size={16} />,
+  "fat-zap": <Zap size={16} />,
+  "fat-sparkles": <Sparkles size={16} />,
+  "fat-utensils": <Utensils size={16} />,
+  "fat-shirt": <Shirt size={16} />,
+  "fat-wind": <Wind size={16} />,
+  "fat-tv": <Tv size={16} />,
+  "fat-car": <Car size={16} />,
+  "fat-dumbbell": <Dumbbell size={16} />,
+  "fat-waves": <Waves size={16} />,
+  "fat-coffee": <Coffee size={16} />,
+  "fat-sandwich": <Sandwich size={16} />,
+  "fat-moon": <Moon size={16} />,
+  default: <Sparkles size={16} />,
+};
+
 export default function DashboardStudent_Screen() {
   const [favorites, setFavorites] = useState([]);
   const [dateRange, setDateRange] = useState(null);
@@ -77,7 +91,7 @@ export default function DashboardStudent_Screen() {
   const [selectedRooms, setSelectedRooms] = useState(1);
   const [selectedBed, setSelectedBed] = useState("");
   const [rentPeriod, setRentPeriod] = useState(12);
-  const [selectedServices, setSelectedServices] = useState([]);
+  const [selectedServiceIds, setSelectedServiceIds] = useState([]);
 
   const [prices, setPrices] = useState({
     subtotal: 0,
@@ -88,8 +102,10 @@ export default function DashboardStudent_Screen() {
   const [loading, setLoading] = useState({
     rooms: false,
     reservation: false,
+    details: false,
   });
   const [error, setError] = useState(null);
+  const [detailsError, setDetailsError] = useState(null);
 
   const navigate = useNavigate();
 
@@ -98,11 +114,7 @@ export default function DashboardStudent_Screen() {
     {},
     false,
   );
-  const {
-    fetchData: fetchAccommodations,
-    loading: accommodationsLoading,
-    error: accommodationsError,
-  } = useApi("/alojamientos", {}, false);
+  const { fetchData: fetchAccommodations } = useApi("/alojamientos", {}, false);
 
   const [accommodations, setAccommodations] = useState([]);
   const [pagination, setPagination] = useState({
@@ -111,22 +123,153 @@ export default function DashboardStudent_Screen() {
     total: 0,
   });
 
+  const mapApiServices = (apiServices) => {
+    if (!apiServices) return [];
+    return apiServices.map((item) => ({
+      id: item.servicio.id_servicio,
+      name: item.servicio.name,
+      cost: item.costo === null ? 0 : Number(item.costo),
+      icon: ICON_MAP[item.servicio.icon] || ICON_MAP.default,
+    }));
+  };
+
   const fetchDocumentStatus = async () => {
     try {
       const response = await fetchDocumentsStatus();
       const approved = response?.approved === true;
       setHasDocuments(approved);
       return approved;
-    } catch (error) {
+    } catch {
       setHasDocuments(false);
       return false;
     }
   };
 
   const handleViewMap = (roomId) => {
-    navigate(`/estudiante/search/${roomId}`, {
-      state: { roomId },
+    navigate(`/estudiante/search/${roomId}`, { state: { roomId } });
+  };
+
+  const openRoomDetails = async (room) => {
+    if (!room) return;
+    setSelectedRoom(null);
+    setOpenDetails(true);
+    setLoading((prev) => ({ ...prev, details: true }));
+    setDetailsError(null);
+
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(`/api/v1/alojamientos/${room.id}/details`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) throw new Error("Error en la respuesta");
+
+      const details = await response.json();
+
+      const images = details.imagenes?.map((img) => img.url) || [];
+
+      const enrichedRoom = {
+        ...room,
+        type: details.typeProperty,
+        gender: details.gender,
+        owner: details.propietario?.namePersonal || "Propietario",
+        location: `${details.address}, ${details.city}, ${details.country}`,
+        address: details.address,
+        description: details.description,
+        beds: details.camas || 0,
+        services: mapApiServices(details.servicios),
+        images,
+      };
+      setSelectedRoom(enrichedRoom);
+    } catch {
+      setDetailsError("No se pudieron cargar los detalles de la habitación");
+    } finally {
+      setLoading((prev) => ({ ...prev, details: false }));
+    }
+  };
+
+  const handleRate = (roomId, value) => {
+    setUserRating((prev) => ({ ...prev, [roomId]: value }));
+  };
+
+  const calculatePrices = (
+    roomPricePerNight,
+    periodMonths,
+    selectedIds,
+    availableServices = [],
+  ) => {
+    const numericPrice = Number(roomPricePerNight) || 0;
+    const days = periodMonths * 30;
+    const roomTotal = numericPrice * days;
+
+    const servicesCost = availableServices
+      .filter((service) => selectedIds.includes(service.id))
+      .reduce((total, service) => total + (service.cost || 0), 0);
+
+    const subtotal = roomTotal + servicesCost;
+    const iva = subtotal * 0.16;
+    const total = subtotal + iva;
+
+    setPrices({
+      subtotal: Math.round(subtotal * 100) / 100,
+      iva: Math.round(iva * 100) / 100,
+      total: Math.round(total * 100) / 100,
     });
+  };
+
+  const saveReservation = async () => {
+    if (!selectedRoom) return;
+    setLoading((prev) => ({ ...prev, reservation: true }));
+    try {
+      const reservationData = {
+        roomId: selectedRoom.id,
+        rentType,
+        selectedRooms,
+        selectedBed,
+        rentPeriod,
+        selectedServiceIds,
+        prices,
+        userId: "current-user-id",
+      };
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      console.log("Reservación guardada:", reservationData);
+    } catch {
+      setError("Error al guardar la reservación");
+    } finally {
+      setLoading((prev) => ({ ...prev, reservation: false }));
+    }
+  };
+
+  const handleRequestRoom = async (roomId) => {
+    let room = null;
+    if (selectedRoom?.id === roomId && selectedRoom?.services) {
+      room = selectedRoom;
+    } else {
+      room = accommodations.find((r) => r.id === roomId);
+    }
+
+    if (room) {
+      if (selectedRoom?.id !== roomId) {
+        setSelectedRoom(room);
+      }
+      calculatePrices(
+        room.price,
+        rentPeriod,
+        selectedServiceIds,
+        room.services || [],
+      );
+    }
+
+    await fetchDocumentStatus();
+    setReservationStep(1);
+    setReservationModalOpen(true);
+  };
+
+  const handlePaginationChange = (page, pageSize) => {
+    setPagination({ current: page, pageSize, total: pagination.total });
   };
 
   useEffect(() => {
@@ -146,20 +289,30 @@ export default function DashboardStudent_Screen() {
         const items = data?.data ?? [];
         const total = data?.meta?.total ?? 0;
 
-        const mappedRooms = items.map((item) => ({
-          id: item.id,
-          name: item.name,
-          price: item.precio_completo,
-          address: `${item.address}, ${item.city}, ${item.country}`,
-          image: item.url || IMAGE_URL,
-          rating: item.rating ?? 0,
-          reviews: item.reviews ?? 0,
-        }));
+        const mappedRooms = items.map((item) => {
+          let mainImage = IMAGE_URL;
+          if (item.imagenes && Array.isArray(item.imagenes)) {
+            const principal = item.imagenes.find(
+              (img) => img.principal === true,
+            );
+            if (principal) mainImage = principal.url;
+          }
+
+          return {
+            id: item.id,
+            name: item.name,
+            price: item.precio_completo,
+            address: `${item.address || ""}, ${item.city || ""}, ${item.country || ""}`,
+            image: mainImage,
+            rating: item.rating ?? 0,
+            reviews: item.reviews ?? 0,
+          };
+        });
 
         setAccommodations(mappedRooms);
         setPagination((prev) => ({ ...prev, total }));
         setError(null);
-      } catch (err) {
+      } catch {
         setError("Error al cargar los alojamientos");
       } finally {
         setLoading((prev) => ({ ...prev, rooms: false }));
@@ -169,95 +322,10 @@ export default function DashboardStudent_Screen() {
     loadAccommodations();
   }, [pagination.current, pagination.pageSize, dateRange, guests]);
 
-  useEffect(() => {
-    setLoading((prev) => ({ ...prev, rooms: accommodationsLoading }));
-  }, [accommodationsLoading]);
-
-  useEffect(() => {
-    if (accommodationsError) {
-      setError("Error al cargar los alojamientos");
-    }
-  }, [accommodationsError]);
-
   const toggleFavorite = (id) => {
     setFavorites((prev) =>
       prev.includes(id) ? prev.filter((f) => f !== id) : [...prev, id],
     );
-  };
-
-  const openRoomDetails = (room) => {
-    setSelectedRoom(room);
-    setOpenDetails(true);
-  };
-
-  const handleRate = (roomId, value) => {
-    setUserRating((prev) => ({ ...prev, [roomId]: value }));
-  };
-
-  const calculatePrices = (roomPrice, period, servicesSelected) => {
-    const periodPrices = {
-      12: 100,
-      6: 200,
-      3: 300,
-    };
-
-    const servicesCost = servicesSelected.reduce((total, serviceName) => {
-      const service = SERVICES.find((s) => s.name === serviceName);
-      return total + (service?.price || 0);
-    }, 0);
-
-    const periodPrice = periodPrices[period] || 0;
-    const subtotal = periodPrice + servicesCost;
-    const iva = subtotal * 0.16;
-    const total = subtotal + iva;
-
-    setPrices({
-      subtotal: Math.round(subtotal * 100) / 100,
-      iva: Math.round(iva * 100) / 100,
-      total: Math.round(total * 100) / 100,
-    });
-  };
-
-  const saveReservation = async () => {
-    if (!selectedRoom) return;
-
-    setLoading((prev) => ({ ...prev, reservation: true }));
-
-    try {
-      const reservationData = {
-        roomId: selectedRoom.id,
-        rentType,
-        selectedRooms,
-        selectedBed,
-        rentPeriod,
-        selectedServices,
-        prices,
-        userId: "current-user-id",
-      };
-
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      console.log("Reservación guardada:", reservationData);
-      setLoading((prev) => ({ ...prev, reservation: false }));
-    } catch (err) {
-      setError("Error al guardar la reservación");
-      setLoading((prev) => ({ ...prev, reservation: false }));
-    }
-  };
-
-  const handleRequestRoom = async (roomId) => {
-    const room = accommodations.find((r) => r.id === roomId);
-    if (room) {
-      setSelectedRoom(room);
-      calculatePrices(room.price, rentPeriod, selectedServices);
-    }
-
-    await fetchDocumentStatus();
-    setReservationStep(1);
-    setReservationModalOpen(true);
-  };
-
-  const handlePaginationChange = (page, pageSize) => {
-    setPagination({ current: page, pageSize, total: pagination.total });
   };
 
   if (loading.rooms && accommodations.length === 0) {
@@ -327,6 +395,8 @@ export default function DashboardStudent_Screen() {
                   </span>
                   <div className="flex items-center">
                     <InputNumber
+                      id="guests-input"
+                      name="guests"
                       min={1}
                       max={20}
                       value={guests}
@@ -343,9 +413,7 @@ export default function DashboardStudent_Screen() {
             <Button
               className="absolute right-4 bg-lime-600 border-none rounded-full w-11 h-11 text-white hover:bg-lime-600 shadow-md"
               icon={<Search size={18} />}
-              onClick={() => {
-                setPagination((prev) => ({ ...prev, current: 1 }));
-              }}
+              onClick={() => setPagination((prev) => ({ ...prev, current: 1 }))}
               aria-label="Buscar habitaciones"
             />
           </div>
@@ -414,13 +482,18 @@ export default function DashboardStudent_Screen() {
 
           <RoomDetailsModal
             open={openDetails}
-            onClose={() => setOpenDetails(false)}
+            onClose={() => {
+              setOpenDetails(false);
+              setDetailsError(null);
+            }}
             room={selectedRoom}
             userRating={userRating[selectedRoom?.id]}
             onRate={handleRate}
             onRequestRoom={handleRequestRoom}
-            services={SERVICES}
-            loading={loading.reservation}
+            services={selectedRoom?.services || []}
+            images={selectedRoom?.images || []}
+            loading={loading.details}
+            error={detailsError}
           />
 
           <ReservationModal
@@ -428,7 +501,7 @@ export default function DashboardStudent_Screen() {
             onClose={() => {
               setReservationModalOpen(false);
               setReservationStep(1);
-              setSelectedServices([]);
+              setSelectedServiceIds([]);
               setError(null);
             }}
             step={reservationStep}
@@ -445,12 +518,17 @@ export default function DashboardStudent_Screen() {
             onRentPeriodChange={(period) => {
               setRentPeriod(period);
               if (selectedRoom) {
-                calculatePrices(selectedRoom.price, period, selectedServices);
+                calculatePrices(
+                  selectedRoom.price,
+                  period,
+                  selectedServiceIds,
+                  selectedRoom.services || [],
+                );
               }
             }}
-            selectedServices={selectedServices}
-            onSelectedServicesChange={setSelectedServices}
-            services={SERVICES}
+            selectedServiceIds={selectedServiceIds}
+            onSelectedServicesChange={setSelectedServiceIds}
+            services={selectedRoom?.services || []}
             prices={prices}
             onSaveReservation={saveReservation}
             loading={loading.reservation}
