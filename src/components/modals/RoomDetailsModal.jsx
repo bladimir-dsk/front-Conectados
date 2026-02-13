@@ -18,7 +18,6 @@ const RoomDetailsModal = ({
   onRate,
   onRequestRoom,
   services = [],
-  images = [],
   imageUrl = "https://s03.s3c.es/imag/_v0/1200x655/0/f/c/habitacion.jpg",
   loading = false,
   error = null,
@@ -30,7 +29,9 @@ const RoomDetailsModal = ({
     return `+ $${cost}`;
   };
 
-  const displayImages = images.length > 0 ? images : [room.image || imageUrl];
+  const fotosOrdenadas = room.fotos
+    ? [...room.fotos].sort((a, b) => b.principal - a.principal)
+    : [];
 
   return (
     <Modal
@@ -55,7 +56,7 @@ const RoomDetailsModal = ({
 
       {error && (
         <Alert
-          message="Error"
+          title="Error"
           description={error}
           type="error"
           showIcon
@@ -66,23 +67,32 @@ const RoomDetailsModal = ({
 
       {loading ? (
         <div className="flex justify-center items-center py-20">
-          <Spin size="large" tip="Cargando detalles..." />
+          <Spin size="large" />
         </div>
       ) : (
         <div className="overflow-hidden">
           <div className="relative h-56">
-            <Carousel autoplay dots className="w-full h-full">
-              {displayImages.map((src, index) => (
-                <div key={index} className="w-full h-56">
-                  <img
-                    src={src}
-                    alt={`${room.name} - ${index + 1}`}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              ))}
-            </Carousel>
-            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent pointer-events-none" />
+            <div className="relative h-56">
+              {fotosOrdenadas.length > 1 ? (
+                <Carousel autoplay>
+                  {fotosOrdenadas.map((foto) => (
+                    <div key={foto.id} className="h-56">
+                      <img
+                        src={foto.url}
+                        alt={room.name}
+                        className="w-full h-56 object-cover"
+                      />
+                    </div>
+                  ))}
+                </Carousel>
+              ) : (
+                <img
+                  src={fotosOrdenadas[0]?.url || imageUrl}
+                  alt={room.name}
+                  className="w-full h-56 object-cover"
+                />
+              )}
+            </div>
             <div className="absolute bottom-4 left-4 right-4">
               <div className="flex justify-between items-end">
                 <div>
@@ -190,38 +200,42 @@ const RoomDetailsModal = ({
                 </div>
               </div>
 
-              {services.length > 0 && (
-                <>
-                  <Divider className="my-0 border-gray-200" />
-                  <div className="w-full">
-                    <h4 className="text-base font-semibold text-gray-800 mb-3">
-                      Servicios disponibles
-                    </h4>
-                    <div className="max-h-60 overflow-y-auto pr-2">
-                      <div className="grid grid-cols-1 gap-2">
-                        {services.map((service) => (
-                          <div
-                            key={service.id}
-                            className="flex justify-between items-center py-2 border-b border-gray-100 last:border-0"
-                          >
-                            <div className="flex items-center gap-3 min-w-0">
-                              <div className="text-lime-600 flex-shrink-0">
-                                {service.icon}
-                              </div>
-                              <span className="text-gray-700 text-sm truncate">
-                                {service.name}
-                              </span>
+              <Divider className="my-0 border-gray-200" />
+
+              <div className="w-full">
+                <h4 className="text-base font-semibold text-lime-600 dark:text-lime-500 mb-3">
+                  Servicios incluidos
+                </h4>
+
+                {services.length > 0 ? (
+                  <div className="max-h-60 overflow-y-auto pr-2">
+                    <div className="grid grid-cols-1 gap-2">
+                      {services.map((service, index) => (
+                        <div
+                          key={service.id ?? index}
+                          className="flex justify-between items-center py-2 border-b border-gray-100 last:border-0"
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="text-lime-600 flex-shrink-0">
+                              {service.icon}
                             </div>
-                            <span className="text-lime-600 font-medium text-sm whitespace-nowrap flex-shrink-0 ml-2">
-                              {formatCost(service.cost)}
+                            <span className="text-gray-700 text-sm truncate">
+                              {service.name}
                             </span>
                           </div>
-                        ))}
-                      </div>
+                          <span className="text-lime-600 font-medium text-sm whitespace-nowrap">
+                            {service.cost === 0 || service.cost === "0"
+                              ? "Incluido"
+                              : `+ $${service.cost}`}
+                          </span>
+                        </div>
+                      ))}
                     </div>
                   </div>
-                </>
-              )}
+                ) : (
+                  <div className="h-4" />
+                )}
+              </div>
 
               {onRequestRoom && (
                 <Button

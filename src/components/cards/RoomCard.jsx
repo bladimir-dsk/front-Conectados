@@ -14,7 +14,7 @@ const RoomCard = ({
   return (
     <div className="relative h-[400px] rounded-2xl overflow-hidden shadow-lg group">
       <img
-        src={room.image || IMAGE_URL}
+        src={room.mainImage || IMAGE_URL}
         alt={room.name}
         className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
       />

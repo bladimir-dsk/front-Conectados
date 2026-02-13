@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useApi } from "../../../hooks/useApi";
+import { getImageUrl } from "../../../utils/supabaseImages";
 import {
   Row,
   Col,
@@ -19,6 +20,8 @@ import {
   Wifi,
   Search,
   CalendarDays,
+  Star,
+  MapPin as MapPinIcon,
   Droplets,
   Zap,
   Sparkles,
@@ -43,22 +46,7 @@ import RoomCard from "../../../components/cards/RoomCard";
 const { RangePicker } = DatePicker;
 const IMAGE_URL = "https://s03.s3c.es/imag/_v0/1200x655/0/f/c/habitacion.jpg";
 
-const SERVICES = [
-  { id: 1, name: "Internet", price: 0, icon: <Wifi size={16} /> },
-  { id: 2, name: "Agua", price: 0, icon: <Droplets size={16} /> },
-  { id: 3, name: "Luz", price: 20, icon: <Zap size={16} /> },
-  { id: 4, name: "Limpieza", price: 15, icon: <Sparkles size={16} /> },
-  { id: 5, name: "Cocina", price: 10, icon: <Utensils size={16} /> },
-  { id: 6, name: "Lavadora", price: 5, icon: <Shirt size={16} /> },
-  { id: 7, name: "Aire acondicionado", price: 25, icon: <Wind size={16} /> },
-  { id: 8, name: "TV", price: 10, icon: <Tv size={16} /> },
-  { id: 9, name: "Parqueadero", price: 30, icon: <Car size={16} /> },
-  { id: 10, name: "Gimnasio", price: 20, icon: <Dumbbell size={16} /> },
-  { id: 11, name: "Piscina", price: 25, icon: <Waves size={16} /> },
-  { id: 12, name: "Desayuno", price: 12, icon: <Coffee size={16} /> },
-  { id: 13, name: "Almuerzo", price: 18, icon: <Sandwich size={16} /> },
-  { id: 14, name: "Cena", price: 22, icon: <Moon size={16} /> },
-];
+const SERVICES = [];
 
 const ICON_MAP = {
   "fat-wifi": <Wifi size={16} />,
@@ -91,7 +79,7 @@ export default function DashboardStudent_Screen() {
   const [selectedRooms, setSelectedRooms] = useState(1);
   const [selectedBed, setSelectedBed] = useState("");
   const [rentPeriod, setRentPeriod] = useState(12);
-  const [selectedServiceIds, setSelectedServiceIds] = useState([]);
+  const [selectedServices, setSelectedServices] = useState([]);
 
   const [prices, setPrices] = useState({
     subtotal: 0,
@@ -116,6 +104,12 @@ export default function DashboardStudent_Screen() {
   );
   const { fetchData: fetchAccommodations } = useApi("/alojamientos", {}, false);
 
+  const { fetchData: fetchAccommodationDetails } = useApi(
+    "/alojamientos",
+    {},
+    false,
+  );
+
   const [accommodations, setAccommodations] = useState([]);
   const [pagination, setPagination] = useState({
     current: 1,
@@ -128,7 +122,7 @@ export default function DashboardStudent_Screen() {
     return apiServices.map((item) => ({
       id: item.servicio.id_servicio,
       name: item.servicio.name,
-      cost: item.costo === null ? 0 : Number(item.costo),
+      cost: item.costo,
       icon: ICON_MAP[item.servicio.icon] || ICON_MAP.default,
     }));
   };
@@ -150,41 +144,40 @@ export default function DashboardStudent_Screen() {
   };
 
   const openRoomDetails = async (room) => {
-    if (!room) return;
-    setSelectedRoom(null);
+    setSelectedRoom(room);
     setOpenDetails(true);
     setLoading((prev) => ({ ...prev, details: true }));
     setDetailsError(null);
 
     try {
-      const token = localStorage.getItem("token");
-      const response = await fetch(`/api/v1/alojamientos/${room.id}/details`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
+      const details = await fetchAccommodationDetails(`/${room.id}/details`);
 
-      if (!response.ok) throw new Error("Error en la respuesta");
+      const fotos = (details.fotos || []).map((foto) => ({
+        ...foto,
+        url: getImageUrl(foto.path),
+      }));
 
-      const details = await response.json();
-
-      const images = details.imagenes?.map((img) => img.url) || [];
+      const mainPhoto = fotos.find((f) => f.principal) || fotos[0] || null;
 
       const enrichedRoom = {
         ...room,
-        type: details.typeProperty,
-        gender: details.gender,
-        owner: details.propietario?.namePersonal || "Propietario",
-        location: `${details.address}, ${details.city}, ${details.country}`,
-        address: details.address,
-        description: details.description,
-        beds: details.camas || 0,
-        services: mapApiServices(details.servicios),
-        images,
+        type: details.typeProperty ?? "No especificado",
+        gender: details.gender ?? "mixto",
+        beds: details.beds ?? 0,
+        owner: details.propietario?.namePersonal ?? "Propietario",
+        address: details.address ?? "Dirección no disponible",
+        location: details.city
+          ? `${details.address}, ${details.city}, ${details.country}`
+          : "Ubicación no disponible",
+        services: mapApiServices(details.servicios ?? []),
+
+        fotos,
+        mainImage: mainPhoto?.url || IMAGE_URL,
       };
+
       setSelectedRoom(enrichedRoom);
-    } catch {
+    } catch (err) {
+      console.error(err);
       setDetailsError("No se pudieron cargar los detalles de la habitación");
     } finally {
       setLoading((prev) => ({ ...prev, details: false }));
@@ -195,24 +188,16 @@ export default function DashboardStudent_Screen() {
     setUserRating((prev) => ({ ...prev, [roomId]: value }));
   };
 
-  const calculatePrices = (
-    roomPricePerNight,
-    periodMonths,
-    selectedIds,
-    availableServices = [],
-  ) => {
-    const numericPrice = Number(roomPricePerNight) || 0;
-    const days = periodMonths * 30;
-    const roomTotal = numericPrice * days;
-
-    const servicesCost = availableServices
-      .filter((service) => selectedIds.includes(service.id))
-      .reduce((total, service) => total + (service.cost || 0), 0);
-
-    const subtotal = roomTotal + servicesCost;
+  const calculatePrices = (roomPrice, period, servicesSelected) => {
+    const periodPrices = { 12: 100, 6: 200, 3: 300 };
+    const servicesCost = servicesSelected.reduce((total, serviceName) => {
+      const service = SERVICES.find((s) => s.name === serviceName);
+      return total + (service?.price || 0);
+    }, 0);
+    const periodPrice = periodPrices[period] || 0;
+    const subtotal = periodPrice + servicesCost;
     const iva = subtotal * 0.16;
     const total = subtotal + iva;
-
     setPrices({
       subtotal: Math.round(subtotal * 100) / 100,
       iva: Math.round(iva * 100) / 100,
@@ -230,7 +215,7 @@ export default function DashboardStudent_Screen() {
         selectedRooms,
         selectedBed,
         rentPeriod,
-        selectedServiceIds,
+        selectedServices,
         prices,
         userId: "current-user-id",
       };
@@ -244,25 +229,11 @@ export default function DashboardStudent_Screen() {
   };
 
   const handleRequestRoom = async (roomId) => {
-    let room = null;
-    if (selectedRoom?.id === roomId && selectedRoom?.services) {
-      room = selectedRoom;
-    } else {
-      room = accommodations.find((r) => r.id === roomId);
-    }
-
+    const room = accommodations.find((r) => r.id === roomId);
     if (room) {
-      if (selectedRoom?.id !== roomId) {
-        setSelectedRoom(room);
-      }
-      calculatePrices(
-        room.price,
-        rentPeriod,
-        selectedServiceIds,
-        room.services || [],
-      );
+      setSelectedRoom(room);
+      calculatePrices(room.price, rentPeriod, selectedServices);
     }
-
     await fetchDocumentStatus();
     setReservationStep(1);
     setReservationModalOpen(true);
@@ -290,20 +261,20 @@ export default function DashboardStudent_Screen() {
         const total = data?.meta?.total ?? 0;
 
         const mappedRooms = items.map((item) => {
-          let mainImage = IMAGE_URL;
-          if (item.imagenes && Array.isArray(item.imagenes)) {
-            const principal = item.imagenes.find(
-              (img) => img.principal === true,
-            );
-            if (principal) mainImage = principal.url;
-          }
+          const fotos = (item.fotos || []).map((foto) => ({
+            ...foto,
+            url: getImageUrl(foto.path),
+          }));
+
+          const mainPhoto = fotos.find((f) => f.principal) || fotos[0] || null;
 
           return {
             id: item.id,
             name: item.name,
             price: item.precio_completo,
-            address: `${item.address || ""}, ${item.city || ""}, ${item.country || ""}`,
-            image: mainImage,
+            address: `${item.address}, ${item.city}, ${item.country}`,
+            fotos,
+            mainImage: mainPhoto?.url || IMAGE_URL,
             rating: item.rating ?? 0,
             reviews: item.reviews ?? 0,
           };
@@ -395,8 +366,6 @@ export default function DashboardStudent_Screen() {
                   </span>
                   <div className="flex items-center">
                     <InputNumber
-                      id="guests-input"
-                      name="guests"
                       min={1}
                       max={20}
                       value={guests}
@@ -438,8 +407,14 @@ export default function DashboardStudent_Screen() {
           ) : (
             <>
               <Row gutter={[24, 24]}>
-                {accommodations.map((room) => (
-                  <Col key={room.id} xs={24} sm={12} lg={8} xl={8}>
+                {accommodations.map((room, index) => (
+                  <Col
+                    key={room.id ?? `room-${index}`}
+                    xs={24}
+                    sm={12}
+                    lg={8}
+                    xl={8}
+                  >
                     <RoomCard
                       room={room}
                       isFav={favorites.includes(room.id)}
@@ -491,7 +466,6 @@ export default function DashboardStudent_Screen() {
             onRate={handleRate}
             onRequestRoom={handleRequestRoom}
             services={selectedRoom?.services || []}
-            images={selectedRoom?.images || []}
             loading={loading.details}
             error={detailsError}
           />
@@ -501,7 +475,7 @@ export default function DashboardStudent_Screen() {
             onClose={() => {
               setReservationModalOpen(false);
               setReservationStep(1);
-              setSelectedServiceIds([]);
+              setSelectedServices([]);
               setError(null);
             }}
             step={reservationStep}
@@ -518,17 +492,12 @@ export default function DashboardStudent_Screen() {
             onRentPeriodChange={(period) => {
               setRentPeriod(period);
               if (selectedRoom) {
-                calculatePrices(
-                  selectedRoom.price,
-                  period,
-                  selectedServiceIds,
-                  selectedRoom.services || [],
-                );
+                calculatePrices(selectedRoom.price, period, selectedServices);
               }
             }}
-            selectedServiceIds={selectedServiceIds}
-            onSelectedServicesChange={setSelectedServiceIds}
-            services={selectedRoom?.services || []}
+            selectedServices={selectedServices}
+            onSelectedServicesChange={setSelectedServices}
+            services={SERVICES}
             prices={prices}
             onSaveReservation={saveReservation}
             loading={loading.reservation}
