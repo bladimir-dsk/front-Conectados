@@ -395,7 +395,7 @@ export default function OwnersScreen_Admin() {
       width: 120,
       render: (_, record) => (
         <Space size="small">
-          <Tooltip title="Propiedades" color="cyan">
+          <Tooltip title="Alojamientos" color="cyan">
             <Button
               type="link"
               icon={<HomeOutlined />}

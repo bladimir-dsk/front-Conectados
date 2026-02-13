@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect } from "react";
-import { Button, Input, Space, Table, Tag, Tooltip, notification } from "antd";
+import { Button, Input, Space, Table, Tag, notification } from "antd";
 import {
     PlusOutlined,
     SearchOutlined,
@@ -11,7 +11,7 @@ import {
 import Highlighter from "react-highlight-words";
 import dayjs from "dayjs";
 import "dayjs/locale/es";
-import { Building2, Warehouse } from "lucide-react";
+import { Building2, Images, Warehouse } from "lucide-react";
 import { useApi } from "../../../hooks/useApi";
 import { useDeleteConfirmation } from "../../../hooks/useDeleteConfirmation";
 import AccommodationModal_Admin from "./modals/AccommodationModal_Admin";
@@ -19,6 +19,9 @@ import AccommodationDetailModal_Admin from "./modals/AccommodationDetailModal_Ad
 import AccommodationServicesModal_Admin from "./modals/AccommodationServicesModal_Admin";
 import RoomsView_Admin from "./RoomsView_Admin";
 dayjs.locale("es");
+import { Dropdown } from "antd";
+import { MoreOutlined } from "@ant-design/icons";
+import AccommodationPhotosModal_Admin from "./modals/AccommodationPhotosModal_Admin";
 
 export default function AccommodationsScreen_Admin() {
     const [searchText, setSearchText] = useState("");
@@ -28,6 +31,7 @@ export default function AccommodationsScreen_Admin() {
     const [servicesAccommodation, setServicesAccommodation] = useState(null);
     const [roomsViewAccommodation, setRoomsViewAccommodation] = useState(null);
     const [isChangingPage, setIsChangingPage] = useState(false);
+    const [photosAccommodation, setPhotosAccommodation] = useState(null);
 
     const [filtros, setFiltros] = useState({
         name: "",
@@ -434,52 +438,62 @@ export default function AccommodationsScreen_Admin() {
             title: "Acciones",
             key: "actions",
             align: "center",
-            width: 180,
-            render: (_, record) => (
-                <Space size="small">
-                    <Tooltip title="Ver detalle" color="blue">
+            width: 60,
+            render: (_, record) => {
+                const items = [
+                    {
+                        key: "detail",
+                        label: "Ver detalle",
+                        icon: <EyeOutlined style={{ color: "#1677ff" }} />,
+                        onClick: () => openModal("detail", record),
+                    },
+                    {
+                        key: "photos",
+                        label: "Agregar fotos",
+                        icon: <Images size={14} className="text-fuchsia-500!" />,
+                        onClick: () => setPhotosAccommodation(record),
+                    },
+                    {
+                        key: "services",
+                        label: "Servicios",
+                        icon: <ToolOutlined style={{ color: "#722ed1" }} />,
+                        onClick: () => openModal("services", record),
+                    },
+                    ...(record.typeIncome === "ESPACIO"
+                        ? [
+                            {
+                                key: "rooms",
+                                label: "Administrar cuartos",
+                                icon: <Warehouse size={14} className="text-orange-500!" />,
+                                onClick: () => setRoomsViewAccommodation(record),
+                            },
+                        ]
+                        : []),
+                    { type: "divider" },
+                    {
+                        key: "edit",
+                        label: "Editar",
+                        icon: <EditOutlined style={{ color: "#52c41a" }} />,
+                        onClick: () => openModal("edit", record),
+                    },
+                    {
+                        key: "delete",
+                        label: "Eliminar",
+                        icon: <DeleteOutlined />,
+                        danger: true,
+                        onClick: () => handleDelete(record),
+                    },
+                ];
+
+                return (
+                    <Dropdown menu={{ items }} trigger={["click"]} placement="bottomRight">
                         <Button
-                            type="link"
-                            icon={<EyeOutlined />}
-                            style={{ color: "#1677ff" }}
-                            onClick={() => openModal("detail", record)}
+                            type="text"
+                            icon={<MoreOutlined style={{ fontSize: 18 }} />}
                         />
-                    </Tooltip>
-                    <Tooltip title="Servicios" color="purple">
-                        <Button
-                            type="link"
-                            icon={<ToolOutlined />}
-                            style={{ color: "#722ed1" }}
-                            onClick={() => openModal("services", record)}
-                        />
-                    </Tooltip>
-                    {record.typeIncome === "ESPACIO" && (
-                        <Tooltip title="Administrar cuartos" color="orange">
-                            <Button
-                                type="link"
-                                icon={<Warehouse size={15} className="text-orange-500!" />}
-                                onClick={() => setRoomsViewAccommodation(record)}
-                            />
-                        </Tooltip>
-                    )}
-                    <Tooltip title="Editar" color="green">
-                        <Button
-                            type="link"
-                            icon={<EditOutlined />}
-                            style={{ color: "#52c41a" }}
-                            onClick={() => openModal("edit", record)}
-                        />
-                    </Tooltip>
-                    <Tooltip title="Eliminar" color="red">
-                        <Button
-                            type="link"
-                            danger
-                            icon={<DeleteOutlined />}
-                            onClick={() => handleDelete(record)}
-                        />
-                    </Tooltip>
-                </Space>
-            ),
+                    </Dropdown>
+                );
+            },
         },
     ];
 
@@ -599,6 +613,13 @@ export default function AccommodationsScreen_Admin() {
                 visible={modalState.services}
                 onClose={() => closeModal("services")}
                 accommodation={servicesAccommodation}
+            />
+
+            <AccommodationPhotosModal_Admin
+                visible={!!photosAccommodation}
+                onClose={() => setPhotosAccommodation(null)}
+                accommodation={photosAccommodation}
+                onPhotosChanged={() => fetchAccommodations()}
             />
         </div>
     );
