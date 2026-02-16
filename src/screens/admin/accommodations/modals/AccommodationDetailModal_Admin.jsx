@@ -1,10 +1,11 @@
-import { Tag, Button, Spin, Collapse } from "antd";
-import { X, MapPin, User, Info, Home, DollarSign, Calendar, DoorOpen, BedDouble, ChevronDown } from "lucide-react";
-import { useState, useEffect } from "react";
+import { Tag, Button, Spin } from "antd";
+import { X, MapPin, User, Info, Home, DollarSign, Calendar, DoorOpen, BedDouble, Settings, ChevronLeft, ChevronRight, ImageOff } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
 import { GoogleMap, Marker } from "@react-google-maps/api";
 import dayjs from "dayjs";
 import "dayjs/locale/es";
 import { useApi } from "../../../../hooks/useApi";
+import ServiceIconRenderer from "../../../../components/icon/Serviceiconrenderer";
 dayjs.locale("es");
 
 const mapContainerStyle = {
@@ -14,6 +15,8 @@ const mapContainerStyle = {
 
 const AccommodationDetailModal_Admin = ({ visible, onClose, data }) => {
     const [detailData, setDetailData] = useState(null);
+    const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
+    const thumbnailsRef = useRef(null);
 
     const {
         data: detailResponse,
@@ -28,6 +31,7 @@ const AccommodationDetailModal_Admin = ({ visible, onClose, data }) => {
     useEffect(() => {
         if (visible && data) {
             setDetailData(null);
+            setCurrentPhotoIndex(0);
             fetchDetail();
         }
     }, [visible, data]);
@@ -41,6 +45,10 @@ const AccommodationDetailModal_Admin = ({ visible, onClose, data }) => {
     if (!visible || !data) return null;
 
     const d = detailData || data;
+    const fotos = detailData?.fotos || [];
+
+    // Ordenar: principal primero
+    const fotosOrdenadas = [...fotos].sort((a, b) => (b.esPrincipal ? 1 : 0) - (a.esPrincipal ? 1 : 0));
 
     const markerPosition =
         d.latitude && d.longitude
@@ -98,6 +106,19 @@ const AccommodationDetailModal_Admin = ({ visible, onClose, data }) => {
         }).format(Number(price));
     };
 
+    const handlePrevPhoto = () => {
+        setCurrentPhotoIndex((prev) =>
+            prev === 0 ? fotosOrdenadas.length - 1 : prev - 1
+        );
+    };
+
+    const handleNextPhoto = () => {
+        setCurrentPhotoIndex((prev) =>
+            prev === fotosOrdenadas.length - 1 ? 0 : prev + 1
+        );
+    };
+
+    const servicios = detailData?.servicios || [];
     const cuartos = detailData?.cuartos || [];
 
     return (
@@ -136,34 +157,125 @@ const AccommodationDetailModal_Admin = ({ visible, onClose, data }) => {
                     <div className="flex-1 overflow-y-auto">
                         <Spin spinning={loading} tip="Cargando...">
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 p-6">
-                                {/* Columna izquierda - Imagen y Precio */}
+                                {/* Columna izquierda - Galería, Precio y Mapa */}
                                 <div>
-                                    {/* Imagen principal */}
+                                    {/* Galería de fotos */}
                                     <div className="relative bg-gray-100 dark:bg-zinc-800 rounded-lg overflow-hidden">
-                                        {d.url ? (
-                                            <img
-                                                src={d.url}
-                                                alt={d.name}
-                                                className="w-full h-96 object-cover"
-                                                onError={(e) => {
-                                                    e.target.src =
-                                                        "https://via.placeholder.com/800x600?text=Sin+Imagen";
-                                                }}
-                                            />
+                                        {fotosOrdenadas.length > 0 ? (
+                                            <>
+                                                {/* Imagen principal */}
+                                                <div className="relative">
+                                                    <img
+                                                        src={fotosOrdenadas[currentPhotoIndex]?.url}
+                                                        alt={`${d.name} - Foto ${currentPhotoIndex + 1}`}
+                                                        className="w-full h-96 object-cover transition-opacity duration-300"
+                                                        onError={(e) => {
+                                                            e.target.src =
+                                                                "https://via.placeholder.com/800x600?text=Error+de+imagen";
+                                                        }}
+                                                    />
+
+                                                    {/* Badge de estado */}
+                                                    <div className="absolute top-3 right-3">
+                                                        <Tag
+                                                            color={getStatusColor(d.estatus)}
+                                                            className="text-sm font-semibold px-3 py-1"
+                                                        >
+                                                            {getStatusLabel(d.estatus)}
+                                                        </Tag>
+                                                    </div>
+
+                                                    {/* Badge principal */}
+                                                    {fotosOrdenadas[currentPhotoIndex]?.esPrincipal && (
+                                                        <div className="absolute top-3 left-3">
+                                                            <span className="bg-orange-500 text-white text-xs font-semibold px-2.5 py-1 rounded-full shadow">
+                                                                Principal
+                                                            </span>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Contador de fotos */}
+                                                    <div className="absolute bottom-3 right-3 bg-black/60 text-white text-xs font-medium px-2.5 py-1 rounded-full">
+                                                        {currentPhotoIndex + 1} / {fotosOrdenadas.length}
+                                                    </div>
+
+                                                    {/* Flechas de navegación */}
+                                                    {fotosOrdenadas.length > 1 && (
+                                                        <>
+                                                            <button
+                                                                onClick={handlePrevPhoto}
+                                                                className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white p-1.5 rounded-full transition-colors"
+                                                            >
+                                                                <ChevronLeft size={20} />
+                                                            </button>
+                                                            <button
+                                                                onClick={handleNextPhoto}
+                                                                className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white p-1.5 rounded-full transition-colors"
+                                                            >
+                                                                <ChevronRight size={20} />
+                                                            </button>
+                                                        </>
+                                                    )}
+                                                </div>
+
+                                                {/* Thumbnails con scroll horizontal */}
+                                                {fotosOrdenadas.length > 1 && (
+                                                    <div className="p-2 bg-gray-50 dark:bg-zinc-800/80">
+                                                        <div
+                                                            ref={thumbnailsRef}
+                                                            className="flex gap-2 overflow-x-auto pb-1"
+                                                            style={{
+                                                                scrollbarWidth: "thin",
+                                                                scrollbarColor: "#a3a3a3 transparent",
+                                                            }}>
+                                                            {fotosOrdenadas.map((foto, index) => (
+                                                                <button
+                                                                    key={foto.id_foto}
+                                                                    onClick={() => setCurrentPhotoIndex(index)}
+                                                                    className={`relative shrink-0 overflow-hidden transition-all duration-200 ${
+                                                                        index === currentPhotoIndex
+                                                                            ? "ring-2 ring-orange-500 ring-offset-1 ring-offset-gray-50 dark:ring-offset-zinc-800 opacity-100"
+                                                                            : "opacity-60 hover:opacity-90"
+                                                                    }`}>
+                                                                    <img
+                                                                        src={foto.url}
+                                                                        alt={`Miniatura ${index + 1}`}
+                                                                        className="w-16 h-12 object-cover"
+                                                                        onError={(e) => {
+                                                                            e.target.src =
+                                                                                "https://via.placeholder.com/64x48?text=Error";
+                                                                        }}/>
+                                                                    {foto.esPrincipal && (
+                                                                        <div className="absolute bottom-0 left-0 right-0 bg-orange-500/80 text-white text-[8px] text-center font-semibold leading-tight py-0.5">
+                                                                            Principal
+                                                                        </div>
+                                                                    )}
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </>
                                         ) : (
-                                            <div className="w-full h-96 flex items-center justify-center">
-                                                <Home size={64} className="text-gray-300 dark:text-zinc-600" />
+                                            /* Sin fotos */
+                                            <div className="relative">
+                                                <div className="w-full h-96 flex flex-col items-center justify-center gap-3">
+                                                    <ImageOff size={48} className="text-gray-300 dark:text-zinc-600" />
+                                                    <p className="text-sm text-gray-400 dark:text-gray-500">
+                                                        Sin imágenes disponibles
+                                                    </p>
+                                                </div>
+                                                {/* Badge de estado aún sin fotos */}
+                                                <div className="absolute top-3 right-3">
+                                                    <Tag
+                                                        color={getStatusColor(d.estatus)}
+                                                        className="text-sm font-semibold px-3 py-1"
+                                                    >
+                                                        {getStatusLabel(d.estatus)}
+                                                    </Tag>
+                                                </div>
                                             </div>
                                         )}
-                                        {/* Badge de estado */}
-                                        <div className="absolute top-3 right-3">
-                                            <Tag
-                                                color={getStatusColor(d.estatus)}
-                                                className="text-sm font-semibold px-3 py-1"
-                                            >
-                                                {getStatusLabel(d.estatus)}
-                                            </Tag>
-                                        </div>
                                     </div>
 
                                     {/* Precio destacado */}
@@ -332,6 +444,51 @@ const AccommodationDetailModal_Admin = ({ visible, onClose, data }) => {
                                         </div>
                                     </div>
 
+                                    {/* Servicios */}
+                                    <div>
+                                        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+                                            <Settings size={18} />
+                                            Servicios
+                                            {servicios.length > 0 && (
+                                                <span className="text-xs font-normal text-gray-400 dark:text-gray-500">
+                                                    ({servicios.length})
+                                                </span>
+                                            )}
+                                        </h3>
+                                        {servicios.length === 0 ? (
+                                            <p className="text-sm text-gray-400 dark:text-gray-500 italic">
+                                                Sin servicios asignados
+                                            </p>
+                                        ) : (
+                                            <div className="flex flex-wrap gap-2">
+                                                {servicios.map((item) => (
+                                                    <div
+                                                        key={item.id}
+                                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-full"
+                                                    >
+                                                        <ServiceIconRenderer
+                                                            iconKey={item.servicio?.icon}
+                                                            size={14}
+                                                            className="text-purple-600 dark:text-purple-400"
+                                                        />
+                                                        <span className="text-xs font-medium text-purple-800 dark:text-purple-300">
+                                                            {item.servicio?.name || "—"}
+                                                        </span>
+                                                        {item.costo ? (
+                                                            <span className="text-xs text-purple-500 dark:text-purple-400 font-semibold ml-0.5">
+                                                                {formatPrice(item.costo)}
+                                                            </span>
+                                                        ) : (
+                                                            <span className="text-[10px] text-purple-400 dark:text-purple-500 italic ml-0.5">
+                                                                Incluido
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+
                                     {/* Fecha de registro */}
                                     <div className="p-3 bg-gray-50 dark:bg-zinc-800 rounded-lg">
                                         <div className="flex items-center gap-2 mb-1">
@@ -379,7 +536,6 @@ const AccommodationDetailModal_Admin = ({ visible, onClose, data }) => {
                                             <div className="divide-y divide-gray-200 dark:divide-zinc-700">
                                                 {cuartos.map((cuarto) => (
                                                     <div key={cuarto.id_cuarto} className="p-4">
-                                                        {/* Info del cuarto */}
                                                         <div className="flex items-start justify-between mb-3">
                                                             <div className="flex items-center gap-3">
                                                                 <div className="w-10 h-10 rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
@@ -417,7 +573,6 @@ const AccommodationDetailModal_Admin = ({ visible, onClose, data }) => {
                                                             </div>
                                                         </div>
 
-                                                        {/* Camas del cuarto */}
                                                         {cuarto.camas && cuarto.camas.length > 0 && (
                                                             <div className="ml-13 pl-4 border-l-2 border-blue-200 dark:border-blue-800 space-y-2">
                                                                 <p className="text-xs font-medium text-gray-500 dark:text-gray-400 flex items-center gap-1.5 mb-2">
@@ -457,7 +612,6 @@ const AccommodationDetailModal_Admin = ({ visible, onClose, data }) => {
                                                             </div>
                                                         )}
 
-                                                        {/* Sin camas */}
                                                         {(!cuarto.camas || cuarto.camas.length === 0) && (
                                                             <div className="ml-13 pl-4 border-l-2 border-gray-200 dark:border-zinc-700">
                                                                 <p className="text-xs text-gray-400 dark:text-gray-500 italic">

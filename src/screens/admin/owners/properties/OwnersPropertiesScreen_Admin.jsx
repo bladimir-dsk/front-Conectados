@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { App, Button, Input, Space, Table, Tag, Tooltip, Empty, Avatar } from "antd";
+import { Button, Input, Space, Table, Tag, notification } from "antd";
 import {
     ArrowLeftOutlined,
     PlusOutlined,
@@ -8,18 +8,22 @@ import {
     EditOutlined,
     DeleteOutlined,
     EyeOutlined,
-    TagOutlined,
-    InsertRowBelowOutlined,
+    ToolOutlined,
 } from "@ant-design/icons";
-import { Building2 } from "lucide-react";
+import { Building2, House, Images, Warehouse } from "lucide-react";
 import Highlighter from "react-highlight-words";
 import dayjs from "dayjs";
 import "dayjs/locale/es";
-import PropertyModal_Admin from "./modals/PropertyModal_Admin";
-import PropertyDetailsModal_Admin from "./modals/PropertyDetailsModal_Admin";
-import PropertySpacesModal_Admin from "./modals/PropertySpacesModal_Admin";
-import PropertyServicesModal_Admin from "./modals/PropertyServicesModal_Admin";
-import { initialPropertiesData } from "../OwnersData";
+import { useDeleteConfirmation } from "../../../../hooks/useDeleteConfirmation";
+import { useApi } from "../../../../hooks/useApi";
+import AccommodationModal_Admin from "../../accommodations/modals/AccommodationModal_Admin";
+import AccommodationDetailModal_Admin from "../../accommodations/modals/AccommodationDetailModal_Admin";
+import AccommodationServicesModal_Admin from "../../accommodations/modals/AccommodationServicesModal_Admin";
+import OwnerRoomsView_Admin from "../OwnerRoomsView_Admin";
+import { Dropdown } from "antd";
+import { MoreOutlined } from "@ant-design/icons";
+import AccommodationPhotosModal_Admin from "../../accommodations/modals/AccommodationPhotosModal_Admin";
+
 
 dayjs.locale("es");
 
@@ -27,83 +31,202 @@ export default function OwnersPropertiesScreen_Admin() {
     const { ownerId } = useParams();
     const location = useLocation();
     const navigate = useNavigate();
-    const { message, modal } = App.useApp();
+    const [api, contextHolder] = notification.useNotification();
 
     const owner = location.state?.owner;
+
     const [searchText, setSearchText] = useState("");
     const [searchedColumn, setSearchedColumn] = useState("");
     const searchInput = useRef(null);
-    const [propertiesData, setPropertiesData] = useState([]);
+    const [isChangingPage, setIsChangingPage] = useState(false);
+    const [photosAccommodation, setPhotosAccommodation] = useState(null);
+
     const [modalState, setModalState] = useState({
         add: false,
         edit: false,
-        details: false,
-        spaces: false,
+        detail: false,
         services: false,
     });
-    const [selectedProperty, setSelectedProperty] = useState(null);
+    const [selectedAccommodation, setSelectedAccommodation] = useState(null);
+    const [servicesAccommodation, setServicesAccommodation] = useState(null);
+    const [roomsViewAccommodation, setRoomsViewAccommodation] = useState(null);
 
-    // Cargar propiedades del propietario
+    // Filtros server-side
+    const [filtros, setFiltros] = useState({
+        name: "",
+        typeProperty: [],
+        gender: [],
+        typeIncome: [],
+        city: "",
+    });
+
+    const [paginacion, setPaginacion] = useState({
+        paginaActual: 1,
+        limite: 10,
+        totalRegistros: 0,
+        totalPaginas: 0,
+    });
+
+    const construirURL = (pagina = 1) => {
+        const params = new URLSearchParams();
+        params.append("page", pagina.toString());
+        params.append("limit", paginacion.limite.toString());
+
+        if (filtros.name) params.append("name", filtros.name);
+        if (filtros.city) params.append("city", filtros.city);
+        if (filtros.typeProperty && filtros.typeProperty.length > 0) {
+            params.append("typeProperty", filtros.typeProperty.join(","));
+        }
+        if (filtros.gender && filtros.gender.length > 0) {
+            params.append("gender", filtros.gender.join(","));
+        }
+        if (filtros.typeIncome && filtros.typeIncome.length > 0) {
+            params.append("typeIncome", filtros.typeIncome.join(","));
+        }
+
+        return `/alojamientos/alojamientos/propietario/${ownerId}?${params.toString()}`;
+    };
+
+    const [endpointPaginacion, setEndpointPaginacion] = useState(() =>
+        construirURL(1)
+    );
+
+    const {
+        data: propertiesResponse,
+        loading: loadingProperties,
+        fetchData: fetchProperties,
+        deleteData: deleteProperty,
+    } = useApi(endpointPaginacion, {}, false);
+
+    // Búsqueda global
+    const handleGlobalSearch = (value, field) => {
+        setFiltros((prev) => ({
+            ...prev,
+            [field]: value,
+        }));
+        setPaginacion((prev) => ({
+            ...prev,
+            paginaActual: 1,
+        }));
+    };
+
+    // Reaccionar a cambios de filtros/paginación
     useEffect(() => {
-        const ownerProperties = initialPropertiesData.filter(
-            (property) => property.ownerId === parseInt(ownerId)
-        );
-        setPropertiesData(ownerProperties);
-    }, [ownerId]);
+        const url = construirURL(paginacion.paginaActual);
+        setEndpointPaginacion(url);
+    }, [filtros, paginacion.paginaActual, paginacion.limite]);
 
-    const openModal = (type, property = null) => {
-        setModalState({ 
-            add: false, 
-            edit: false, 
-            details: false, 
-            spaces: false,
-            services: false,
-            [type]: true 
-        });
-        setSelectedProperty(property);
+    useEffect(() => {
+        if (endpointPaginacion) {
+            fetchProperties();
+        }
+    }, [endpointPaginacion]);
+
+    useEffect(() => {
+        if (propertiesResponse?.meta) {
+            setPaginacion((prev) => ({
+                ...prev,
+                paginaActual: propertiesResponse.meta.currentPage,
+                totalRegistros: propertiesResponse.meta.totalItems,
+                totalPaginas: propertiesResponse.meta.totalPages,
+                limite: propertiesResponse.meta.itemsPerPage,
+            }));
+            setIsChangingPage(false);
+        }
+    }, [propertiesResponse]);
+
+    const propertiesData = propertiesResponse?.data || [];
+
+    // Modales
+    const openModal = (type, accommodation = null) => {
+        setModalState((prev) => ({ ...prev, [type]: true }));
+        if (type === "services") {
+            setServicesAccommodation(accommodation);
+        } else {
+            setSelectedAccommodation(accommodation);
+        }
     };
 
     const closeModal = (type) => {
         setModalState((prev) => ({ ...prev, [type]: false }));
-        setSelectedProperty(null);
-    };
-
-    const handleSaveProperty = (values) => {
-        if (modalState.edit && selectedProperty) {
-            setPropertiesData((prev) =>
-                prev.map((item) =>
-                    item.id === selectedProperty.id ? { ...item, ...values } : item
-                )
-            );
-            closeModal("edit");
+        if (type === "services") {
+            setServicesAccommodation(null);
         } else {
-            const newId =
-                propertiesData.length > 0
-                    ? Math.max(...propertiesData.map((p) => p.id)) + 1
-                    : 1;
-
-            setPropertiesData((prev) => [
-                ...prev,
-                {
-                    key: String(newId),
-                    id: newId,
-                    ...values,
-                    registrationDate: dayjs().format("YYYY-MM-DD"),
-                },
-            ]);
-            closeModal("add");
+            setSelectedAccommodation(null);
         }
     };
 
+    const handleSaveAccommodation = async () => {
+        await fetchProperties();
+        closeModal("add");
+        closeModal("edit");
+    };
+
+    // Eliminación
+    const showDeleteConfirm = useDeleteConfirmation({
+        onDelete: deleteProperty,
+    });
+
+    const handleDelete = (record) => {
+        showDeleteConfirm({
+            title: "¿Estás seguro de eliminar este alojamiento?",
+            itemName: record.name,
+            entityName: "el alojamiento",
+            recordId: record.id_alojamiento,
+            successTitle: "Alojamiento eliminado",
+            onSuccess: fetchProperties,
+        });
+    };
+
+    // Cambio de página
+    const handlePageChange = (page) => {
+        setIsChangingPage(true);
+        setPaginacion((prev) => ({
+            ...prev,
+            paginaActual: page,
+        }));
+    };
+
+    // Manejar cambios en filtros de la tabla (selects)
+    const handleTableChange = (_pagination, filters) => {
+        const filterMapping = {
+            typeProperty: "typeProperty",
+            gender: "gender",
+            typeIncome: "typeIncome",
+        };
+
+        let changed = false;
+        const newFiltros = { ...filtros };
+
+        Object.entries(filterMapping).forEach(([columnKey, filtroKey]) => {
+            if (filters[columnKey] !== undefined) {
+                const nuevosValores = filters[columnKey] || [];
+                if (JSON.stringify(nuevosValores) !== JSON.stringify(filtros[filtroKey])) {
+                    newFiltros[filtroKey] = nuevosValores;
+                    changed = true;
+                }
+            }
+        });
+
+        if (changed) {
+            setFiltros(newFiltros);
+            setPaginacion((prev) => ({ ...prev, paginaActual: 1 }));
+        }
+    };
+
+    // Búsqueda por columna (texto)
     const handleSearch = (selectedKeys, confirm, dataIndex) => {
         confirm();
-        setSearchText(selectedKeys[0]);
+        const value = selectedKeys[0] || "";
+        handleGlobalSearch(value, dataIndex);
+        setSearchText(value);
         setSearchedColumn(dataIndex);
     };
 
-    const handleReset = (clearFilters) => {
+    const handleReset = (clearFilters, dataIndex) => {
         clearFilters();
         setSearchText("");
+        handleGlobalSearch("", dataIndex);
     };
 
     const getColumnSearchProps = (dataIndex) => ({
@@ -117,8 +240,8 @@ export default function OwnersPropertiesScreen_Admin() {
             <div style={{ padding: 8 }} onKeyDown={(e) => e.stopPropagation()}>
                 <Input
                     ref={searchInput}
-                    placeholder={`Buscar...`}
-                    value={selectedKeys[0]}
+                    placeholder="Buscar..."
+                    value={selectedKeys[0] || ""}
                     onChange={(e) =>
                         setSelectedKeys(e.target.value ? [e.target.value] : [])
                     }
@@ -138,7 +261,9 @@ export default function OwnersPropertiesScreen_Admin() {
                     </Button>
                     <Button
                         className="btn-limpiar"
-                        onClick={() => clearFilters && handleReset(clearFilters)}
+                        onClick={() =>
+                            clearFilters && handleReset(clearFilters, dataIndex)
+                        }
                         size="small"
                         style={{ width: 90 }}
                     >
@@ -161,15 +286,19 @@ export default function OwnersPropertiesScreen_Admin() {
                 </Space>
             </div>
         ),
-        filterIcon: (filtered) => (
-            <SearchOutlined style={{ color: filtered ? "#9cd522" : undefined }} />
+        filterIcon: () => (
+            <SearchOutlined
+                style={{
+                    color: filtros[dataIndex] ? "#0B733E" : undefined,
+                }}
+            />
         ),
-        onFilter: (value, record) =>
-            record[dataIndex]?.toString().toLowerCase().includes(value.toLowerCase()),
+        filteredValue: filtros[dataIndex] ? [filtros[dataIndex]] : null,
+        onFilter: () => true,
         filterDropdownProps: {
             onOpenChange(open) {
                 if (open) {
-                    setTimeout(() => searchInput.current?.select(), 100);
+                    setTimeout(() => searchInput.current?.select?.());
                 }
             },
         },
@@ -186,119 +315,142 @@ export default function OwnersPropertiesScreen_Admin() {
             ),
     });
 
-    const handleDelete = (record) => {
-        modal.confirm({
-            title: "¿Estás seguro?",
-            content: `Se eliminará la propiedad: ${record.propertyName}`,
-            okText: "Aceptar",
-            okType: "danger",
-            cancelText: "Cancelar",
-            onOk: () => {
-                setPropertiesData((prev) => prev.filter((item) => item.id !== record.id));
-                message.success("Propiedad eliminada correctamente");
-            },
-        });
+    const getStatusColor = (status) => {
+        const map = {
+            ACTIVO: "green",
+            INACTIVO: "red",
+            OCUPADO: "blue",
+            MANTENIMIENTO: "orange",
+            PENDIENTE: "gold",
+        };
+        return map[status] || "default";
     };
 
-    const getStatusColor = (status) => {
-        return status === "Activo" ? "green" : "red";
+    const getStatusLabel = (status) => {
+        const map = {
+            ACTIVO: "Activo",
+            INACTIVO: "Inactivo",
+            OCUPADO: "Ocupado",
+            MANTENIMIENTO: "Mantenimiento",
+            PENDIENTE: "Pendiente",
+        };
+        return map[status] || status;
     };
+
+    const getTypeIncomeColor = (type) => {
+        const map = {
+            ALOJAMIENTO_COMPLETO: "purple",
+            CUARTO: "cyan",
+            CAMA: "geekblue",
+            ESPACIO: "magenta",
+        };
+        return map[type] || "default";
+    };
+
+    const getTypeIncomeLabel = (type) => {
+        const map = {
+            ALOJAMIENTO_COMPLETO: "Alojamiento completo",
+            CUARTO: "Cuarto",
+            CAMA: "Cama",
+            ESPACIO: "Espacio",
+        };
+        return map[type] || type;
+    };
+
+    const formatPrice = (price) => {
+        return new Intl.NumberFormat("es-MX", {
+            style: "currency",
+            currency: "MXN",
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 2,
+        }).format(Number(price));
+    };
+
+    const dataSource = propertiesData.map((property) => ({
+        key: property.id_alojamiento,
+        ...property,
+    }));
 
     const columns = [
         {
-            title: "Imagen",
-            dataIndex: "image",
-            key: "image",
-            align: "center",
-            width: 80,
-            render: (image, record) => (
-                <Avatar
-                    src={image}
-                    alt={record.propertyName}
-                    size={50}
-                    shape="square"
-                />
-            ),
-        },
-        {
             title: "Nombre",
-            dataIndex: "propertyName",
-            key: "propertyName",
-            ...getColumnSearchProps("propertyName"),
-            sorter: (a, b) => a.propertyName.localeCompare(b.propertyName),
+            dataIndex: "name",
+            key: "name",
+            ...getColumnSearchProps("name"),
+            sorter: (a, b) => a.name.localeCompare(b.name),
         },
         {
-            title: "Dirección",
-            dataIndex: "address",
-            key: "address",
-            ...getColumnSearchProps("address"),
+            title: "Tipo propiedad",
+            dataIndex: "typeProperty",
+            key: "typeProperty",
+            align: "center",
+            filters: [
+                { text: "Casa", value: "Casa" },
+                { text: "Departamento", value: "Departamento" },
+                { text: "Cuarto", value: "Cuarto" },
+            ],
+            filteredValue:
+                filtros.typeProperty && filtros.typeProperty.length > 0
+                    ? filtros.typeProperty
+                    : null,
+            onFilter: () => true,
+            render: (type) => <Tag>{type}</Tag>,
         },
         {
             title: "Ciudad",
             dataIndex: "city",
             key: "city",
-            align: "center",
+            ...getColumnSearchProps("city"),
+            sorter: (a, b) => a.city.localeCompare(b.city),
         },
         {
-            title: "Tipo",
-            dataIndex: "propertyType",
-            key: "propertyType",
+            title: "Género",
+            dataIndex: "gender",
+            key: "gender",
             align: "center",
             filters: [
-                { text: "Casa", value: "Casa" },
-                { text: "Departamento", value: "Departamento" },
-                { text: "Local Comercial", value: "Local Comercial" },
-                { text: "Oficina", value: "Oficina" },
-                { text: "Terreno", value: "Terreno" },
+                { text: "Mixto", value: "Mixto" },
+                { text: "Masculino", value: "Masculino" },
+                { text: "Femenino", value: "Femenino" },
             ],
-            onFilter: (value, record) => record.propertyType === value,
-            render: (type) => (
-                <Tag color="blue" style={{ fontSize: "13px" }}>
-                    {type}
-                </Tag>
-            ),
+            filteredValue:
+                filtros.gender && filtros.gender.length > 0 ? filtros.gender : null,
+            onFilter: () => true,
         },
         {
             title: "Tipo de renta",
-            dataIndex: "rentalType",
-            key: "rentalType",
+            dataIndex: "typeIncome",
+            key: "typeIncome",
             align: "center",
             filters: [
-                { text: "Completa", value: "Completa" },
-                { text: "Por espacios", value: "Por espacios" },
+                { text: "Alojamiento completo", value: "ALOJAMIENTO_COMPLETO" },
+                { text: "Espacio", value: "ESPACIO" },
             ],
-            onFilter: (value, record) => record.rentalType === value,
+            filteredValue:
+                filtros.typeIncome && filtros.typeIncome.length > 0
+                    ? filtros.typeIncome
+                    : null,
+            onFilter: () => true,
             render: (type) => (
-                <Tag color={type === "Completa" ? "purple" : "cyan"} style={{ fontSize: "13px" }}>
-                    {type}
-                </Tag>
+                <Tag color={getTypeIncomeColor(type)}>{getTypeIncomeLabel(type)}</Tag>
             ),
         },
         {
-            title: "Precio desde",
-            dataIndex: "priceFrom",
-            key: "priceFrom",
+            title: "Precio",
+            dataIndex: "precio_completo",
+            key: "precio_completo",
             align: "center",
-            sorter: (a, b) => a.priceFrom - b.priceFrom,
-            render: (price) => (
-                <span className="font-semibold text-green-600">
-                    ${price?.toLocaleString("es-MX")}
-                </span>
-            ),
+            sorter: (a, b) => Number(a.precio_completo) - Number(b.precio_completo),
+            render: (price) => formatPrice(price),
         },
         {
             title: "Estado",
-            dataIndex: "status",
-            key: "status",
+            dataIndex: "estatus",
+            key: "estatus",
             align: "center",
-            filters: [
-                { text: "Activo", value: "Activo" },
-                { text: "Inactivo", value: "Inactivo" },
-            ],
-            onFilter: (value, record) => record.status === value,
             render: (status) => (
                 <Tag color={getStatusColor(status)} style={{ fontSize: "13px" }}>
-                    {status}
+                    {getStatusLabel(status)}
                 </Tag>
             ),
         },
@@ -306,66 +458,79 @@ export default function OwnersPropertiesScreen_Admin() {
             title: "Acciones",
             key: "actions",
             align: "center",
-            width: 120,
-            render: (_, record) => (
-                <Space size="small">
-                    <Tooltip title="Ver detalles" color="blue">
+            width: 60,
+            render: (_, record) => {
+                const items = [
+                    {
+                        key: "detail",
+                        label: "Ver detalle",
+                        icon: <EyeOutlined style={{ color: "#1677ff" }} />,
+                        onClick: () => openModal("detail", record),
+                    },
+                    {
+                        key: "photos",
+                        label: "Agregar fotos",
+                        icon: <Images size={14} className="text-fuchsia-500!" />,
+                        onClick: () => setPhotosAccommodation(record),
+                    },
+                    {
+                        key: "services",
+                        label: "Servicios",
+                        icon: <ToolOutlined style={{ color: "#722ed1" }} />,
+                        onClick: () => openModal("services", record),
+                    },
+                    ...(record.typeIncome === "ESPACIO"
+                        ? [
+                            {
+                                key: "rooms",
+                                label: "Administrar cuartos",
+                                icon: <Warehouse size={14} className="text-orange-500!" />,
+                                onClick: () => setRoomsViewAccommodation(record),
+                            },
+                        ]
+                        : []),
+                    { type: "divider" },
+                    {
+                        key: "edit",
+                        label: "Editar",
+                        icon: <EditOutlined style={{ color: "#52c41a" }} />,
+                        onClick: () => openModal("edit", record),
+                    },
+                    {
+                        key: "delete",
+                        label: "Eliminar",
+                        icon: <DeleteOutlined />,
+                        danger: true,
+                        onClick: () => handleDelete(record),
+                    },
+                ];
+
+                return (
+                    <Dropdown menu={{ items }} trigger={["click"]} placement="bottomRight">
                         <Button
-                            type="link"
-                            icon={<EyeOutlined />}
-                            style={{ color: "#1890ff" }}
-                            onClick={() => openModal("details", record)}
+                            type="text"
+                            icon={<MoreOutlined style={{ fontSize: 18 }} />}
                         />
-                    </Tooltip>
-                    <Tooltip 
-                        title={
-                            record.rentalType === "Por espacios" 
-                                ? "Agregar espacios" 
-                                : "Solo disponible para rentas por espacios"
-                        } 
-                        color={record.rentalType === "Por espacios" ? "orange" : "gray"}
-                    >
-                        <Button 
-                            type="link"
-                            icon={<InsertRowBelowOutlined />}
-                            style={{
-                                color: record.rentalType === "Por espacios" ? "#FF8904" : "#d9d9d9"
-                            }}
-                            disabled={record.rentalType !== "Por espacios"}
-                            onClick={() => record.rentalType === "Por espacios" && openModal("spaces", record)}
-                        />
-                    </Tooltip>
-                    <Tooltip title="Agregar servicios" color="cyan">
-                        <Button
-                            type="link"
-                            icon={<TagOutlined />}
-                            style={{ color: "#13c2c2" }}
-                            onClick={() => openModal("services", record)}
-                        />
-                    </Tooltip>
-                    <Tooltip title="Editar" color="green">
-                        <Button
-                            type="link"
-                            icon={<EditOutlined />}
-                            style={{ color: "#52c41a" }}
-                            onClick={() => openModal("edit", record)}
-                        />
-                    </Tooltip>
-                    <Tooltip title="Eliminar" color="red">
-                        <Button
-                            type="link"
-                            danger
-                            icon={<DeleteOutlined />}
-                            onClick={() => handleDelete(record)}
-                        />
-                    </Tooltip>
-                </Space>
-            ),
+                    </Dropdown>
+                );
+            },
         },
     ];
 
+    // Si se seleccionó un alojamiento para ver cuartos, mostrar esa vista
+    if (roomsViewAccommodation) {
+        return (
+            <OwnerRoomsView_Admin
+                accommodation={roomsViewAccommodation}
+                onBack={() => setRoomsViewAccommodation(null)}
+            />
+        );
+    }
+
     return (
         <div>
+            {contextHolder}
+
             {/* Header */}
             <div className="bg-linear-to-r from-[#84cc16] to-[#65a30d] px-6 py-6 md:py-3 rounded-md">
                 <div className="flex items-center justify-between gap-4">
@@ -378,14 +543,16 @@ export default function OwnersPropertiesScreen_Admin() {
                             size="large"
                         />
                         <div className="p-2">
-                            <Building2 className="text-[#111214]" size={35} />
+                            <House className="text-[#111214]" size={35} />
                         </div>
                         <div className="space-y-0">
                             <h1 className="text-xl md:text-2xl font-bold text-[#111214] leading-tight">
-                                Propiedades de {owner?.name || "Propietario"}
+                                Alojamientos de{" "}
+                                {owner?.namePersonal || owner?.name || "Propietario"}{" "}
+                                {owner?.lastName || ""}
                             </h1>
                             <h1 className="text-gray-700 text-sm mt-0.5">
-                                {owner?.email || ""}
+                                {owner?.emailPersonal || owner?.email || ""}
                             </h1>
                         </div>
                     </div>
@@ -412,67 +579,76 @@ export default function OwnersPropertiesScreen_Admin() {
                 <div className="bg-white dark:bg-[#141414] rounded-md shadow-lg p-4 md:p-6">
                     <Table
                         columns={columns}
-                        dataSource={propertiesData}
+                        dataSource={dataSource}
+                        loading={loadingProperties || isChangingPage}
                         scroll={{ x: "max-content" }}
+                        onChange={handleTableChange}
                         pagination={{
-                            pageSize: 10,
-                            showTotal: (total) => `Total ${total} propiedades`,
+                            current: paginacion.paginaActual,
+                            pageSize: paginacion.limite,
+                            total: paginacion.totalRegistros,
+                            showTotal: (total) => `Total ${total} alojamientos`,
+                            showSizeChanger: false,
+                            onChange: handlePageChange,
                         }}
                         locale={{
-                            emptyText: (
-                                <Empty
-                                    description={
-                                        <span>
-                                            No hay propiedades registradas para este propietario.
-                                            <br />
-                                            Dale en "Agregar" para crear una.
-                                        </span>
-                                    }
-                                />
-                            ),
+                            emptyText: () => {
+                                if (loadingProperties) return null;
+
+                                const hayFiltrosActivos =
+                                    filtros.name ||
+                                    filtros.city ||
+                                    (filtros.typeProperty && filtros.typeProperty.length > 0) ||
+                                    (filtros.gender && filtros.gender.length > 0) ||
+                                    (filtros.typeIncome && filtros.typeIncome.length > 0);
+
+                                if (hayFiltrosActivos) {
+                                    return "No se encontraron alojamientos con los filtros aplicados.";
+                                }
+
+                                return 'No hay alojamientos registrados para este propietario. Dale en "Agregar" para crear uno.';
+                            },
                         }}
                     />
                 </div>
             </div>
 
-            {/* Modal – Agregar */}
-            <PropertyModal_Admin
+            {/* Modal – Agregar alojamiento */}
+            <AccommodationModal_Admin
                 visible={modalState.add}
                 onClose={() => closeModal("add")}
-                onSave={handleSaveProperty}
+                onSave={handleSaveAccommodation}
                 isEditing={false}
-                selectedOwnerId={parseInt(ownerId)}
             />
 
-            {/* Modal – Editar */}
-            <PropertyModal_Admin
+            {/* Modal – Editar alojamiento */}
+            <AccommodationModal_Admin
                 visible={modalState.edit}
                 onClose={() => closeModal("edit")}
-                onSave={handleSaveProperty}
-                editData={selectedProperty}
+                onSave={handleSaveAccommodation}
+                editData={selectedAccommodation}
                 isEditing={true}
             />
 
-            {/* Modal – Detalles */}
-            <PropertyDetailsModal_Admin
-                visible={modalState.details}
-                onClose={() => closeModal("details")}
-                propertyData={selectedProperty}
-                ownerData={owner}
+            {/* Modal – Detalle alojamiento */}
+            <AccommodationDetailModal_Admin
+                visible={modalState.detail}
+                onClose={() => closeModal("detail")}
+                data={selectedAccommodation}
             />
 
-            {/* Modal – Gestionar Espacios */}
-            <PropertySpacesModal_Admin
-                visible={modalState.spaces}
-                onClose={() => closeModal("spaces")}
-                propertyData={selectedProperty}
-            />
-
-            {/* Modal – Gestionar Servicios */}
-            <PropertyServicesModal_Admin
+            {/* Modal – Servicios alojamiento */}
+            <AccommodationServicesModal_Admin
                 visible={modalState.services}
                 onClose={() => closeModal("services")}
-                propertyData={selectedProperty}
+                accommodation={servicesAccommodation}
+            />
+
+            <AccommodationPhotosModal_Admin
+                visible={!!photosAccommodation}
+                onClose={() => setPhotosAccommodation(null)}
+                accommodation={photosAccommodation}
+                onPhotosChanged={() => fetchProperties()}
             />
         </div>
     );
