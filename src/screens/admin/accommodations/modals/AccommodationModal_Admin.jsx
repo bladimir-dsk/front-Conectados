@@ -120,7 +120,6 @@ const AccommodationModal_Admin = ({
                     const initialValues = {
                         name: editData.name || "",
                         description: editData.description || "",
-                        url: editData.url || "",
                         typeProperty: editData.typeProperty || undefined,
                         gender: editData.gender || undefined,
                         typeIncome: editData.typeIncome || undefined,
@@ -195,7 +194,6 @@ const AccommodationModal_Admin = ({
         const hasChanged =
             allValues.name !== initialData.name ||
             allValues.description !== initialData.description ||
-            allValues.url !== initialData.url ||
             allValues.typeProperty !== initialData.typeProperty ||
             allValues.gender !== initialData.gender ||
             allValues.typeIncome !== initialData.typeIncome ||
@@ -257,7 +255,6 @@ const AccommodationModal_Admin = ({
             const dataToSend = {
                 name: values.name,
                 description: values.description || "",
-                url: values.url || "",
                 typeProperty: values.typeProperty,
                 gender: values.gender,
                 typeIncome: values.typeIncome,
@@ -429,18 +426,6 @@ const AccommodationModal_Admin = ({
                                                 allowClear
                                             />
                                         </Form.Item>
-                                    </div>
-
-                                    {/* URL imagen */}
-                                    <div className="md:col-span-2">
-                                        <FormInput
-                                            name="url"
-                                            label="URL de imagen"
-                                            placeholder="https://ejemplo.com/imagen.jpg"
-                                            rules={[
-                                                { required: true, message: "La URL de la imagen es requerida" },
-                                            ]}
-                                        />
                                     </div>
 
                                     {/* Descripción */}
