@@ -1,9 +1,7 @@
 import React from "react";
 import { Tag, Button } from "antd";
 import { Heart, MapPin, Star, MapPin as MapPinIcon } from "lucide-react";
-
 const IMAGE_URL = "https://s03.s3c.es/imag/_v0/1200x655/0/f/c/habitacion.jpg";
-
 const RoomCard = ({
   room,
   isFav,
@@ -55,7 +53,7 @@ const RoomCard = ({
         <div className="flex gap-2">
           <Button
             className="flex-1 !bg-transparent !border-white font-medium hover:!bg-transparent !text-white h-10 text-sm"
-            onClick={() => onViewDetails(room)}
+            onClick={() => onViewDetails(room.id)}
           >
             Ver detalles
           </Button>

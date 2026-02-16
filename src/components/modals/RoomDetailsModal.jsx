@@ -1,6 +1,20 @@
 import React from "react";
 import { Modal, Button, Space, Divider, Spin, Alert, Carousel } from "antd";
 import {
+  Wifi,
+  Droplets,
+  Zap,
+  Sparkles,
+  Utensils,
+  Shirt,
+  Wind,
+  Tv,
+  Car,
+  Dumbbell,
+  Waves,
+  Coffee,
+  Sandwich,
+  Moon,
   Home,
   User,
   Star as StarIcon,
@@ -9,6 +23,23 @@ import {
   DollarSign,
   X,
 } from "lucide-react";
+
+const ICON_MAP = {
+  "fat-wifi": Wifi,
+  "fat-droplets": Droplets,
+  "fat-zap": Zap,
+  "fat-sparkles": Sparkles,
+  "fat-utensils": Utensils,
+  "fat-shirt": Shirt,
+  "fat-wind": Wind,
+  "fat-tv": Tv,
+  "fat-car": Car,
+  "fat-dumbbell": Dumbbell,
+  "fat-waves": Waves,
+  "fat-coffee": Coffee,
+  "fat-sandwich": Sandwich,
+  "fat-moon": Moon,
+};
 
 const RoomDetailsModal = ({
   open,
@@ -29,9 +60,23 @@ const RoomDetailsModal = ({
     return `+ $${cost}`;
   };
 
-  const fotosOrdenadas = room.fotos
-    ? [...room.fotos].sort((a, b) => b.principal - a.principal)
+  const fotosOrdenadas = Array.isArray(room?.fotos)
+    ? [...room.fotos].sort((a, b) => {
+        if (a.principal === b.principal) return 0;
+        return b.principal ? 1 : -1;
+      })
     : [];
+
+  const renderServiceIcon = (iconName) => {
+    if (!iconName) return <Sparkles size={16} className="text-lime-600" />;
+
+    const IconComponent = ICON_MAP[iconName];
+    return IconComponent ? (
+      <IconComponent size={16} className="text-lime-600" />
+    ) : (
+      <Sparkles size={16} className="text-lime-600" />
+    );
+  };
 
   return (
     <Modal
@@ -73,24 +118,22 @@ const RoomDetailsModal = ({
         <div className="overflow-hidden">
           <div className="relative h-56">
             <div className="relative h-56">
-              {fotosOrdenadas.length > 1 ? (
-                <Carousel autoplay>
+              {fotosOrdenadas.length > 0 ? (
+                <Carousel autoplay dots>
                   {fotosOrdenadas.map((foto) => (
-                    <div key={foto.id} className="h-56">
+                    <div key={foto.id} className="h-60">
                       <img
                         src={foto.url}
-                        alt={room.name}
-                        className="w-full h-56 object-cover"
+                        alt={`Foto ${foto.id}`}
+                        className="w-full h-60 object-cover rounded-lg"
                       />
                     </div>
                   ))}
                 </Carousel>
               ) : (
-                <img
-                  src={fotosOrdenadas[0]?.url || imageUrl}
-                  alt={room.name}
-                  className="w-full h-56 object-cover"
-                />
+                <div className="w-full h-64 flex items-center justify-center bg-gray-100 text-gray-500 rounded-lg">
+                  Sin imágenes disponibles
+                </div>
               )}
             </div>
             <div className="absolute bottom-4 left-4 right-4">
@@ -208,32 +251,23 @@ const RoomDetailsModal = ({
                 </h4>
 
                 {services.length > 0 ? (
-                  <div className="max-h-60 overflow-y-auto pr-2">
-                    <div className="grid grid-cols-1 gap-2">
-                      {services.map((service, index) => (
-                        <div
-                          key={service.id ?? index}
-                          className="flex justify-between items-center py-2 border-b border-gray-100 last:border-0"
-                        >
-                          <div className="flex items-center gap-3 min-w-0">
-                            <div className="text-lime-600 flex-shrink-0">
-                              {service.icon}
-                            </div>
-                            <span className="text-gray-700 text-sm truncate">
-                              {service.name}
-                            </span>
-                          </div>
-                          <span className="text-lime-600 font-medium text-sm whitespace-nowrap">
-                            {service.cost === 0 || service.cost === "0"
-                              ? "Incluido"
-                              : `+ $${service.cost}`}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
+                  <div className="grid grid-cols-2 gap-3 mt-2">
+                    {services.map((service) => (
+                      <div
+                        key={service.id}
+                        className="flex items-center gap-2 bg-gray-50 p-2 rounded-lg"
+                      >
+                        {renderServiceIcon(service.icon)}
+                        <span className="text-sm text-gray-700">
+                          {service.name}
+                        </span>
+                      </div>
+                    ))}
                   </div>
                 ) : (
-                  <div className="h-4" />
+                  <p className="text-gray-500 text-sm">
+                    No hay servicios incluidos
+                  </p>
                 )}
               </div>
 
