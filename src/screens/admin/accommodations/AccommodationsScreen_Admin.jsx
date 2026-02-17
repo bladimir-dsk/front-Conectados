@@ -1,8 +1,6 @@
 import { useRef, useState, useEffect } from "react";
-import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { Button, Input, Space, Table, Tag, notification } from "antd";
 import {
-    ArrowLeftOutlined,
     PlusOutlined,
     SearchOutlined,
     EditOutlined,
@@ -10,54 +8,38 @@ import {
     EyeOutlined,
     ToolOutlined,
 } from "@ant-design/icons";
-import { Building2, House, Images, Warehouse } from "lucide-react";
 import Highlighter from "react-highlight-words";
 import dayjs from "dayjs";
 import "dayjs/locale/es";
-import { useDeleteConfirmation } from "../../../../hooks/useDeleteConfirmation";
-import { useApi } from "../../../../hooks/useApi";
-import AccommodationModal_Admin from "../../accommodations/modals/AccommodationModal_Admin";
-import AccommodationDetailModal_Admin from "../../accommodations/modals/AccommodationDetailModal_Admin";
-import AccommodationServicesModal_Admin from "../../accommodations/modals/AccommodationServicesModal_Admin";
-import OwnerRoomsView_Admin from "../OwnerRoomsView_Admin";
+import { Building2, Images, Warehouse } from "lucide-react";
+import { useApi } from "../../../hooks/useApi";
+import { useDeleteConfirmation } from "../../../hooks/useDeleteConfirmation";
+import AccommodationModal_Admin from "./modals/AccommodationModal_Admin";
+import AccommodationDetailModal_Admin from "./modals/AccommodationDetailModal_Admin";
+import AccommodationServicesModal_Admin from "./modals/AccommodationServicesModal_Admin";
+import RoomsView_Admin from "./RoomsView_Admin";
+dayjs.locale("es");
 import { Dropdown } from "antd";
 import { MoreOutlined } from "@ant-design/icons";
-import AccommodationPhotosModal_Admin from "../../accommodations/modals/AccommodationPhotosModal_Admin";
+import AccommodationPhotosModal_Admin from "./modals/AccommodationPhotosModal_Admin";
 
-
-dayjs.locale("es");
-
-export default function OwnersPropertiesScreen_Admin() {
-    const { ownerId } = useParams();
-    const location = useLocation();
-    const navigate = useNavigate();
-    const [api, contextHolder] = notification.useNotification();
-
-    const owner = location.state?.owner;
-
+export default function AccommodationsScreen_Admin() {
     const [searchText, setSearchText] = useState("");
     const [searchedColumn, setSearchedColumn] = useState("");
-    const searchInput = useRef(null);
-    const [isChangingPage, setIsChangingPage] = useState(false);
-    const [photosAccommodation, setPhotosAccommodation] = useState(null);
-
-    const [modalState, setModalState] = useState({
-        add: false,
-        edit: false,
-        detail: false,
-        services: false,
-    });
+    const [modalState, setModalState] = useState({ add: false, edit: false, detail: false, services: false });
     const [selectedAccommodation, setSelectedAccommodation] = useState(null);
     const [servicesAccommodation, setServicesAccommodation] = useState(null);
     const [roomsViewAccommodation, setRoomsViewAccommodation] = useState(null);
+    const [isChangingPage, setIsChangingPage] = useState(false);
+    const [photosAccommodation, setPhotosAccommodation] = useState(null);
 
-    // Filtros server-side
     const [filtros, setFiltros] = useState({
         name: "",
         typeProperty: [],
         gender: [],
         typeIncome: [],
         city: "",
+        estatus: [],
     });
 
     const [paginacion, setPaginacion] = useState({
@@ -67,6 +49,9 @@ export default function OwnersPropertiesScreen_Admin() {
         totalPaginas: 0,
     });
 
+    const searchInput = useRef(null);
+    const [api, contextHolder] = notification.useNotification();
+
     const construirURL = (pagina = 1) => {
         const params = new URLSearchParams();
         params.append("page", pagina.toString());
@@ -74,17 +59,16 @@ export default function OwnersPropertiesScreen_Admin() {
 
         if (filtros.name) params.append("name", filtros.name);
         if (filtros.city) params.append("city", filtros.city);
-        if (filtros.typeProperty && filtros.typeProperty.length > 0) {
+        if (filtros.typeProperty.length > 0)
             params.append("typeProperty", filtros.typeProperty.join(","));
-        }
-        if (filtros.gender && filtros.gender.length > 0) {
+        if (filtros.gender.length > 0)
             params.append("gender", filtros.gender.join(","));
-        }
-        if (filtros.typeIncome && filtros.typeIncome.length > 0) {
+        if (filtros.typeIncome.length > 0)
             params.append("typeIncome", filtros.typeIncome.join(","));
-        }
+        if (filtros.estatus.length > 0)
+            params.append("estatus", filtros.estatus.join(","));
 
-        return `/alojamientos/alojamientos/propietario/${ownerId}?${params.toString()}`;
+        return `/alojamientos?${params.toString()}`;
     };
 
     const [endpointPaginacion, setEndpointPaginacion] = useState(() =>
@@ -92,25 +76,20 @@ export default function OwnersPropertiesScreen_Admin() {
     );
 
     const {
-        data: propertiesResponse,
-        loading: loadingProperties,
-        fetchData: fetchProperties,
-        deleteData: deleteProperty,
+        data: accommodationsResponse,
+        loading: loadingAccommodations,
+        fetchData: fetchAccommodations,
+        deleteData: deleteAccommodation,
     } = useApi(endpointPaginacion, {}, false);
 
-    // Búsqueda global
     const handleGlobalSearch = (value, field) => {
         setFiltros((prev) => ({
             ...prev,
             [field]: value,
         }));
-        setPaginacion((prev) => ({
-            ...prev,
-            paginaActual: 1,
-        }));
+        setPaginacion((prev) => ({ ...prev, paginaActual: 1 }));
     };
 
-    // Reaccionar a cambios de filtros/paginación
     useEffect(() => {
         const url = construirURL(paginacion.paginaActual);
         setEndpointPaginacion(url);
@@ -118,26 +97,24 @@ export default function OwnersPropertiesScreen_Admin() {
 
     useEffect(() => {
         if (endpointPaginacion) {
-            fetchProperties();
+            fetchAccommodations();
         }
     }, [endpointPaginacion]);
 
     useEffect(() => {
-        if (propertiesResponse?.meta) {
+        if (accommodationsResponse?.meta) {
             setPaginacion((prev) => ({
                 ...prev,
-                paginaActual: propertiesResponse.meta.currentPage,
-                totalRegistros: propertiesResponse.meta.totalItems,
-                totalPaginas: propertiesResponse.meta.totalPages,
-                limite: propertiesResponse.meta.itemsPerPage,
+                totalRegistros: accommodationsResponse.meta.totalItems,
+                totalPaginas: accommodationsResponse.meta.totalPages,
+                paginaActual: accommodationsResponse.meta.currentPage,
             }));
             setIsChangingPage(false);
         }
-    }, [propertiesResponse]);
+    }, [accommodationsResponse]);
 
-    const propertiesData = propertiesResponse?.data || [];
+    const accommodationsData = accommodationsResponse?.data || [];
 
-    // Modales
     const openModal = (type, accommodation = null) => {
         setModalState((prev) => ({ ...prev, [type]: true }));
         if (type === "services") {
@@ -157,14 +134,13 @@ export default function OwnersPropertiesScreen_Admin() {
     };
 
     const handleSaveAccommodation = async () => {
-        await fetchProperties();
+        await fetchAccommodations();
         closeModal("add");
         closeModal("edit");
     };
 
-    // Eliminación
     const showDeleteConfirm = useDeleteConfirmation({
-        onDelete: deleteProperty,
+        onDelete: deleteAccommodation,
     });
 
     const handleDelete = (record) => {
@@ -174,25 +150,16 @@ export default function OwnersPropertiesScreen_Admin() {
             entityName: "el alojamiento",
             recordId: record.id_alojamiento,
             successTitle: "Alojamiento eliminado",
-            onSuccess: fetchProperties,
+            onSuccess: fetchAccommodations,
         });
     };
 
-    // Cambio de página
-    const handlePageChange = (page) => {
-        setIsChangingPage(true);
-        setPaginacion((prev) => ({
-            ...prev,
-            paginaActual: page,
-        }));
-    };
-
-    // Manejar cambios en filtros de la tabla (selects)
     const handleTableChange = (_pagination, filters) => {
         const filterMapping = {
             typeProperty: "typeProperty",
             gender: "gender",
             typeIncome: "typeIncome",
+            estatus: "estatus",
         };
 
         let changed = false;
@@ -214,7 +181,11 @@ export default function OwnersPropertiesScreen_Admin() {
         }
     };
 
-    // Búsqueda por columna (texto)
+    const handlePageChange = (page) => {
+        setIsChangingPage(true);
+        setPaginacion((prev) => ({ ...prev, paginaActual: page }));
+    };
+
     const handleSearch = (selectedKeys, confirm, dataIndex) => {
         confirm();
         const value = selectedKeys[0] || "";
@@ -261,9 +232,7 @@ export default function OwnersPropertiesScreen_Admin() {
                     </Button>
                     <Button
                         className="btn-limpiar"
-                        onClick={() =>
-                            clearFilters && handleReset(clearFilters, dataIndex)
-                        }
+                        onClick={() => clearFilters && handleReset(clearFilters, dataIndex)}
                         size="small"
                         style={{ width: 90 }}
                     >
@@ -305,7 +274,7 @@ export default function OwnersPropertiesScreen_Admin() {
         render: (text) =>
             searchedColumn === dataIndex ? (
                 <Highlighter
-                    highlightStyle={{ backgroundColor: "#C7DC5B", padding: 0 }}
+                    highlightStyle={{ backgroundColor: "#ffc069", padding: 0 }}
                     searchWords={[searchText]}
                     autoEscape
                     textToHighlight={text ? text.toString() : ""}
@@ -366,9 +335,9 @@ export default function OwnersPropertiesScreen_Admin() {
         }).format(Number(price));
     };
 
-    const dataSource = propertiesData.map((property) => ({
-        key: property.id_alojamiento,
-        ...property,
+    const dataSource = accommodationsData.map((item) => ({
+        key: item.id_alojamiento,
+        ...item,
     }));
 
     const columns = [
@@ -390,9 +359,7 @@ export default function OwnersPropertiesScreen_Admin() {
                 { text: "Cuarto", value: "Cuarto" },
             ],
             filteredValue:
-                filtros.typeProperty && filtros.typeProperty.length > 0
-                    ? filtros.typeProperty
-                    : null,
+                filtros.typeProperty.length > 0 ? filtros.typeProperty : null,
             onFilter: () => true,
             render: (type) => <Tag>{type}</Tag>,
         },
@@ -413,8 +380,7 @@ export default function OwnersPropertiesScreen_Admin() {
                 { text: "Masculino", value: "Masculino" },
                 { text: "Femenino", value: "Femenino" },
             ],
-            filteredValue:
-                filtros.gender && filtros.gender.length > 0 ? filtros.gender : null,
+            filteredValue: filtros.gender.length > 0 ? filtros.gender : null,
             onFilter: () => true,
         },
         {
@@ -426,10 +392,7 @@ export default function OwnersPropertiesScreen_Admin() {
                 { text: "Alojamiento completo", value: "ALOJAMIENTO_COMPLETO" },
                 { text: "Espacio", value: "ESPACIO" },
             ],
-            filteredValue:
-                filtros.typeIncome && filtros.typeIncome.length > 0
-                    ? filtros.typeIncome
-                    : null,
+            filteredValue: filtros.typeIncome.length > 0 ? filtros.typeIncome : null,
             onFilter: () => true,
             render: (type) => (
                 <Tag color={getTypeIncomeColor(type)}>{getTypeIncomeLabel(type)}</Tag>
@@ -448,11 +411,28 @@ export default function OwnersPropertiesScreen_Admin() {
             dataIndex: "estatus",
             key: "estatus",
             align: "center",
+            filters: [
+                { text: "Activo", value: "ACTIVO" },
+                { text: "Inactivo", value: "INACTIVO" },
+                { text: "Ocupado", value: "OCUPADO" },
+                { text: "Mantenimiento", value: "MANTENIMIENTO" },
+                { text: "Pendiente", value: "PENDIENTE" },
+            ],
+            filteredValue: filtros.estatus.length > 0 ? filtros.estatus : null,
+            onFilter: () => true,
             render: (status) => (
                 <Tag color={getStatusColor(status)} style={{ fontSize: "13px" }}>
                     {getStatusLabel(status)}
                 </Tag>
             ),
+        },
+        {
+            title: "Propietario",
+            key: "propietario",
+            render: (_, record) =>
+                record.propietario
+                    ? `${record.propietario.namePersonal} ${record.propietario.lastName}`
+                    : "—",
         },
         {
             title: "Acciones",
@@ -517,10 +497,9 @@ export default function OwnersPropertiesScreen_Admin() {
         },
     ];
 
-    // Si se seleccionó un alojamiento para ver cuartos, mostrar esa vista
     if (roomsViewAccommodation) {
         return (
-            <OwnerRoomsView_Admin
+            <RoomsView_Admin
                 accommodation={roomsViewAccommodation}
                 onBack={() => setRoomsViewAccommodation(null)}
             />
@@ -535,24 +514,15 @@ export default function OwnersPropertiesScreen_Admin() {
             <div className="bg-linear-to-r from-[#84cc16] to-[#65a30d] px-6 py-6 md:py-3 rounded-md">
                 <div className="flex items-center justify-between gap-4">
                     <div className="flex items-center gap-3 flex-1">
-                        <Button
-                            type="text"
-                            icon={<ArrowLeftOutlined />}
-                            onClick={() => navigate("/admin/propietarios")}
-                            className="text-[#111214]! hover:bg-[#65a30d]!"
-                            size="large"
-                        />
                         <div className="p-2">
-                            <House className="text-[#111214]" size={35} />
+                            <Building2 className="text-[#111214]!" size={35} />
                         </div>
                         <div className="space-y-0">
                             <h1 className="text-xl md:text-2xl font-bold text-[#111214] leading-tight">
-                                Alojamientos de{" "}
-                                {owner?.namePersonal || owner?.name || "Propietario"}{" "}
-                                {owner?.lastName || ""}
+                                Alojamientos
                             </h1>
                             <h1 className="text-gray-700 text-sm mt-0.5">
-                                {owner?.emailPersonal || owner?.email || ""}
+                                Administra y organiza los alojamientos registrados.
                             </h1>
                         </div>
                     </div>
@@ -580,7 +550,7 @@ export default function OwnersPropertiesScreen_Admin() {
                     <Table
                         columns={columns}
                         dataSource={dataSource}
-                        loading={loadingProperties || isChangingPage}
+                        loading={loadingAccommodations || isChangingPage}
                         scroll={{ x: "max-content" }}
                         onChange={handleTableChange}
                         pagination={{
@@ -593,27 +563,28 @@ export default function OwnersPropertiesScreen_Admin() {
                         }}
                         locale={{
                             emptyText: () => {
-                                if (loadingProperties) return null;
+                                if (loadingAccommodations) return null;
 
                                 const hayFiltrosActivos =
                                     filtros.name ||
                                     filtros.city ||
-                                    (filtros.typeProperty && filtros.typeProperty.length > 0) ||
-                                    (filtros.gender && filtros.gender.length > 0) ||
-                                    (filtros.typeIncome && filtros.typeIncome.length > 0);
+                                    filtros.typeProperty.length > 0 ||
+                                    filtros.gender.length > 0 ||
+                                    filtros.typeIncome.length > 0 ||
+                                    filtros.estatus.length > 0;
 
                                 if (hayFiltrosActivos) {
                                     return "No se encontraron alojamientos con los filtros aplicados.";
                                 }
 
-                                return 'No hay alojamientos registrados para este propietario. Dale en "Agregar" para crear uno.';
+                                return 'No hay alojamientos registrados aún. Dale en "Agregar" para crear uno.';
                             },
                         }}
                     />
                 </div>
             </div>
 
-            {/* Modal – Agregar alojamiento */}
+            {/* Modal – Agregar */}
             <AccommodationModal_Admin
                 visible={modalState.add}
                 onClose={() => closeModal("add")}
@@ -621,7 +592,7 @@ export default function OwnersPropertiesScreen_Admin() {
                 isEditing={false}
             />
 
-            {/* Modal – Editar alojamiento */}
+            {/* Modal – Editar */}
             <AccommodationModal_Admin
                 visible={modalState.edit}
                 onClose={() => closeModal("edit")}
@@ -630,14 +601,14 @@ export default function OwnersPropertiesScreen_Admin() {
                 isEditing={true}
             />
 
-            {/* Modal – Detalle alojamiento */}
+            {/* Modal – Detalle */}
             <AccommodationDetailModal_Admin
                 visible={modalState.detail}
                 onClose={() => closeModal("detail")}
                 data={selectedAccommodation}
             />
 
-            {/* Modal – Servicios alojamiento */}
+            {/* Modal – Servicios */}
             <AccommodationServicesModal_Admin
                 visible={modalState.services}
                 onClose={() => closeModal("services")}
@@ -648,7 +619,7 @@ export default function OwnersPropertiesScreen_Admin() {
                 visible={!!photosAccommodation}
                 onClose={() => setPhotosAccommodation(null)}
                 accommodation={photosAccommodation}
-                onPhotosChanged={() => fetchProperties()}
+                onPhotosChanged={() => fetchAccommodations()}
             />
         </div>
     );
