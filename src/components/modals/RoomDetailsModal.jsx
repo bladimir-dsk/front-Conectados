@@ -1,5 +1,15 @@
 import React from "react";
-import { Modal, Button, Space, Divider, Spin, Alert, Carousel } from "antd";
+import {
+  Modal,
+  Button,
+  Space,
+  Divider,
+  Spin,
+  Alert,
+  Carousel,
+  Collapse,
+  Tag,
+} from "antd";
 import {
   Wifi,
   Droplets,
@@ -19,7 +29,6 @@ import {
   User,
   Star as StarIcon,
   MapPin as MapPinIcon,
-  Bed,
   DollarSign,
   X,
 } from "lucide-react";
@@ -56,7 +65,7 @@ const RoomDetailsModal = ({
   if (!room) return null;
 
   const formatCost = (cost) => {
-    if (cost === null || cost === "0" || cost === 0) return "Incluido";
+    if (cost === null || cost === "0" || cost === 0) return "FREE";
     return `+ $${cost}`;
   };
 
@@ -77,6 +86,14 @@ const RoomDetailsModal = ({
       <Sparkles size={16} className="text-lime-600" />
     );
   };
+  const BED_DISABLED_STATUS = [
+    "INACTIVO",
+    "OCUPADO",
+    "MANTENIMIENTO",
+    "PENDIENTE",
+  ];
+
+  const isBedAvailable = (status) => status === "ACTIVO";
 
   return (
     <Modal
@@ -205,17 +222,6 @@ const RoomDetailsModal = ({
                   </div>
                 </div>
                 <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                  <Bed size={18} className="text-lime-600" />
-                  <div className="min-w-0">
-                    <div className="text-xs text-gray-500 uppercase tracking-wide">
-                      Camas
-                    </div>
-                    <div className="text-sm font-medium text-gray-800">
-                      {room.beds || 0} {room.beds === 1 ? "cama" : "camas"}
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                   <DollarSign size={18} className="text-lime-600" />
                   <div className="min-w-0">
                     <div className="text-xs text-gray-500 uppercase tracking-wide">
@@ -230,43 +236,119 @@ const RoomDetailsModal = ({
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg col-span-2">
                   <MapPinIcon size={18} className="text-lime-600" />
                   <div className="min-w-0">
                     <div className="text-xs text-gray-500 uppercase tracking-wide">
-                      Ubicación
+                      Dirección
                     </div>
                     <div className="text-xs font-medium text-gray-800 truncate">
                       {room.address || "Dirección no disponible"}
                     </div>
                   </div>
                 </div>
-              </div>
+                <div className="col-span-2">
+                  <h4 className="text-base font-semibold text-lime-600 mb-1">
+                    Cuartos y camas
+                  </h4>
 
-              <Divider className="my-0 border-gray-200" />
+                  {room.cuartos && room.cuartos.length > 0 ? (
+                    <Collapse accordion ghost>
+                      {room.cuartos.map((cuarto) => (
+                        <Collapse.Panel
+                          key={cuarto.id_cuarto}
+                          header={
+                            <div className="flex justify-between items-center w-full">
+                              <span className="font-medium text-gray-800">
+                                {cuarto.name}
+                              </span>
+                              <span className="text-sm font-semibold text-lime-600">
+                                + ${cuarto.price}
+                              </span>
+                            </div>
+                          }
+                        >
+                          {cuarto.camas && cuarto.camas.length > 0 ? (
+                            <div className="space-y-2">
+                              {cuarto.camas.map((cama) => {
+                                const disponible = cama.estatus === "ACTIVO";
+
+                                return (
+                                  <div
+                                    key={cama.id_cama}
+                                    className={`flex items-center justify-between p-3 rounded-lg border ${
+                                      disponible
+                                        ? "bg-white border-gray-200"
+                                        : "bg-gray-100 border-gray-300 opacity-60"
+                                    }`}
+                                  >
+                                    <div>
+                                      <p className="text-sm font-medium text-gray-800">
+                                        {cama.name}
+                                      </p>
+                                      <p className="text-xs text-gray-500">
+                                        {disponible
+                                          ? "Disponible"
+                                          : "No disponible"}
+                                      </p>
+                                    </div>
+
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-sm font-semibold">
+                                        + ${cama.price}
+                                      </span>
+
+                                      {!disponible && (
+                                        <Tag color="red">No disponible</Tag>
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          ) : (
+                            <p className="text-sm text-gray-500">
+                              Este cuarto no tiene camas registradas
+                            </p>
+                          )}
+                        </Collapse.Panel>
+                      ))}
+                    </Collapse>
+                  ) : (
+                    <p className="text-sm text-gray-500">
+                      No hay cuartos disponibles para esta habitación
+                    </p>
+                  )}
+                </div>
+              </div>
 
               <div className="w-full">
                 <h4 className="text-base font-semibold text-lime-600 dark:text-lime-500 mb-3">
-                  Servicios incluidos
+                  Servicios disponibles
                 </h4>
 
                 {services.length > 0 ? (
-                  <div className="grid grid-cols-2 gap-3 mt-2">
+                  <div className="grid grid-cols-2 gap-2 mt-2 ">
                     {services.map((service) => (
                       <div
                         key={service.id}
-                        className="flex items-center gap-2 bg-gray-50 p-2 rounded-lg"
+                        className="flex items-center justify-between bg-gray-50 p-2 rounded-lg"
                       >
-                        {renderServiceIcon(service.icon)}
-                        <span className="text-sm text-gray-700">
-                          {service.name}
+                        <div className="flex items-center gap-2">
+                          {renderServiceIcon(service.icon)}
+                          <span className="text-sm text-gray-700">
+                            {service.name}
+                          </span>
+                        </div>
+                        <span className="text-xs font-medium text-gray-600">
+                          {formatCost(service.costo)}
                         </span>
                       </div>
                     ))}
                   </div>
                 ) : (
                   <p className="text-gray-500 text-sm">
-                    No hay servicios incluidos
+                    No hay servicios disponibles
                   </p>
                 )}
               </div>

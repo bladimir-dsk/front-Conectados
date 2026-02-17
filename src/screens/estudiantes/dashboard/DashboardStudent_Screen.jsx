@@ -26,8 +26,6 @@ import RoomCard from "../../../components/cards/RoomCard";
 const { RangePicker } = DatePicker;
 const IMAGE_URL = "https://s03.s3c.es/imag/_v0/1200x655/0/f/c/habitacion.jpg";
 
-const SERVICES = [];
-
 export default function DashboardStudent_Screen() {
   const [favorites, setFavorites] = useState([]);
   const [dateRange, setDateRange] = useState(null);
@@ -196,13 +194,25 @@ export default function DashboardStudent_Screen() {
           0,
         ) ?? 0;
 
-      const includedServices = (details.servicios || [])
-        .filter((s) => Number(s.costo) === 0)
-        .map((s) => ({
-          id: s.servicio.id_servicio,
-          name: s.servicio.name,
-          icon: s.servicio.icon,
-        }));
+      const allServices = (details.servicios || []).map((s) => ({
+        id: s.servicio.id_servicio,
+        name: s.servicio.name,
+        icon: s.servicio.icon,
+        costo: s.costo,
+      }));
+
+      const cuartos = (details.cuartos || []).map((cuarto) => ({
+        id_cuarto: cuarto.id_cuarto,
+        name: cuarto.name,
+        price: cuarto.price,
+        estatus: cuarto.estatus,
+        camas: (cuarto.camas || []).map((cama) => ({
+          id_cama: cama.id_cama,
+          name: cama.name,
+          price: cama.price,
+          estatus: cama.estatus,
+        })),
+      }));
 
       const enrichedRoom = {
         id: details.id_alojamiento,
@@ -210,12 +220,12 @@ export default function DashboardStudent_Screen() {
         price: details.precio_completo,
         type: details.typeProperty,
         gender: normalizeGender(details.gender),
-        beds: totalBeds,
         owner: details.propietario?.namePersonal ?? "Propietario",
         address: `${details.address}, ${details.city}, ${details.country}`,
-        services: includedServices,
+        services: allServices,
         fotos,
         mainImage: fotos[0]?.url || IMAGE_URL,
+        cuartos,
       };
 
       setSelectedRoom(enrichedRoom);
@@ -231,13 +241,9 @@ export default function DashboardStudent_Screen() {
     setUserRating((prev) => ({ ...prev, [roomId]: value }));
   };
 
-  const calculatePrices = (roomPrice, period, servicesSelected) => {
-    // ... lógica de precios
-  };
+  const calculatePrices = (roomPrice, period, servicesSelected) => {};
 
-  const saveReservation = async () => {
-    // ... lógica de guardado
-  };
+  const saveReservation = async () => {};
 
   const handleRequestRoom = async (roomId) => {
     const room = allAccommodations.find((r) => r.id === roomId);
@@ -461,7 +467,7 @@ export default function DashboardStudent_Screen() {
             }}
             selectedServices={selectedServices}
             onSelectedServicesChange={setSelectedServices}
-            services={SERVICES}
+            services={[]}
             prices={prices}
             onSaveReservation={saveReservation}
             loading={loading.reservation}
