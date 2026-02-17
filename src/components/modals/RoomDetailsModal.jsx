@@ -3,7 +3,6 @@ import {
   Modal,
   Button,
   Space,
-  Divider,
   Spin,
   Alert,
   Carousel,
@@ -26,10 +25,12 @@ import {
   Sandwich,
   Moon,
   Home,
+  Transgender,
   User,
+  Mail,
+  Phone,
   Star as StarIcon,
   MapPin as MapPinIcon,
-  DollarSign,
   X,
 } from "lucide-react";
 
@@ -48,6 +49,16 @@ const ICON_MAP = {
   "fat-coffee": Coffee,
   "fat-sandwich": Sandwich,
   "fat-moon": Moon,
+  internet: Wifi,
+  water: Droplets,
+  electricidad: Zap,
+  cable: Zap,
+  wifi: Wifi,
+  aire: Wind,
+  tv: Tv,
+  estacionamiento: Car,
+  gimnasio: Dumbbell,
+  piscina: Waves,
 };
 
 const RoomDetailsModal = ({
@@ -71,29 +82,51 @@ const RoomDetailsModal = ({
 
   const fotosOrdenadas = Array.isArray(room?.fotos)
     ? [...room.fotos].sort((a, b) => {
-        if (a.principal === b.principal) return 0;
-        return b.principal ? 1 : -1;
+        if (a.esPrincipal === b.esPrincipal) return 0;
+        return b.esPrincipal ? 1 : -1;
       })
     : [];
 
   const renderServiceIcon = (iconName) => {
     if (!iconName) return <Sparkles size={16} className="text-lime-600" />;
 
-    const IconComponent = ICON_MAP[iconName];
+    const IconComponent =
+      ICON_MAP[iconName.toLowerCase()] || ICON_MAP[iconName];
     return IconComponent ? (
       <IconComponent size={16} className="text-lime-600" />
     ) : (
       <Sparkles size={16} className="text-lime-600" />
     );
   };
-  const BED_DISABLED_STATUS = [
-    "INACTIVO",
-    "OCUPADO",
-    "MANTENIMIENTO",
-    "PENDIENTE",
-  ];
+
+  const STATUS_CONFIG = {
+    ACTIVO: { label: "Disponible", color: "green" },
+    INACTIVO: { label: "No disponible", color: "red" },
+    PENDIENTE: { label: "Pendiente", color: "gold" },
+    OCUPADO: { label: "Ocupado", color: "gold" },
+    MANTENIMIENTO: { label: "Mantenimiento", color: "gold" },
+  };
+
+  const getStatusTag = (status) => {
+    const config = STATUS_CONFIG[status] || {
+      label: status,
+      color: "default",
+    };
+
+    return <Tag color={config.color}>{config.label}</Tag>;
+  };
 
   const isBedAvailable = (status) => status === "ACTIVO";
+
+  const propietario = room.propietario || {};
+  const ownerName =
+    propietario.namePersonal && propietario.lastName
+      ? `${propietario.namePersonal} ${propietario.lastName}`
+      : propietario.namePersonal || "Propietario";
+  const ownerEmail = propietario.emailPersonal || propietario.email || "";
+  const ownerPhone = propietario.phone
+    ? `+${propietario.code || ""} ${propietario.phone}`
+    : "";
 
   return (
     <Modal
@@ -134,25 +167,23 @@ const RoomDetailsModal = ({
       ) : (
         <div className="overflow-hidden">
           <div className="relative h-56">
-            <div className="relative h-56">
-              {fotosOrdenadas.length > 0 ? (
-                <Carousel autoplay dots>
-                  {fotosOrdenadas.map((foto) => (
-                    <div key={foto.id} className="h-60">
-                      <img
-                        src={foto.url}
-                        alt={`Foto ${foto.id}`}
-                        className="w-full h-60 object-cover rounded-lg"
-                      />
-                    </div>
-                  ))}
-                </Carousel>
-              ) : (
-                <div className="w-full h-64 flex items-center justify-center bg-gray-100 text-gray-500 rounded-lg">
-                  Sin imágenes disponibles
-                </div>
-              )}
-            </div>
+            {fotosOrdenadas.length > 0 ? (
+              <Carousel autoplay dots>
+                {fotosOrdenadas.map((foto) => (
+                  <div key={foto.id_foto} className="h-60">
+                    <img
+                      src={foto.url}
+                      alt={`Foto ${foto.id_foto}`}
+                      className="w-full h-60 object-cover rounded-lg"
+                    />
+                  </div>
+                ))}
+              </Carousel>
+            ) : (
+              <div className="w-full h-64 flex items-center justify-center bg-gray-100 text-gray-500 rounded-lg">
+                Sin imágenes disponibles
+              </div>
+            )}
             <div className="absolute bottom-4 left-4 right-4">
               <div className="flex justify-between items-end">
                 <div>
@@ -170,22 +201,43 @@ const RoomDetailsModal = ({
                 </div>
                 <div className="text-right">
                   <div className="text-2xl font-bold text-white">
-                    ${room.price}
-                    <span className="text-sm text-lime-100 ml-1">/noche</span>
+                    ${room.precio_completo || room.price}
+                    <span className="text-sm text-lime-100 ml-1">/mes</span>
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="p-5">
+          <div className="p-5 my-2">
             <Space orientation="vertical" size={16} className="w-full">
-              <div className="flex justify-between items-center">
-                <div className="flex items-center gap-2">
-                  <User size={16} className="text-gray-600" />
-                  <span className="text-gray-700 text-sm font-medium">
-                    {room.owner || "Propietario"}
-                  </span>
+              <div className="flex justify-between items-start">
+                <div>
+                  <h4 className="text-base font-semibold text-lime-600 my-3 ">
+                    Propietario
+                  </h4>
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <User size={16} className="text-gray-600" />
+                      <span className="text-gray-700 text-sm">{ownerName}</span>
+                    </div>
+                    {ownerEmail && (
+                      <div className="flex items-center gap-2">
+                        <Mail size={14} className="text-gray-600" />
+                        <span className="text-gray-500 text-xs">
+                          {ownerEmail}
+                        </span>
+                      </div>
+                    )}
+                    {ownerPhone && (
+                      <div className="flex items-center gap-2">
+                        <Phone size={14} className="text-gray-600" />
+                        <span className="text-gray-500 text-xs">
+                          {ownerPhone}
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 </div>
                 {onRate && (
                   <div className="text-right">
@@ -200,7 +252,7 @@ const RoomDetailsModal = ({
                           className="cursor-pointer"
                           fill={userRating >= star ? "#84cc16" : "none"}
                           color={userRating >= star ? "#84cc16" : "#d1d5db"}
-                          onClick={() => onRate(room.id, star)}
+                          onClick={() => onRate(room.id_alojamiento, star)}
                           aria-label={`Calificar con ${star} estrella${star !== 1 ? "s" : ""}`}
                         />
                       ))}
@@ -217,12 +269,12 @@ const RoomDetailsModal = ({
                       Tipo
                     </div>
                     <div className="text-sm font-medium text-gray-800 truncate">
-                      {room.type || "No especificado"}
+                      {room.typeProperty || "No especificado"}
                     </div>
                   </div>
                 </div>
                 <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                  <DollarSign size={18} className="text-lime-600" />
+                  <Transgender size={18} className="text-lime-600" />
                   <div className="min-w-0">
                     <div className="text-xs text-gray-500 uppercase tracking-wide">
                       Género
@@ -254,65 +306,63 @@ const RoomDetailsModal = ({
 
                   {room.cuartos && room.cuartos.length > 0 ? (
                     <Collapse accordion ghost>
-                      {room.cuartos.map((cuarto) => (
-                        <Collapse.Panel
-                          key={cuarto.id_cuarto}
-                          header={
-                            <div className="flex justify-between items-center w-full">
-                              <span className="font-medium text-gray-800">
-                                {cuarto.name}
-                              </span>
-                              <span className="text-sm font-semibold text-lime-600">
-                                + ${cuarto.price}
-                              </span>
-                            </div>
-                          }
-                        >
-                          {cuarto.camas && cuarto.camas.length > 0 ? (
-                            <div className="space-y-2">
-                              {cuarto.camas.map((cama) => {
-                                const disponible = cama.estatus === "ACTIVO";
+                      {room.cuartos.map((cuarto) => {
+                        const cuartoActivo = cuarto.estatus === "ACTIVO";
 
-                                return (
-                                  <div
-                                    key={cama.id_cama}
-                                    className={`flex items-center justify-between p-3 rounded-lg border ${
-                                      disponible
-                                        ? "bg-white border-gray-200"
-                                        : "bg-gray-100 border-gray-300 opacity-60"
-                                    }`}
-                                  >
-                                    <div>
-                                      <p className="text-sm font-medium text-gray-800">
-                                        {cama.name}
-                                      </p>
-                                      <p className="text-xs text-gray-500">
-                                        {disponible
-                                          ? "Disponible"
-                                          : "No disponible"}
-                                      </p>
+                        return (
+                          <Collapse.Panel
+                            key={cuarto.id_cuarto}
+                            header={
+                              <div className="flex justify-between items-center w-full">
+                                <span className="font-medium text-gray-800">
+                                  {cuarto.name}
+                                </span>
+
+                                <div className="flex items-center gap-2">
+                                  {getStatusTag(cuarto.estatus)}
+                                  <span className="text-sm font-semibold text-lime-600">
+                                    + ${cuarto.price}
+                                  </span>
+                                </div>
+                              </div>
+                            }
+                          >
+                            {cuartoActivo ? (
+                              cuarto.camas && cuarto.camas.length > 0 ? (
+                                <div className="space-y-2">
+                                  {cuarto.camas.map((cama) => (
+                                    <div
+                                      key={cama.id_cama}
+                                      className="flex items-center justify-between p-3 rounded-lg border bg-white border-gray-200"
+                                    >
+                                      <div>
+                                        <p className="text-sm font-medium text-gray-800">
+                                          {cama.name}
+                                        </p>
+                                      </div>
+
+                                      <div className="flex items-center gap-2">
+                                        {getStatusTag(cama.estatus)}
+                                        <span className="text-sm font-semibold">
+                                          + ${cama.price}
+                                        </span>
+                                      </div>
                                     </div>
-
-                                    <div className="flex items-center gap-2">
-                                      <span className="text-sm font-semibold">
-                                        + ${cama.price}
-                                      </span>
-
-                                      {!disponible && (
-                                        <Tag color="red">No disponible</Tag>
-                                      )}
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          ) : (
-                            <p className="text-sm text-gray-500">
-                              Este cuarto no tiene camas registradas
-                            </p>
-                          )}
-                        </Collapse.Panel>
-                      ))}
+                                  ))}
+                                </div>
+                              ) : (
+                                <p className="text-sm text-gray-500">
+                                  Este cuarto no tiene camas registradas
+                                </p>
+                              )
+                            ) : (
+                              <p className="text-sm text-gray-500">
+                                Este cuarto no está disponible para selección
+                              </p>
+                            )}
+                          </Collapse.Panel>
+                        );
+                      })}
                     </Collapse>
                   ) : (
                     <p className="text-sm text-gray-500">
@@ -323,12 +373,12 @@ const RoomDetailsModal = ({
               </div>
 
               <div className="w-full">
-                <h4 className="text-base font-semibold text-lime-600 dark:text-lime-500 mb-3">
+                <h4 className="text-base font-semibold text-lime-600 mb-3">
                   Servicios disponibles
                 </h4>
 
                 {services.length > 0 ? (
-                  <div className="grid grid-cols-2 gap-2 mt-2 ">
+                  <div className="grid grid-cols-2 gap-2 mt-2">
                     {services.map((service) => (
                       <div
                         key={service.id}
@@ -357,7 +407,7 @@ const RoomDetailsModal = ({
                 <Button
                   className="w-full !bg-lime-600 hover:!bg-lime-600 !border-lime-600 !text-white h-12 text-lg font-bold rounded-lg"
                   onClick={() => {
-                    onRequestRoom(room.id);
+                    onRequestRoom(room.id_alojamiento);
                     onClose();
                   }}
                   aria-label="Solicitar habitación"

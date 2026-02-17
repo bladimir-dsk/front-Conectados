@@ -47,7 +47,7 @@ const RoomCard = ({
           </div>
           <div className="flex items-baseline">
             <span className="text-xl font-bold text-white">${room.price}</span>
-            <span className="text-gray-300 text-xs ml-1">/noche</span>
+            <span className="text-gray-300 text-xs ml-1">/mes</span>
           </div>
         </div>
         <div className="flex gap-2">
