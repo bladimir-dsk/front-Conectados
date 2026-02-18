@@ -88,14 +88,14 @@ const RoomDetailsModal = ({
     : [];
 
   const renderServiceIcon = (iconName) => {
-    if (!iconName) return <Sparkles size={16} className="text-lime-600" />;
+    if (!iconName) return <Sparkles size={16} className="text-lime-500" />;
 
     const IconComponent =
       ICON_MAP[iconName.toLowerCase()] || ICON_MAP[iconName];
     return IconComponent ? (
-      <IconComponent size={16} className="text-lime-600" />
+      <IconComponent size={16} className="text-lime-500" />
     ) : (
-      <Sparkles size={16} className="text-lime-600" />
+      <Sparkles size={16} className="text-lime-500" />
     );
   };
 
@@ -143,7 +143,7 @@ const RoomDetailsModal = ({
           type="text"
           icon={<X size={18} />}
           onClick={onClose}
-          className="text-gray-500 hover:text-lime-600"
+          className="text-gray-500 hover:text-lime-500"
           aria-label="Cerrar"
           disabled={loading}
         />
@@ -213,26 +213,37 @@ const RoomDetailsModal = ({
             <Space orientation="vertical" size={16} className="w-full">
               <div className="flex justify-between items-start">
                 <div>
-                  <h4 className="text-base font-semibold text-lime-600 my-3 ">
+                  <h4 className="text-base font-semibold text-lime-500 my-3">
                     Propietario
                   </h4>
                   <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <User size={16} className="text-gray-600" />
-                      <span className="text-gray-700 text-sm">{ownerName}</span>
+                    <div className="flex items-center gap-2 dark:text-white">
+                      <User
+                        size={16}
+                        className="text-gray-600 dark:text-white"
+                      />
+                      <span className="text-gray-700 text-sm dark:text-white">
+                        {ownerName}
+                      </span>
                     </div>
                     {ownerEmail && (
                       <div className="flex items-center gap-2">
-                        <Mail size={14} className="text-gray-600" />
-                        <span className="text-gray-500 text-xs">
+                        <Mail
+                          size={14}
+                          className="text-gray-600 dark:text-white"
+                        />
+                        <span className="text-gray-500 text-xs dark:text-white">
                           {ownerEmail}
                         </span>
                       </div>
                     )}
                     {ownerPhone && (
                       <div className="flex items-center gap-2">
-                        <Phone size={14} className="text-gray-600" />
-                        <span className="text-gray-500 text-xs">
+                        <Phone
+                          size={14}
+                          className="text-gray-600 dark:text-white"
+                        />
+                        <span className="text-gray-500 text-xs dark:text-white">
                           {ownerPhone}
                         </span>
                       </div>
@@ -241,7 +252,7 @@ const RoomDetailsModal = ({
                 </div>
                 {onRate && (
                   <div className="text-right">
-                    <div className="text-xs text-gray-500 mb-1">
+                    <div className="text-xs text-gray-500 mb-1 dark:text-white">
                       Tu calificación
                     </div>
                     <div className="flex gap-1">
@@ -252,7 +263,7 @@ const RoomDetailsModal = ({
                           className="cursor-pointer"
                           fill={userRating >= star ? "#84cc16" : "none"}
                           color={userRating >= star ? "#84cc16" : "#d1d5db"}
-                          onClick={() => onRate(room.id_alojamiento, star)}
+                          onClick={() => onRate(room.id, star)}
                           aria-label={`Calificar con ${star} estrella${star !== 1 ? "s" : ""}`}
                         />
                       ))}
@@ -260,26 +271,26 @@ const RoomDetailsModal = ({
                   </div>
                 )}
               </div>
-
               <div className="grid grid-cols-2 gap-4">
-                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                  <Home size={18} className="text-lime-600" />
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-gray-50 border border-transparent dark:bg-neutral-900">
+                  <Home size={18} className="text-lime-500" />
                   <div className="min-w-0">
-                    <div className="text-xs text-gray-500 uppercase tracking-wide truncate">
+                    <div className="text-xs uppercase tracking-wide truncate text-gray-500 dark:text-white">
                       Tipo
                     </div>
-                    <div className="text-sm font-medium text-gray-800 truncate">
+
+                    <div className="text-sm font-medium truncate text-gray-800 dark:text-white">
                       {room.typeProperty || "No especificado"}
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                  <Transgender size={18} className="text-lime-600" />
+                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg dark:bg-neutral-900">
+                  <Transgender size={18} className="text-lime-500" />
                   <div className="min-w-0">
-                    <div className="text-xs text-gray-500 uppercase tracking-wide">
+                    <div className="text-xs text-gray-500 uppercase tracking-wide dark:text-white">
                       Género
                     </div>
-                    <div className="text-sm font-medium text-gray-800 truncate">
+                    <div className="text-sm font-medium text-gray-800 truncate dark:text-white">
                       {room.gender === "femenino"
                         ? "Solo mujeres"
                         : room.gender === "masculino"
@@ -288,22 +299,21 @@ const RoomDetailsModal = ({
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg col-span-2">
-                  <MapPinIcon size={18} className="text-lime-600" />
+                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg col-span-2 dark:bg-neutral-900">
+                  <MapPinIcon size={18} className="text-lime-500" />
                   <div className="min-w-0">
-                    <div className="text-xs text-gray-500 uppercase tracking-wide">
+                    <div className="text-xs text-gray-500 uppercase tracking-wide dark:text-white">
                       Dirección
                     </div>
-                    <div className="text-xs font-medium text-gray-800 truncate">
+                    <div className="text-xs font-medium text-gray-800 truncate dark:text-white">
                       {room.address || "Dirección no disponible"}
                     </div>
                   </div>
                 </div>
                 <div className="col-span-2">
-                  <h4 className="text-base font-semibold text-lime-600 mb-1">
+                  <h4 className="text-base font-semibold text-lime-500 mb-1">
                     Cuartos y camas
                   </h4>
-
                   {room.cuartos && room.cuartos.length > 0 ? (
                     <Collapse accordion ghost>
                       {room.cuartos.map((cuarto) => {
@@ -314,13 +324,13 @@ const RoomDetailsModal = ({
                             key={cuarto.id_cuarto}
                             header={
                               <div className="flex justify-between items-center w-full">
-                                <span className="font-medium text-gray-800">
+                                <span className="font-medium text-gray-800 dark:text-white">
                                   {cuarto.name}
                                 </span>
 
                                 <div className="flex items-center gap-2">
                                   {getStatusTag(cuarto.estatus)}
-                                  <span className="text-sm font-semibold text-lime-600">
+                                  <span className="text-sm font-semibold text-lime-500">
                                     + ${cuarto.price}
                                   </span>
                                 </div>
@@ -333,14 +343,13 @@ const RoomDetailsModal = ({
                                   {cuarto.camas.map((cama) => (
                                     <div
                                       key={cama.id_cama}
-                                      className="flex items-center justify-between p-3 rounded-lg border bg-white border-gray-200"
+                                      className="flex items-center justify-between p-3 rounded-lg bg-white border-gray-200 dark:bg-neutral-900"
                                     >
                                       <div>
-                                        <p className="text-sm font-medium text-gray-800">
+                                        <p className="text-sm font-medium text-gray-500 dark:text-white">
                                           {cama.name}
                                         </p>
                                       </div>
-
                                       <div className="flex items-center gap-2">
                                         {getStatusTag(cama.estatus)}
                                         <span className="text-sm font-semibold">
@@ -351,7 +360,7 @@ const RoomDetailsModal = ({
                                   ))}
                                 </div>
                               ) : (
-                                <p className="text-sm text-gray-500">
+                                <p className="text-sm text-gray-500 dark:text-white">
                                   Este cuarto no tiene camas registradas
                                 </p>
                               )
@@ -371,26 +380,25 @@ const RoomDetailsModal = ({
                   )}
                 </div>
               </div>
-
               <div className="w-full">
-                <h4 className="text-base font-semibold text-lime-600 mb-3">
+                <h4 className="text-base font-semibold text-lime-500 mb-3">
                   Servicios disponibles
                 </h4>
 
                 {services.length > 0 ? (
-                  <div className="grid grid-cols-2 gap-2 mt-2">
+                  <div className="grid grid-cols-2 gap-2 mt-2 ">
                     {services.map((service) => (
                       <div
                         key={service.id}
-                        className="flex items-center justify-between bg-gray-50 p-2 rounded-lg"
+                        className="flex items-center justify-between bg-gray-50 p-2 rounded-lg dark:bg-neutral-900"
                       >
                         <div className="flex items-center gap-2">
                           {renderServiceIcon(service.icon)}
-                          <span className="text-sm text-gray-700">
+                          <span className="text-sm text-gray-700 dark:text-white">
                             {service.name}
                           </span>
                         </div>
-                        <span className="text-xs font-medium text-gray-600">
+                        <span className="text-xs font-medium text-gray-600 dark:text-white">
                           {formatCost(service.costo)}
                         </span>
                       </div>
@@ -405,7 +413,7 @@ const RoomDetailsModal = ({
 
               {onRequestRoom && (
                 <Button
-                  className="w-full !bg-lime-600 hover:!bg-lime-600 !border-lime-600 !text-white h-12 text-lg font-bold rounded-lg"
+                  className="w-full !bg-lime-500 hover:!bg-lime-500 !border-lime-500 !text-white h-12 text-lg font-bold rounded-lg"
                   onClick={() => {
                     onRequestRoom(room.id_alojamiento);
                     onClose();

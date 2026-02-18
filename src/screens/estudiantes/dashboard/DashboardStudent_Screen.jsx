@@ -283,7 +283,7 @@ export default function DashboardStudent_Screen() {
 
   return (
     <ConfigProvider locale={esES}>
-      <div className="min-h-screen bg-gray-50 flex justify-center w-full mb-0">
+      <div className="min-h-screen bg-gray-50 flex justify-center w-full mb-0 dark:bg-neutral-800">
         <div className="w-full max-w-7xl px-4 py-8 mb-0">
           {error && (
             <Alert
@@ -297,7 +297,7 @@ export default function DashboardStudent_Screen() {
             />
           )}
 
-          <div className="relative mx-auto mb-2 bg-white rounded-2xl border border-gray-200 h-14 max-w-lg flex items-center shadow-sm">
+          <div className="relative mx-auto mb-2 bg-white rounded-2xl border border-gray-200 h-14 max-w-lg flex items-center shadow-sm dark:bg-neutral-900 dark:border-neutral-700">
             <div className="flex-1 flex justify-center items-center gap-6 px-4">
               <Popover
                 trigger="click"
@@ -312,12 +312,15 @@ export default function DashboardStudent_Screen() {
                 }
               >
                 <div className="flex items-center gap-3 cursor-pointer">
-                  <CalendarDays size={18} className="text-gray-600" />
+                  <CalendarDays
+                    size={18}
+                    className="text-gray-600dark:text-white "
+                  />
                   <div className="flex flex-col">
-                    <span className="text-xs text-gray-500 font-medium">
+                    <span className="text-xs text-gray-500 font-medium dark:text-white">
                       FECHAS
                     </span>
-                    <span className="text-sm font-medium text-gray-800">
+                    <span className="text-sm font-medium text-gray-800 dark:text-white">
                       {dateRange && dateRange[0] && dateRange[1] ? (
                         `${dayjs(dateRange[0]).format("DD MMM")} - ${dayjs(
                           dateRange[1],
@@ -329,13 +332,11 @@ export default function DashboardStudent_Screen() {
                   </div>
                 </div>
               </Popover>
-
               <div className="w-px h-6 bg-gray-300" />
-
               <div className="flex items-center gap-3">
-                <Users size={18} className="text-gray-600" />
+                <Users size={18} className="text-gray-600 dark:text-white" />
                 <div className="flex flex-col">
-                  <span className="text-xs text-gray-500 font-medium">
+                  <span className="text-xs text-gray-500 font-medium dark:text-white">
                     HUÉSPEDES
                   </span>
                   <div className="flex items-center">
@@ -363,7 +364,7 @@ export default function DashboardStudent_Screen() {
             />
           </div>
 
-          <div className="mb-3 text-sm text-gray-600">
+          <div className="mb-3 text-sm text-gray-600 dark:text-white">
             Mostrando {displayedRooms.length} de {allAccommodations.length}{" "}
             habitaciones
             {dateRange && dateRange[0] && dateRange[1] && (
