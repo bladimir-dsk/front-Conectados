@@ -1,10 +1,10 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useApi } from "../../../hooks/useApi";
+import api from "../../../api/axiosConfig";
 import {
   Row,
   Col,
-  Tag,
   Button,
   InputNumber,
   DatePicker,
@@ -15,140 +15,23 @@ import {
   Spin,
 } from "antd";
 import esES from "antd/locale/es_ES";
-import {
-  Users,
-  Wifi,
-  MapPin,
-  DollarSign,
-  Heart,
-  Search,
-  CalendarDays,
-  Home,
-  User,
-  Star,
-  Bed,
-  MapPin as MapPinIcon,
-  Droplets,
-  Zap,
-  Sparkles,
-  Utensils,
-  Shirt,
-  Wind,
-  Tv,
-  Car,
-  Dumbbell,
-  Waves,
-  Coffee,
-  Sandwich,
-  Moon,
-} from "lucide-react";
+import { Users, Search, CalendarDays } from "lucide-react";
 import dayjs from "dayjs";
 import "dayjs/locale/es";
 
-// Importar componentes de modales
 import RoomDetailsModal from "../../../components/modals/RoomDetailsModal";
 import ReservationModal from "../../../components/modals/ReservationModal";
+import RoomCard from "../../../components/cards/RoomCard";
 
 const { RangePicker } = DatePicker;
-
 const IMAGE_URL = "https://s03.s3c.es/imag/_v0/1200x655/0/f/c/habitacion.jpg";
-
-const SERVICES = [
-  { id: 1, name: "Internet", price: 0, icon: <Wifi size={16} /> },
-  { id: 2, name: "Agua", price: 0, icon: <Droplets size={16} /> },
-  { id: 3, name: "Luz", price: 20, icon: <Zap size={16} /> },
-  { id: 4, name: "Limpieza", price: 15, icon: <Sparkles size={16} /> },
-  { id: 5, name: "Cocina", price: 10, icon: <Utensils size={16} /> },
-  { id: 6, name: "Lavadora", price: 5, icon: <Shirt size={16} /> },
-  { id: 7, name: "Aire acondicionado", price: 25, icon: <Wind size={16} /> },
-  { id: 8, name: "TV", price: 10, icon: <Tv size={16} /> },
-  { id: 9, name: "Parqueadero", price: 30, icon: <Car size={16} /> },
-  { id: 10, name: "Gimnasio", price: 20, icon: <Dumbbell size={16} /> },
-  { id: 11, name: "Piscina", price: 25, icon: <Waves size={16} /> },
-  { id: 12, name: "Desayuno", price: 12, icon: <Coffee size={16} /> },
-  { id: 13, name: "Almuerzo", price: 18, icon: <Sandwich size={16} /> },
-  { id: 14, name: "Cena", price: 22, icon: <Moon size={16} /> },
-];
-
-const RoomCard = ({
-  room,
-  isFav,
-  onToggleFavorite,
-  onViewDetails,
-  onViewMap,
-}) => {
-  return (
-    <div className="relative h-[400px] rounded-2xl overflow-hidden shadow-lg group">
-      <img
-        src={IMAGE_URL}
-        alt={room.name}
-        className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-      />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-black/20" />
-      <div className="absolute top-3 left-3 right-3 flex justify-between items-start">
-        <Tag className="font-medium bg-white/20 backdrop-blur-sm border-0 text-white text-xs">
-          Disponible
-        </Tag>
-        <button
-          className={`bg-white/20 backdrop-blur-sm rounded-full p-1.5 cursor-pointer transition-colors ${
-            isFav ? "text-red-400" : "text-white"
-          }`}
-          onClick={() => onToggleFavorite(room.id)}
-          aria-label={isFav ? "Quitar de favoritos" : "Agregar a favoritos"}
-        >
-          <Heart size={16} fill={isFav ? "#ff4d4f" : "none"} />
-        </button>
-      </div>
-      <div className="absolute bottom-0 left-0 right-0 p-4">
-        <h3 className="text-lg font-bold text-white mb-1">{room.name}</h3>
-        <div className="flex items-center gap-1 mb-2">
-          <MapPin size={12} className="text-gray-300" />
-          <span className="text-gray-300 text-xs">Mérida, Yucatán</span>
-        </div>
-        <div className="flex justify-between items-center mb-3">
-          <div className="flex items-center gap-1">
-            <Star size={12} className="text-yellow-400" fill="#fbbf24" />
-            <span className="text-white font-medium text-sm">
-              {room.rating.toFixed(1)}
-            </span>
-            <span className="text-gray-300 text-xs">({room.reviews})</span>
-          </div>
-          <div className="flex items-baseline">
-            <span className="text-xl font-bold text-white">${room.price}</span>
-            <span className="text-gray-300 text-xs ml-1">/noche</span>
-          </div>
-        </div>
-        <div className="flex gap-2">
-          <Button
-            className="flex-1 !bg-transparent !border-white font-medium hover:!bg-transparent !text-white h-10 text-sm"
-            onClick={() => onViewDetails(room)}
-          >
-            Ver detalles
-          </Button>
-          <Button
-            icon={<MapPinIcon size={14} />}
-            className="flex-1 !bg-transparent !border-white font-medium hover:!bg-transparent !text-white h-10 text-sm"
-            onClick={() => onViewMap(room.id)}
-          >
-            Mapa
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
-};
 
 export default function DashboardStudent_Screen() {
   const [favorites, setFavorites] = useState([]);
   const [dateRange, setDateRange] = useState(null);
   const [guests, setGuests] = useState(1);
-  const [appliedFilters, setAppliedFilters] = useState({
-    dateRange: null,
-    guests: 1,
-  });
   const [openDetails, setOpenDetails] = useState(false);
   const [selectedRoom, setSelectedRoom] = useState(null);
-  const [currentPage, setCurrentPage] = useState(1);
   const [userRating, setUserRating] = useState({});
   const [reservationModalOpen, setReservationModalOpen] = useState(false);
   const [reservationStep, setReservationStep] = useState(1);
@@ -157,7 +40,7 @@ export default function DashboardStudent_Screen() {
   const [selectedBed, setSelectedBed] = useState("");
   const [rentPeriod, setRentPeriod] = useState(12);
   const [selectedServices, setSelectedServices] = useState([]);
-  const { fetchData } = useApi("/documentacion/status/approved", {}, false);
+
   const [prices, setPrices] = useState({
     subtotal: 0,
     iva: 0,
@@ -167,84 +50,221 @@ export default function DashboardStudent_Screen() {
   const [loading, setLoading] = useState({
     rooms: false,
     reservation: false,
+    details: false,
   });
   const [error, setError] = useState(null);
+  const [detailsError, setDetailsError] = useState(null);
 
   const navigate = useNavigate();
 
+  const { fetchData: fetchDocumentsStatus } = useApi(
+    "/documentacion/status/approved",
+    {},
+    false,
+  );
+
+  const [allAccommodations, setAllAccommodations] = useState([]);
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 9,
+    total: 0,
+  });
+
+  const [displayedRooms, setDisplayedRooms] = useState([]);
+
+  const handleDateChange = (dates) => {
+    setDateRange(dates);
+    setPagination((prev) => ({ ...prev, current: 1 }));
+  };
+
+  const handleGuestsChange = (value) => {
+    setGuests(value);
+    setPagination((prev) => ({ ...prev, current: 1 }));
+  };
+
+  const loadAllAccommodations = async () => {
+    setLoading((prev) => ({ ...prev, rooms: true }));
+    try {
+      let page = 1;
+      let allItems = [];
+      let total = 0;
+      const limit = 100;
+
+      do {
+        const params = {
+          startDate: dateRange?.[0]?.format("YYYY-MM-DD"),
+          endDate: dateRange?.[1]?.format("YYYY-MM-DD"),
+          guests,
+          page,
+          limit,
+        };
+        const res = await api.get("/alojamientos", { params });
+        const items = res.data?.data ?? res.data ?? [];
+        total = res.data?.meta?.total ?? items.length;
+        allItems = [...allItems, ...items];
+        page++;
+      } while (allItems.length < total);
+
+      const mappedRooms = allItems.map((item) => {
+        const fotos = (item.fotos || []).map((foto) => ({
+          id: foto.id_foto,
+          url: foto.url,
+          esPrincipal: foto.esPrincipal,
+        }));
+
+        const mainPhoto =
+          fotos.find((f) => f.esPrincipal === true) || fotos[0] || null;
+
+        return {
+          id: item.id_alojamiento,
+          name: item.name,
+          price: item.precio_completo,
+          address: `${item.address}, ${item.city}, ${item.country}`,
+          fotos,
+          mainImage: mainPhoto?.url || IMAGE_URL,
+          rating: item.rating ?? 0,
+          reviews: item.reviews ?? 0,
+        };
+      });
+
+      setAllAccommodations(mappedRooms);
+      setPagination((prev) => ({ ...prev, total: mappedRooms.length }));
+      setError(null);
+    } catch (err) {
+      console.error(err);
+      setError("Error al cargar los alojamientos");
+    } finally {
+      setLoading((prev) => ({ ...prev, rooms: false }));
+    }
+  };
+
+  useEffect(() => {
+    loadAllAccommodations();
+  }, [dateRange, guests]);
+
+  useEffect(() => {
+    const start = (pagination.current - 1) * pagination.pageSize;
+    const end = start + pagination.pageSize;
+    setDisplayedRooms(allAccommodations.slice(start, end));
+  }, [allAccommodations, pagination.current, pagination.pageSize]);
+
   const fetchDocumentStatus = async () => {
     try {
-      const response = await fetchData();
+      const response = await fetchDocumentsStatus();
       const approved = response?.approved === true;
       setHasDocuments(approved);
       return approved;
-    } catch (error) {
+    } catch {
       setHasDocuments(false);
       return false;
     }
   };
 
   const handleViewMap = (roomId) => {
-    navigate(`/estudiante/search/${roomId}`, {
-      state: { roomId },
-    });
+    navigate(`/estudiante/search/${roomId}`, { state: { roomId } });
   };
 
-  const pageSize = 6;
+  const openRoomDetails = async (roomId) => {
+    setLoading((prev) => ({ ...prev, details: true }));
+    setDetailsError(null);
+    setOpenDetails(true);
 
-  const rooms = useMemo(() => {
-    return Array.from({ length: 24 }, (_, i) => ({
-      id: i + 1,
-      name: `Habitación ${i + 1}`,
-      price: 80 + (i % 5) * 20,
-      owner: "Juan Pérez",
-      gender: "Mixto",
-      type:
-        i % 3 === 0
-          ? "Cuarto privado"
-          : i % 3 === 1
-            ? "Habitación compartida"
-            : "Estudio",
-      beds: i % 2 === 0 ? 1 : 2,
-      address: "Calle 10 #123, Centro, Mérida, Yucatán",
-      rating: 4.0 + i * 0.05,
-      reviews: 10 + i,
-      maxGuests: Math.floor(Math.random() * 5) + 1,
-      availableDates: generateRandomAvailableDates(),
-    }));
-  }, []);
+    try {
+      const res = await api.get(`/alojamientos/${roomId}/details`);
+      const details = res.data;
 
-  function generateRandomAvailableDates() {
-    const availableDates = [];
-    const startDate = dayjs();
-    const endDate = dayjs().add(90, "day");
+      const normalizeGender = (gender) => {
+        if (!gender) return "mixto";
+        const value = gender.toLowerCase();
+        if (value === "mujer" || value === "femenino") return "femenino";
+        if (value === "hombre" || value === "masculino") return "masculino";
+        return "mixto";
+      };
 
-    let currentDate = startDate;
-    while (currentDate.isBefore(endDate)) {
-      if (Math.random() > 0.2) {
-        availableDates.push(currentDate.format("YYYY-MM-DD"));
-      }
-      currentDate = currentDate.add(1, "day");
+      const fotos = (details.fotos || []).map((foto) => ({
+        id: foto.id_foto,
+        url: foto.url,
+        principal: foto.esPrincipal,
+        descripcion: foto.descripcion,
+      }));
+
+      const totalBeds =
+        details.cuartos?.reduce(
+          (total, cuarto) => total + (cuarto.camas?.length || 0),
+          0,
+        ) ?? 0;
+
+      const allServices = (details.servicios || []).map((s) => ({
+        id: s.servicio.id_servicio,
+        name: s.servicio.name,
+        icon: s.servicio.icon,
+        costo: s.costo,
+      }));
+
+      const cuartos = (details.cuartos || []).map((cuarto) => ({
+        id_cuarto: cuarto.id_cuarto,
+        name: cuarto.name,
+        price: cuarto.price,
+        estatus: cuarto.estatus,
+        camas: (cuarto.camas || []).map((cama) => ({
+          id_cama: cama.id_cama,
+          name: cama.name,
+          price: cama.price,
+          estatus: cama.estatus,
+        })),
+      }));
+
+      const enrichedRoom = {
+        id: details.id_alojamiento,
+        name: details.name,
+        price: details.precio_completo,
+        type: details.typeProperty,
+        gender: normalizeGender(details.gender),
+        propietario: {
+          namePersonal: details.propietario?.namePersonal,
+          lastName: details.propietario?.lastName,
+          emailPersonal: details.propietario?.emailPersonal,
+          phone: details.propietario?.phone,
+          code: details.propietario?.code,
+        },
+        address: `${details.address}, ${details.city}, ${details.country}`,
+        services: allServices,
+        fotos,
+        mainImage: fotos[0]?.url || IMAGE_URL,
+        cuartos,
+      };
+
+      setSelectedRoom(enrichedRoom);
+    } catch (error) {
+      console.error(error);
+      setDetailsError("No se pudieron cargar los detalles de la habitación");
+    } finally {
+      setLoading((prev) => ({ ...prev, details: false }));
     }
-    return availableDates;
-  }
+  };
 
-  const isRoomAvailableInDateRange = (room, startDate, endDate) => {
-    if (!startDate || !endDate) return true;
+  const handleRate = (roomId, value) => {
+    setUserRating((prev) => ({ ...prev, [roomId]: value }));
+  };
 
-    const start = dayjs(startDate);
-    const end = dayjs(endDate);
-    let current = start;
+  const calculatePrices = (roomPrice, period, servicesSelected) => {};
 
-    while (current.isBefore(end) || current.isSame(end, "day")) {
-      const dateStr = current.format("YYYY-MM-DD");
-      if (!room.availableDates.includes(dateStr)) {
-        return false;
-      }
-      current = current.add(1, "day");
+  const saveReservation = async () => {};
+
+  const handleRequestRoom = async (roomId) => {
+    const room = allAccommodations.find((r) => r.id === roomId);
+    if (room) {
+      setSelectedRoom(room);
+      calculatePrices(room.price, rentPeriod, selectedServices);
     }
+    await fetchDocumentStatus();
+    setReservationStep(1);
+    setReservationModalOpen(true);
+  };
 
-    return true;
+  const handlePaginationChange = (page) => {
+    setPagination((prev) => ({ ...prev, current: page }));
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const toggleFavorite = (id) => {
@@ -253,144 +273,21 @@ export default function DashboardStudent_Screen() {
     );
   };
 
-  const openRoomDetails = (room) => {
-    setSelectedRoom(room);
-    setOpenDetails(true);
-  };
-
-  const handleRate = (roomId, value) => {
-    setUserRating((prev) => ({ ...prev, [roomId]: value }));
-  };
-
-  const calculatePrices = (roomPrice, period, servicesSelected) => {
-    const periodPrices = {
-      12: 100,
-      6: 200,
-      3: 300,
-    };
-
-    const servicesCost = servicesSelected.reduce((total, serviceName) => {
-      const service = SERVICES.find((s) => s.name === serviceName);
-      return total + (service?.price || 0);
-    }, 0);
-
-    const periodPrice = periodPrices[period] || 0;
-    const subtotal = periodPrice + servicesCost;
-    const iva = subtotal * 0.16;
-    const total = subtotal + iva;
-
-    setPrices({
-      subtotal: Math.round(subtotal * 100) / 100,
-      iva: Math.round(iva * 100) / 100,
-      total: Math.round(total * 100) / 100,
-    });
-  };
-
-  const saveReservation = async () => {
-    if (!selectedRoom) return;
-
-    setLoading((prev) => ({ ...prev, reservation: true }));
-
-    try {
-      const reservationData = {
-        roomId: selectedRoom.id,
-        rentType,
-        selectedRooms,
-        selectedBed,
-        rentPeriod,
-        selectedServices,
-        prices,
-        userId: "current-user-id",
-      };
-
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-
-      console.log("Reservación guardada:", reservationData);
-
-      setLoading((prev) => ({ ...prev, reservation: false }));
-    } catch (err) {
-      setError("Error al guardar la reservación");
-      setLoading((prev) => ({ ...prev, reservation: false }));
-    }
-  };
-
-  const handleRequestRoom = async (roomId) => {
-    const room = filteredRooms.find((r) => r.id === roomId);
-    if (room) {
-      setSelectedRoom(room);
-      calculatePrices(room.price, rentPeriod, selectedServices);
-    }
-
-    await fetchDocumentStatus();
-    setReservationStep(1);
-    setReservationModalOpen(true);
-  };
-
-  const applyFilters = () => {
-    setAppliedFilters({
-      dateRange,
-      guests,
-    });
-    setCurrentPage(1);
-  };
-
-  const filteredRooms = useMemo(() => {
-    return rooms.filter((room) => {
-      if (room.maxGuests < appliedFilters.guests) {
-        return false;
-      }
-
-      if (
-        appliedFilters.dateRange &&
-        appliedFilters.dateRange[0] &&
-        appliedFilters.dateRange[1]
-      ) {
-        const [startDate, endDate] = appliedFilters.dateRange;
-        if (!isRoomAvailableInDateRange(room, startDate, endDate)) {
-          return false;
-        }
-      }
-
-      return true;
-    });
-  }, [rooms, appliedFilters]);
-
-  const currentRooms = useMemo(() => {
-    return filteredRooms.slice(
-      (currentPage - 1) * pageSize,
-      currentPage * pageSize,
-    );
-  }, [filteredRooms, currentPage, pageSize]);
-
-  const handleServicesChange = (newServices) => {
-    setSelectedServices(newServices);
-    if (selectedRoom) {
-      calculatePrices(selectedRoom.price, rentPeriod, newServices);
-    }
-  };
-
-  useEffect(() => {
-    setLoading((prev) => ({ ...prev, rooms: true }));
-    setTimeout(() => {
-      setLoading((prev) => ({ ...prev, rooms: false }));
-    }, 1000);
-  }, []);
-
-  if (loading.rooms && rooms.length === 0) {
+  if (loading.rooms && allAccommodations.length === 0) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <Spin size="large" tip="Cargando habitaciones..." />
+        <Spin size="large" tip="Cargando habitaciones..." fullscreen />
       </div>
     );
   }
 
   return (
     <ConfigProvider locale={esES}>
-      <div className="min-h-screen bg-gray-50 flex justify-center w-full mb-0">
+      <div className="min-h-screen bg-gray-50 flex justify-center w-full mb-0 dark:bg-neutral-800">
         <div className="w-full max-w-7xl px-4 py-8 mb-0">
           {error && (
             <Alert
-              message="Error"
+              title="Error"
               description={error}
               type="error"
               showIcon
@@ -400,7 +297,7 @@ export default function DashboardStudent_Screen() {
             />
           )}
 
-          <div className="relative mx-auto mb-2 bg-white rounded-2xl border border-gray-200 h-14 max-w-lg flex items-center shadow-sm">
+          <div className="relative mx-auto mb-2 bg-white rounded-2xl border border-gray-200 h-14 max-w-lg flex items-center shadow-sm dark:bg-neutral-900 dark:border-neutral-700">
             <div className="flex-1 flex justify-center items-center gap-6 px-4">
               <Popover
                 trigger="click"
@@ -409,18 +306,21 @@ export default function DashboardStudent_Screen() {
                   <RangePicker
                     inline
                     value={dateRange}
-                    onChange={setDateRange}
+                    onChange={handleDateChange}
                     allowClear={false}
                   />
                 }
               >
                 <div className="flex items-center gap-3 cursor-pointer">
-                  <CalendarDays size={18} className="text-gray-600" />
+                  <CalendarDays
+                    size={18}
+                    className="text-gray-600dark:text-white "
+                  />
                   <div className="flex flex-col">
-                    <span className="text-xs text-gray-500 font-medium">
+                    <span className="text-xs text-gray-500 font-medium dark:text-white">
                       FECHAS
                     </span>
-                    <span className="text-sm font-medium text-gray-800">
+                    <span className="text-sm font-medium text-gray-800 dark:text-white">
                       {dateRange && dateRange[0] && dateRange[1] ? (
                         `${dayjs(dateRange[0]).format("DD MMM")} - ${dayjs(
                           dateRange[1],
@@ -432,13 +332,11 @@ export default function DashboardStudent_Screen() {
                   </div>
                 </div>
               </Popover>
-
               <div className="w-px h-6 bg-gray-300" />
-
               <div className="flex items-center gap-3">
-                <Users size={18} className="text-gray-600" />
+                <Users size={18} className="text-gray-600 dark:text-white" />
                 <div className="flex flex-col">
-                  <span className="text-xs text-gray-500 font-medium">
+                  <span className="text-xs text-gray-500 font-medium dark:text-white">
                     HUÉSPEDES
                   </span>
                   <div className="flex items-center">
@@ -446,7 +344,7 @@ export default function DashboardStudent_Screen() {
                       min={1}
                       max={20}
                       value={guests}
-                      onChange={setGuests}
+                      onChange={handleGuestsChange}
                       variant="borderless"
                       className="w-12 text-base font-medium text-gray-800 p-0"
                       controls={false}
@@ -459,27 +357,25 @@ export default function DashboardStudent_Screen() {
             <Button
               className="absolute right-4 bg-lime-600 border-none rounded-full w-11 h-11 text-white hover:bg-lime-600 shadow-md"
               icon={<Search size={18} />}
-              onClick={applyFilters}
+              onClick={() => {
+                loadAllAccommodations();
+              }}
               aria-label="Buscar habitaciones"
             />
           </div>
 
-          <div className="mb-3 text-sm text-gray-600">
-            Mostrando {filteredRooms.length} de {rooms.length} habitaciones
-            {appliedFilters.dateRange &&
-              appliedFilters.dateRange[0] &&
-              appliedFilters.dateRange[1] && (
-                <span>
-                  {" "}
-                  para las fechas{" "}
-                  {dayjs(appliedFilters.dateRange[0]).format(
-                    "DD/MM/YYYY",
-                  )} - {dayjs(appliedFilters.dateRange[1]).format("DD/MM/YYYY")}
-                </span>
-              )}
-            {appliedFilters.guests > 1 && (
-              <span> con capacidad para {appliedFilters.guests} huéspedes</span>
+          <div className="mb-3 text-sm text-gray-600 dark:text-white">
+            Mostrando {displayedRooms.length} de {allAccommodations.length}{" "}
+            habitaciones
+            {dateRange && dateRange[0] && dateRange[1] && (
+              <span>
+                {" "}
+                para las fechas {dayjs(dateRange[0]).format(
+                  "DD/MM/YYYY",
+                )} - {dayjs(dateRange[1]).format("DD/MM/YYYY")}
+              </span>
             )}
+            {guests > 1 && <span> con capacidad para {guests} huéspedes</span>}
           </div>
 
           {loading.rooms ? (
@@ -489,8 +385,14 @@ export default function DashboardStudent_Screen() {
           ) : (
             <>
               <Row gutter={[24, 24]}>
-                {currentRooms.map((room) => (
-                  <Col key={room.id} xs={24} sm={12} lg={8} xl={8}>
+                {displayedRooms.map((room, index) => (
+                  <Col
+                    key={room.id ?? `room-${index}`}
+                    xs={24}
+                    sm={12}
+                    lg={8}
+                    xl={8}
+                  >
                     <RoomCard
                       room={room}
                       isFav={favorites.includes(room.id)}
@@ -502,7 +404,7 @@ export default function DashboardStudent_Screen() {
                 ))}
               </Row>
 
-              {filteredRooms.length === 0 && (
+              {allAccommodations.length === 0 && (
                 <div className="text-center py-12">
                   <Search size={48} className="mx-auto text-gray-300 mb-4" />
                   <h3 className="text-lg font-semibold text-gray-700 mb-2">
@@ -516,29 +418,33 @@ export default function DashboardStudent_Screen() {
                 </div>
               )}
 
-              <div className="flex justify-center mt-12">
-                <Pagination
-                  current={currentPage}
-                  pageSize={pageSize}
-                  total={filteredRooms.length}
-                  onChange={setCurrentPage}
-                  showSizeChanger={false}
-                  showQuickJumper
-                  className="[&_.ant-pagination-item]:rounded-full [&_.ant-pagination-item-active]:bg-lime-600 [&_.ant-pagination-item-active]:border-lime-600 [&_.ant-pagination-item-active_a]:text-white"
-                />
-              </div>
+              {allAccommodations.length > pagination.pageSize && (
+                <div className="flex justify-center mt-12">
+                  <Pagination
+                    current={pagination.current}
+                    pageSize={pagination.pageSize}
+                    total={allAccommodations.length}
+                    onChange={handlePaginationChange}
+                    className="[&_.ant-pagination-item]:rounded-full [&_.ant-pagination-item-active]:bg-lime-600 [&_.ant-pagination-item-active]:border-lime-600 [&_.ant-pagination-item-active_a]:text-white"
+                  />
+                </div>
+              )}
             </>
           )}
 
           <RoomDetailsModal
             open={openDetails}
-            onClose={() => setOpenDetails(false)}
+            onClose={() => {
+              setOpenDetails(false);
+              setDetailsError(null);
+            }}
             room={selectedRoom}
             userRating={userRating[selectedRoom?.id]}
             onRate={handleRate}
             onRequestRoom={handleRequestRoom}
-            services={SERVICES}
-            loading={loading.reservation}
+            services={selectedRoom?.services || []}
+            loading={loading.details}
+            error={detailsError}
           />
 
           <ReservationModal
@@ -567,8 +473,8 @@ export default function DashboardStudent_Screen() {
               }
             }}
             selectedServices={selectedServices}
-            onSelectedServicesChange={handleServicesChange}
-            services={SERVICES}
+            onSelectedServicesChange={setSelectedServices}
+            services={[]}
             prices={prices}
             onSaveReservation={saveReservation}
             loading={loading.reservation}
