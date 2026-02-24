@@ -52,6 +52,7 @@ const RouteModal = ({
   onClose,
   selectedRoom,
   userRating,
+  hasRated,
   onRate,
   onShowRoute,
   onRequestRoom,
@@ -73,7 +74,9 @@ const RouteModal = ({
   const ownerEmail = owner.email || null;
   const ownerPhone = owner.phone || owner.telefono || null;
 
-  const [rating, setRating] = useState(userRating[selectedRoom.id] || 0);
+  const roomId = selectedRoom.id;
+  const rating = userRating[roomId] || 0;
+  const alreadyRated = hasRated?.[roomId];
 
   const handleRate = (value) => {
     setRating(value);
@@ -192,25 +195,43 @@ const RouteModal = ({
                 )}
               </div>
             </div>
-            {onRate && (
-              <div className="text-right">
-                <span className="text-xs text-gray-500 block dark:text-white">
-                  Calificar
-                </span>
-                <div className="flex gap-1">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <Star
-                      key={star}
-                      size={16}
-                      className="cursor-pointer"
-                      fill={rating >= star ? "#84cc16" : "none"}
-                      color={rating >= star ? "#84cc16" : "#d1d5db"}
-                      onClick={() => handleRate(star)}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
+            <div className="text-right">
+              {alreadyRated ? (
+                <>
+                  <div className="text-sm font-medium text-lime-600">
+                    Ya calificaste
+                  </div>
+                  <div className="flex justify-end gap-1 mt-1">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <Star
+                        key={star}
+                        size={16}
+                        fill={rating >= star ? "#84cc16" : "none"}
+                        color={rating >= star ? "#84cc16" : "#d1d5db"}
+                      />
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="text-xs text-gray-500 dark:text-white">
+                    Tu calificación
+                  </div>
+                  <div className="flex justify-end gap-1 mt-1">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <Star
+                        key={star}
+                        size={16}
+                        className="cursor-pointer"
+                        fill={rating >= star ? "#84cc16" : "none"}
+                        color={rating >= star ? "#84cc16" : "#d1d5db"}
+                        onClick={() => onRate(roomId, star)}
+                      />
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <Info

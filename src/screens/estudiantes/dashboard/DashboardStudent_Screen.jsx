@@ -66,13 +66,14 @@ export default function DashboardStudent_Screen() {
 
   const loadUserRating = async (roomId) => {
     try {
-      const res = await api.get(`/calificacion/${roomId}`);
+      const res = await api.get(`/calificacion/mi-calificacion/${roomId}`);
+
       return res.data?.puntuacion ?? null;
     } catch (error) {
       if (error.response?.status === 404) {
         return null;
       }
-      console.error("Error cargando calificación del usuario", error);
+      console.error("Error cargando mi calificación", error);
       return null;
     }
   };
@@ -214,22 +215,15 @@ export default function DashboardStudent_Screen() {
 
       const rating = await loadUserRating(roomId);
 
-      if (rating !== null) {
-        setUserRating((prev) => ({
-          ...prev,
-          [roomId]: rating,
-        }));
+      setUserRating((prev) => ({
+        ...prev,
+        [roomId]: rating ?? 0,
+      }));
 
-        setHasRated((prev) => ({
-          ...prev,
-          [roomId]: true,
-        }));
-      } else {
-        setHasRated((prev) => ({
-          ...prev,
-          [roomId]: false,
-        }));
-      }
+      setHasRated((prev) => ({
+        ...prev,
+        [roomId]: rating !== null,
+      }));
 
       const normalizeGender = (gender) => {
         if (!gender) return "mixto";
@@ -295,7 +289,7 @@ export default function DashboardStudent_Screen() {
       setSelectedRoom(enrichedRoom);
     } catch (error) {
       console.error(error);
-      setDetailsError("No se pudieron cargar los detalles de la habitación");
+      setDetailsError("No se pudieron cargar los detalles");
     } finally {
       setLoading((prev) => ({ ...prev, details: false }));
     }

@@ -110,6 +110,8 @@ export default function SearchStudent_Screen() {
   const [rentType, setRentType] = useState("completo");
   const [selectedRooms, setSelectedRooms] = useState(1);
   const [selectedBed, setSelectedBed] = useState("");
+  const [hasRated, setHasRated] = useState({});
+  const [ratingLoading, setRatingLoading] = useState(false);
   const [rentPeriod, setRentPeriod] = useState(12);
 
   const parseCoordinate = (coord) => {
@@ -143,11 +145,25 @@ export default function SearchStudent_Screen() {
     }
   };
 
+  const loadUserRating = async (roomId) => {
+    try {
+      const res = await api.get(`/calificacion/mi-calificacion/${roomId}`);
+
+      return res.data?.puntuacion ?? null;
+    } catch (error) {
+      if (error.response?.status === 404) {
+        return null;
+      }
+      console.error("Error cargando mi calificación", error);
+      return null;
+    }
+  };
+
   const [error, setError] = useState(null);
 
   const location = useLocation();
 
-  const { id } = useParams();
+  const { roomId } = useParams();
 
   const [directions, setDirections] = useState(null);
   const [roomCoords, setRoomCoords] = useState(null);
@@ -303,6 +319,18 @@ export default function SearchStudent_Screen() {
       const res = await api.get(`/alojamientos/${roomId}/details`);
       const data = res.data?.data ?? res.data;
 
+      const rating = await loadUserRating(roomId);
+
+      setUserRating((prev) => ({
+        ...prev,
+        [roomId]: rating ?? 0,
+      }));
+
+      setHasRated((prev) => ({
+        ...prev,
+        [roomId]: rating !== null,
+      }));
+
       const mappedRoom = {
         id: data.id_alojamiento,
         name: data.name,
@@ -347,17 +375,15 @@ export default function SearchStudent_Screen() {
       setOpenDetails(true);
     } catch (error) {
       console.error("❌ Error cargando detalles:", error);
-      setSelectedRoom(null);
     } finally {
       setLoadingDetails(false);
     }
   };
-
   useEffect(() => {
-    if (id) {
-      fetchRoomDetails(Number(id));
+    if (roomId) {
+      fetchRoomDetails(Number(roomId));
     }
-  }, [id]);
+  }, [roomId]);
 
   useEffect(() => {
     const loadRooms = async () => {
@@ -429,8 +455,21 @@ export default function SearchStudent_Screen() {
 
   const roomIdFromDashboard = location.state?.roomId;
 
-  const handleRate = (roomId, value) => {
+  const handleRate = async (roomId, value) => {
+    if (hasRated[roomId]) return;
+
     setUserRating((prev) => ({ ...prev, [roomId]: value }));
+
+    try {
+      await api.post("/calificacion", {
+        id_alojamiento: roomId,
+        puntuacion: value,
+      });
+
+      setHasRated((prev) => ({ ...prev, [roomId]: true }));
+    } catch (error) {
+      console.error("Error guardando calificación", error);
+    }
   };
 
   useEffect(() => {
@@ -503,6 +542,7 @@ export default function SearchStudent_Screen() {
           selectedRoom={selectedRoom}
           loading={loadingDetails}
           userRating={userRating}
+          hasRated={hasRated}
           onRate={handleRate}
           onClose={() => setOpenDetails(false)}
           onShowRoute={handleShowRoute}

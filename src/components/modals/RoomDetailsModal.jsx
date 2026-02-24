@@ -253,11 +253,15 @@ const RoomDetailsModal = ({
                 </div>
                 {hasRated ? (
                   <div className="text-right">
-                    <div className="text-sm font-medium text-lime-600">
-                      Ya calificaste este alojamiento
+                    <div className="text-sm font-medium text-lime-600 mb-1">
+                      Tu calificación:
                     </div>
-                    <div className="text-xs text-gray-500 dark:text-white">
-                      Tu calificación: {userRating} / 5
+
+                    <div className="flex items-center justify-end gap-1">
+                      <span className="text-xs text-gray-500 dark:text-white">
+                        {userRating} / 5
+                      </span>
+                      <StarIcon size={16} fill="#84cc16" color="#84cc16" />
                     </div>
                   </div>
                 ) : (
