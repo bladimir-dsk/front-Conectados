@@ -147,7 +147,7 @@ export default function SearchStudent_Screen() {
 
   const location = useLocation();
 
-  const { id } = useParams();
+  const { roomId } = useParams();
 
   const [directions, setDirections] = useState(null);
   const [roomCoords, setRoomCoords] = useState(null);
@@ -352,13 +352,11 @@ export default function SearchStudent_Screen() {
       setLoadingDetails(false);
     }
   };
-
   useEffect(() => {
-    if (id) {
-      fetchRoomDetails(Number(id));
+    if (roomId) {
+      fetchRoomDetails(Number(roomId));
     }
-  }, [id]);
-
+  }, [roomId]);
   useEffect(() => {
     const loadRooms = async () => {
       try {
