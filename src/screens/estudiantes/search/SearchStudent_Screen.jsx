@@ -382,11 +382,8 @@ export default function SearchStudent_Screen() {
   useEffect(() => {
     if (roomId) {
       fetchRoomDetails(Number(roomId));
-    if (roomId) {
-      fetchRoomDetails(Number(roomId));
     }
   }, [roomId]);
-
   useEffect(() => {
     const loadRooms = async () => {
       try {
