@@ -43,7 +43,10 @@ const RoomCard = ({
             <span className="text-white font-medium text-sm">
               {room.rating?.toFixed(1) || "0.0"}
             </span>
-            <span className="text-gray-300 text-xs">({room.reviews || 0})</span>
+            <span className="text-gray-300 text-xs">
+              ({room.totalVotos ?? 0} {room.totalVotos === 1 ? "voto" : "votos"}
+              )
+            </span>
           </div>
           <div className="flex items-baseline">
             <span className="text-xl font-bold text-white">${room.price}</span>

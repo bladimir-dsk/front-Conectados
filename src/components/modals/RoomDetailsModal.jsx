@@ -66,6 +66,7 @@ const RoomDetailsModal = ({
   onClose,
   room,
   userRating,
+  hasRated,
   onRate,
   onRequestRoom,
   services = [],
@@ -250,7 +251,16 @@ const RoomDetailsModal = ({
                     )}
                   </div>
                 </div>
-                {onRate && (
+                {hasRated ? (
+                  <div className="text-right">
+                    <div className="text-sm font-medium text-lime-600">
+                      Ya calificaste este alojamiento
+                    </div>
+                    <div className="text-xs text-gray-500 dark:text-white">
+                      Tu calificación: {userRating} / 5
+                    </div>
+                  </div>
+                ) : (
                   <div className="text-right">
                     <div className="text-xs text-gray-500 mb-1 dark:text-white">
                       Tu calificación
@@ -264,7 +274,6 @@ const RoomDetailsModal = ({
                           fill={userRating >= star ? "#84cc16" : "none"}
                           color={userRating >= star ? "#84cc16" : "#d1d5db"}
                           onClick={() => onRate(room.id, star)}
-                          aria-label={`Calificar con ${star} estrella${star !== 1 ? "s" : ""}`}
                         />
                       ))}
                     </div>
@@ -360,7 +369,7 @@ const RoomDetailsModal = ({
                                   ))}
                                 </div>
                               ) : (
-                                <p className="text-sm text-gray-500 dark:text-white">
+                                <p className="text-sm text-gray-500">
                                   Este cuarto no tiene camas registradas
                                 </p>
                               )

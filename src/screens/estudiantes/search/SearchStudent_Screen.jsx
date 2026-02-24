@@ -6,23 +6,9 @@ import {
   useJsApiLoader,
 } from "@react-google-maps/api";
 import { useLocation, useParams } from "react-router-dom";
-import {
-  Modal,
-  Button,
-  Tag,
-  Steps,
-  Divider,
-  Space,
-  ConfigProvider,
-} from "antd";
+import { ConfigProvider } from "antd";
 import esES from "antd/locale/es_ES";
 import {
-  MapPin,
-  User,
-  Home,
-  Bed,
-  DollarSign,
-  Star,
   Wifi,
   Droplets,
   Zap,
@@ -37,20 +23,14 @@ import {
   Coffee,
   Sandwich,
   Moon,
-  ShieldCheck,
   X,
-  Navigation,
-  Map,
   Clock,
-  CheckCircle,
-  CalendarDays,
-  Plus,
 } from "lucide-react";
 
-// Importar componentes de modales
 import RouteModal from "../../../components/modals/RouteModal";
 import ReservationModal from "../../../components/modals/ReservationModal";
 import { useApi } from "../../../hooks/useApi";
+import api from "../../../api/axiosConfig";
 
 const containerStyle = {
   width: "100%",
@@ -76,162 +56,6 @@ const SERVICES = [
   { name: "Cena", price: 22, icon: <Moon size={16} /> },
 ];
 
-const rooms = [
-  {
-    id: 1,
-    title: "Habitación Centro",
-    name: "Habitación Centro",
-    price: 2500,
-    rating: 4.3,
-    available: true,
-    services: SERVICES,
-    lat: 20.9671,
-    lng: -89.6237,
-    image: IMAGE_URL,
-    address: "Calle 10 #123, Centro, Mérida, Yucatán",
-    owner: "Juan Pérez",
-    type: "Cuarto privado",
-    beds: 1,
-    gender: "Mixto",
-  },
-  {
-    id: 2,
-    title: "Habitación Itzimná",
-    name: "Habitación Itzimná",
-    price: 3200,
-    rating: 4.5,
-    available: true,
-    services: SERVICES,
-    lat: 20.9802,
-    lng: -89.6103,
-    image: IMAGE_URL,
-    address: "Calle 25 #456, Itzimná, Mérida",
-    owner: "María García",
-    type: "Cuarto privado",
-    beds: 1,
-    gender: "Femenino",
-  },
-  {
-    id: 3,
-    title: "Habitación Chuburná",
-    name: "Habitación Chuburná",
-    price: 2800,
-    rating: 4.2,
-    available: true,
-    services: SERVICES,
-    lat: 20.9954,
-    lng: -89.6356,
-    image: IMAGE_URL,
-    address: "Calle 30 #789, Chuburná, Mérida",
-    owner: "Carlos López",
-    type: "Habitación compartida",
-    beds: 2,
-    gender: "Mixto",
-  },
-  {
-    id: 4,
-    title: "Habitación Montejo",
-    name: "Habitación Montejo",
-    price: 3000,
-    rating: 4.4,
-    available: true,
-    services: SERVICES,
-    lat: 21.0152,
-    lng: -89.6487,
-    image: IMAGE_URL,
-    address: "Paseo Montejo #101, Centro, Mérida",
-    owner: "Ana Rodríguez",
-    type: "Cuarto privado",
-    beds: 1,
-    gender: "Masculino",
-  },
-  {
-    id: 5,
-    title: "Habitación Altabrisa",
-    name: "Habitación Altabrisa",
-    price: 4200,
-    rating: 4.8,
-    available: true,
-    services: SERVICES,
-    lat: 21.0281,
-    lng: -89.5904,
-    image: IMAGE_URL,
-    address: "Altabrisa #202, Mérida",
-    owner: "Luis Hernández",
-    type: "Cuarto privado",
-    beds: 1,
-    gender: "Mixto",
-  },
-  {
-    id: 6,
-    title: "Habitación Jardines",
-    name: "Habitación Jardines",
-    price: 3500,
-    rating: 4.1,
-    available: true,
-    services: SERVICES,
-    lat: 21.0403,
-    lng: -89.6109,
-    image: IMAGE_URL,
-    address: "Jardines del Norte #303, Mérida",
-    owner: "Sofía Martínez",
-    type: "Habitación compartida",
-    beds: 2,
-    gender: "Mixto",
-  },
-  {
-    id: 7,
-    title: "Habitación México Norte",
-    name: "Habitación México Norte",
-    price: 2700,
-    rating: 4.0,
-    available: true,
-    services: SERVICES,
-    lat: 20.9959,
-    lng: -89.6048,
-    image: IMAGE_URL,
-    address: "México Norte #404, Mérida",
-    owner: "Pedro Gómez",
-    type: "Cuarto privado",
-    beds: 1,
-    gender: "Femenino",
-  },
-  {
-    id: 8,
-    title: "Habitación Ginerés",
-    name: "Habitación Ginerés",
-    price: 3300,
-    rating: 4.3,
-    available: true,
-    services: SERVICES,
-    lat: 20.9584,
-    lng: -89.6082,
-    image: IMAGE_URL,
-    address: "Ginerés #505, Mérida",
-    owner: "Laura Díaz",
-    type: "Cuarto privado",
-    beds: 1,
-    gender: "Masculino",
-  },
-  ...Array.from({ length: 16 }).map((_, i) => ({
-    id: i + 9,
-    title: `Habitación Zona ${i + 9}`,
-    name: `Habitación ${i + 9}`,
-    price: 2600 + (i % 5) * 300,
-    rating: 4 + (i % 3) * 0.2,
-    available: true,
-    services: SERVICES,
-    lat: 20.96 + i * 0.003,
-    lng: -89.62 + i * 0.002,
-    image: IMAGE_URL,
-    address: `Calle ${i + 10} #${100 + i}, Mérida, Yucatán`,
-    owner: "Propietario verificado",
-    type: i % 2 === 0 ? "Cuarto privado" : "Habitación compartida",
-    beds: i % 2 === 0 ? 1 : 2,
-    gender: i % 3 === 0 ? "Femenino" : "Mixto",
-  })),
-];
-
 const university = {
   name: "Universidad Marista",
   lat: 21.0257,
@@ -239,13 +63,17 @@ const university = {
 };
 
 const RouteInfo = ({ duration, onClear }) => (
-  <div className="absolute top-24 right-5 z-20 bg-white rounded-2xl shadow-xl px-4 py-3 w-52">
+  <div className="absolute top-24 right-5 z-20 bg-white rounded-2xl shadow-xl px-4 py-3 w-52 dark:bg-neutral-800">
     <div className="flex items-center justify-between">
       <div className="flex items-center gap-3">
         <Clock size={18} className="text-lime-600" />
         <div>
-          <p className="text-xs text-gray-500">Tiempo estimado</p>
-          <p className="font-semibold text-gray-800">{duration}</p>
+          <p className="text-xs text-gray-500 dark:text-white">
+            Tiempo estimado
+          </p>
+          <p className="font-semibold text-gray-800 dark:text-white">
+            {duration}
+          </p>
         </div>
       </div>
       <button onClick={onClear} className="text-gray-400 hover:text-gray-600">
@@ -269,6 +97,10 @@ const Info = ({ icon, label, value }) => (
 
 export default function SearchStudent_Screen() {
   const [selectedRoom, setSelectedRoom] = useState(null);
+  const [rooms, setRooms] = useState([]);
+  const [roomDetails, setRoomDetails] = useState(null);
+  const [loadingDetails, setLoadingDetails] = useState(false);
+  const [loadingRooms, setLoadingRooms] = useState(false);
   const [openDetails, setOpenDetails] = useState(false);
   const [userRating, setUserRating] = useState({});
   const [showRoute, setShowRoute] = useState(false);
@@ -279,6 +111,13 @@ export default function SearchStudent_Screen() {
   const [selectedRooms, setSelectedRooms] = useState(1);
   const [selectedBed, setSelectedBed] = useState("");
   const [rentPeriod, setRentPeriod] = useState(12);
+
+  const parseCoordinate = (coord) => {
+    if (!coord) return null;
+
+    const clean = coord.replace(/[^\d.-]/g, "");
+    return parseFloat(clean);
+  };
   const [hasDocuments, setHasDocuments] = useState(false);
   const [selectedServices, setSelectedServices] = useState([]);
   const { fetchData } = useApi("/documentacion/status/approved", {}, false);
@@ -307,8 +146,8 @@ export default function SearchStudent_Screen() {
   const [error, setError] = useState(null);
 
   const location = useLocation();
+
   const { id } = useParams();
-  const roomId = id || location.state?.roomId;
 
   const [directions, setDirections] = useState(null);
   const [roomCoords, setRoomCoords] = useState(null);
@@ -437,62 +276,158 @@ export default function SearchStudent_Screen() {
   };
 
   const handleShowRoute = (room) => {
-    setRoomCoords({ lat: room.lat, lng: room.lng });
+    if (!room?.lat || !room?.lng) {
+      console.error("Habitación sin coordenadas", room);
+      return;
+    }
+
+    const lat = Number(room.lat);
+    const lng = Number(room.lng);
+
+    if (isNaN(lat) || isNaN(lng)) {
+      console.error("Coordenadas inválidas", room.lat, room.lng);
+      return;
+    }
+
+    setRoomCoords({ lat, lng });
     setDirections(null);
+    setRouteDuration("");
     setShowRoute(true);
     setOpenDetails(false);
   };
 
+  const fetchRoomDetails = async (roomId) => {
+    try {
+      setLoadingDetails(true);
+
+      const res = await api.get(`/alojamientos/${roomId}/details`);
+      const data = res.data?.data ?? res.data;
+
+      const mappedRoom = {
+        id: data.id_alojamiento,
+        name: data.name,
+        price: Number(data.precio_completo),
+        type: data.typeProperty,
+        gender: data.gender ?? "mixto",
+
+        address: `${data.address}, ${data.city}, ${data.country}`,
+
+        available: data.estatus === "ACTIVO",
+
+        cuartos: data.cuartos || [],
+
+        owner: {
+          namePersonal: data.propietario?.namePersonal,
+          lastName: data.propietario?.lastName,
+          email: data.propietario?.emailPersonal,
+          phone: `${data.propietario?.code ?? ""}${data.propietario?.phone ?? ""}`,
+        },
+
+        images: (data.fotos || []).map((f) => ({
+          id_foto: f.id_foto,
+          url: f.url,
+          orden: f.orden ?? 0,
+          esPrincipal: f.esPrincipal,
+        })),
+
+        mainImage:
+          data.fotos?.find((f) => f.esPrincipal)?.url ||
+          data.fotos?.[0]?.url ||
+          IMAGE_URL,
+
+        services: (data.servicios || []).map((s) => ({
+          id: s.servicio.id_servicio,
+          name: s.servicio.name,
+          icon: s.servicio.icon,
+          price: Number(s.costo),
+        })),
+      };
+
+      setSelectedRoom(mappedRoom);
+      setOpenDetails(true);
+    } catch (error) {
+      console.error("❌ Error cargando detalles:", error);
+      setSelectedRoom(null);
+    } finally {
+      setLoadingDetails(false);
+    }
+  };
+
   useEffect(() => {
-    if (!id) return;
-
-    setDirections(null);
-    setRoomCoords(null);
-
-    const fetchRoom = async () => {
-      const response = await fetch(`http://localhost:3000/rooms/${id}`);
-      const data = await response.json();
-
-      setRoomCoords({
-        lat: data.latitude,
-        lng: data.longitude,
-      });
-    };
-
-    fetchRoom();
+    if (id) {
+      fetchRoomDetails(Number(id));
+    }
   }, [id]);
 
   useEffect(() => {
-    if (!isLoaded || !roomCoords || !showRoute) return;
+    const loadRooms = async () => {
+      try {
+        setLoadingRooms(true);
+
+        const res = await api.get("/alojamientos");
+        const items = res.data?.data ?? res.data ?? [];
+
+        const parsed = items
+          .map((item) => {
+            if (!item.latitude || !item.longitude) return null;
+
+            return {
+              id: item.id_alojamiento,
+              name: item.name,
+              price: item.precio_completo,
+              lat: parseFloat(item.latitude.replace(/[^\d.-]/g, "")),
+              lng: parseFloat(item.longitude.replace(/[^\d.-]/g, "")),
+            };
+          })
+          .filter(Boolean);
+
+        setRooms(parsed);
+      } catch (error) {
+        console.error("Error cargando alojamientos", error);
+      } finally {
+        setLoadingRooms(false);
+      }
+    };
+
+    loadRooms();
+  }, []);
+
+  useEffect(() => {
+    if (!isLoaded || !showRoute || !roomCoords) return;
+
+    console.log("Calculando ruta:", {
+      origin: university,
+      destination: roomCoords,
+    });
 
     const service = new window.google.maps.DirectionsService();
 
     service.route(
       {
-        origin: university,
-        destination: roomCoords,
+        origin: {
+          lat: university.lat,
+          lng: university.lng,
+        },
+        destination: {
+          lat: roomCoords.lat,
+          lng: roomCoords.lng,
+        },
         travelMode: window.google.maps.TravelMode.DRIVING,
       },
       (result, status) => {
-        if (status === "OK") {
+        console.log("Directions status:", status);
+
+        if (status === "OK" && result) {
           setDirections(result);
           setRouteDuration(result.routes[0].legs[0].duration.text);
+        } else {
+          console.error("Error al calcular ruta:", status);
         }
       },
     );
-  }, [isLoaded, roomCoords, showRoute]);
+  }, [isLoaded, showRoute, roomCoords]);
 
   const roomIdFromDashboard = location.state?.roomId;
-
-  useEffect(() => {
-    if (roomId) {
-      const room = rooms.find((r) => r.id === Number(roomId));
-      if (room) {
-        setSelectedRoom(room);
-        setOpenDetails(true);
-      }
-    }
-  }, [roomId, rooms]);
 
   const handleRate = (roomId, value) => {
     setUserRating((prev) => ({ ...prev, [roomId]: value }));
@@ -519,7 +454,6 @@ export default function SearchStudent_Screen() {
                 scaledSize: new window.google.maps.Size(36, 36),
               }}
             />
-
             {rooms.map((room) => (
               <Marker
                 key={room.id}
@@ -528,14 +462,17 @@ export default function SearchStudent_Screen() {
                   url: "/casa.png",
                   scaledSize: new window.google.maps.Size(32, 32),
                 }}
-                onClick={() => {
-                  setSelectedRoom(room);
+                onClick={async () => {
+                  await fetchRoomDetails(room.id);
+                  setSelectedRoom((prev) => ({
+                    ...prev,
+                    lat: room.lat,
+                    lng: room.lng,
+                  }));
                   setOpenDetails(true);
-                  setRoomCoords({ lat: room.lat, lng: room.lng });
                 }}
               />
             ))}
-
             {directions && (
               <DirectionsRenderer
                 directions={directions}
@@ -543,9 +480,7 @@ export default function SearchStudent_Screen() {
                   polylineOptions: {
                     strokeColor: "#84cc16",
                     strokeWeight: 5,
-                    strokeOpacity: 0.8,
                   },
-                  suppressMarkers: true,
                 }}
               />
             )}
@@ -566,15 +501,14 @@ export default function SearchStudent_Screen() {
         <RouteModal
           open={openDetails}
           selectedRoom={selectedRoom}
+          loading={loadingDetails}
           userRating={userRating}
           onRate={handleRate}
           onClose={() => setOpenDetails(false)}
           onShowRoute={handleShowRoute}
-          onRequestRoom={(room) => {
-            handleRequestRoom(room);
-            setOpenDetails(false);
-          }}
+          onRequestRoom={handleRequestRoom}
         />
+
         <ReservationModal
           open={reservationModalOpen}
           onClose={() => {
