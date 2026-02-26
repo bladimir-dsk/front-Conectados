@@ -8,6 +8,9 @@ import {
   BedDouble,
   ChevronLeft,
   ChevronRight,
+  Home,
+  Transgender,
+  MapPinIcon,
 } from "lucide-react";
 import { Spin, Empty, Button } from "antd";
 import { getServiceIcon } from "../icon/serviceIconsConfig";
