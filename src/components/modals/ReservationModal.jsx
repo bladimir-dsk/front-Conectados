@@ -1,470 +1,669 @@
-import React, { useState } from "react";
-import { Modal, Button, Divider, Steps, Tag, Alert } from "antd";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
-  CheckCircle,
-  X,
-  Home,
-  Bed,
-  CalendarDays,
-  Plus,
-  Loader2,
+  X, FileWarning, BedDouble, Layers,
+  CheckCircle2, ImageOff, CalendarDays, Clock,
 } from "lucide-react";
+import { Spin, Alert, Empty, Select, DatePicker, ConfigProvider } from "antd";
+import esES from "antd/locale/es_ES";
+import dayjs from "dayjs";
+import "dayjs/locale/es";
+import { useApi } from "../../hooks/useApi";
+import { useAuth } from "../../hooks/useAuth";
+import ServiceIconRenderer from "../icon/Serviceiconrenderer";
 
-const { Step } = Steps;
+dayjs.locale("es");
 
-const ReservationModal = ({
-  open,
-  onClose,
-  step = 1,
-  onStepChange,
-  room,
-  hasDocuments,
-  rentType = "completo",
-  onRentTypeChange,
-  selectedRooms = 1,
-  onSelectedRoomsChange,
-  selectedBed = "",
-  onSelectedBedChange,
-  rentPeriod = 12,
-  onRentPeriodChange,
-  selectedServices = [],
-  onSelectedServicesChange,
-  services = [],
-  prices = { subtotal: 0, iva: 0, total: 0 },
-  onSaveReservation,
-  imageUrl = "https://s03.s3c.es/imag/_v0/1200x655/0/f/c/habitacion.jpg",
-  loading = false,
-  error = null,
-}) => {
-  const [showExtraServices, setShowExtraServices] = useState(false);
+const ESTATUS_OCULTO = ["INACTIVO", "PENDIENTE"];
+const ESTATUS_DISABLED = ["OCUPADO", "MANTENIMIENTO"];
 
-  const handleServiceToggle = (serviceName) => {
-    const newServices = selectedServices.includes(serviceName)
-      ? selectedServices.filter((s) => s !== serviceName)
-      : [...selectedServices, serviceName];
-    onSelectedServicesChange(newServices);
-  };
+function StepDot({ step, current, label }) {
+  const done = current > step;
+  const active = current === step;
+  return (
+    <div className="flex flex-col items-center gap-1 min-w-0">
+      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-colors
+        ${done || active ? "bg-lime-600 text-white" : "bg-gray-100 dark:bg-zinc-700 text-gray-400 dark:text-zinc-500"}
+        ${active ? "ring-4 ring-lime-100 dark:ring-lime-900/40" : ""}`}
+      >
+        {done ? <CheckCircle2 size={15} /> : step}
+      </div>
+      <span className={`text-xs font-medium whitespace-nowrap ${done || active ? "text-lime-600 dark:text-lime-400" : "text-gray-400 dark:text-zinc-500"}`}>
+        {label}
+      </span>
+    </div>
+  );
+}
 
-  const includedServices = services.filter((service) => service.price === 0);
-  const extraServices = services.filter((service) => service.price > 0);
+function StepLine({ done }) {
+  return (
+    <div className="flex-1 h-0.5 mx-1 mb-5 rounded-full" style={{ background: done ? "#16a34a" : "#e5e7eb" }} />
+  );
+}
 
-  const items = [
-    { title: "Documentos", description: step > 1 ? "Completado" : "" },
-    { title: "Reservación", description: step > 2 ? "Completado" : "" },
-    { title: "Confirmación", description: step > 3 ? "Completado" : "" },
-  ];
+const STEPS = [{ label: "Documentos" }, { label: "Detalles" }, { label: "Servicios" }, { label: "Resumen" }];
 
-  const stepContents = [
-    <div key="1" className="text-center py-0">
+function StepDocuments({ hasDocuments }) {
+  return (
+    <div className="flex flex-col items-center text-center py-8 gap-4">
       {hasDocuments ? (
         <>
-          <CheckCircle size={48} className="text-green-500 mx-auto mb-3" />
-          <h3 className="text-lg font-bold text-gray-800 mb-1">
-            Documentos completos
-          </h3>
-          <p className="text-gray-600 text-sm mb-4">
-            Puedes continuar con tu reservación.
-          </p>
-          <Button
-            type="default"
-            className="!bg-lime-600 hover:!bg-lime-600 !border-lime-600 !text-white"
-            onClick={() => onStepChange(2)}
-            loading={loading}
-            disabled={loading}
-          >
-            Continuar
-          </Button>
+          <div className="w-16 h-16 rounded-full bg-lime-50 dark:bg-lime-900/20 flex items-center justify-center">
+            <CheckCircle2 size={32} className="text-lime-600" />
+          </div>
+          <div>
+            <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-1">Documentos verificados</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 max-w-xs">
+              Tus documentos están aprobados. Puedes continuar con la reservación.
+            </p>
+          </div>
         </>
       ) : (
         <>
-          <X size={48} className="text-red-500 mx-auto mb-3" />
-          <h3 className="text-lg font-bold text-gray-800 mb-1">
-            Documentos pendientes
-          </h3>
-          <p className="text-gray-600 text-sm mb-4">
-            Debe subir sus documentos o no han sido aprobados.
-          </p>
-          <Button
-            type="default"
-            className="!bg-lime-600 hover:!bg-lime-600 !border-lime-600 !text-white"
-            onClick={() => {
-              window.location.href = "/estudiante/documentation";
-            }}
-          >
-            Ir a Mi Documentación
-          </Button>
+          <div className="w-16 h-16 rounded-full bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center">
+            <FileWarning size={32} className="text-amber-500" />
+          </div>
+          <div>
+            <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-1">Documentos requeridos</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 max-w-xs">
+              Necesitas tener tus documentos aprobados para poder hacer una reservación.
+            </p>
+          </div>
+          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-400 rounded-lg px-4 py-3 text-sm max-w-xs">
+            Dirígete a tu perfil y sube los documentos requeridos para continuar.
+          </div>
         </>
       )}
-    </div>,
-    <div key="2" className="py-0">
-      <div className="mb-4">
-        <h1 className="text-xl font-bold text-gray-800 mb-4">
-          Procesar reservación
-        </h1>
+    </div>
+  );
+}
 
-        {error && (
-          <Alert
-            message="Error"
-            description={error}
-            type="error"
-            showIcon
-            className="mb-4"
-          />
-        )}
+function StepRentType({
+  room, rentType, onRentTypeChange,
+  selectedCuarto, onSelectedCuartoChange,
+  selectedCama, onSelectedCamaChange,
+  rentPeriod, onRentPeriodChange,
+  fechaEntrada, onFechaEntradaChange,
+}) {
+  const isAlojamientoCompleto = room?.typeIncome === "ALOJAMIENTO_COMPLETO";
 
-        <div className="flex gap-3 p-4 bg-gray-50 rounded-lg border border-gray-200 mb-3">
-          <div className="w-20 h-20 flex-shrink-0">
-            <img
-              src={imageUrl}
-              alt={room?.name}
-              className="w-full h-full object-cover rounded-md"
-            />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-start justify-between mb-1">
-              <div>
-                <Tag color="blue" className="text-xs mb-1">
-                  {room?.id
-                    ? `AL-${room.id.toString().padStart(3, "0")}`
-                    : "AL-001"}
-                </Tag>
-                <h3 className="font-semibold text-gray-800 truncate">
-                  {room?.name || "Casa color roja"}
-                </h3>
-              </div>
-              <div className="text-right">
-                <div className="text-sm font-bold text-lime-600">
-                  ${room?.price || 0}
-                  <span className="text-xs text-gray-500 ml-1">/noche</span>
-                </div>
-              </div>
-            </div>
+  useEffect(() => {
+    if (isAlojamientoCompleto) {
+      onRentTypeChange("ALOJAMIENTO_COMPLETO");
+    } else {
+      onRentTypeChange("ESPACIO");
+    }
+  }, [room?.typeIncome]);
 
-            <div className="text-xs text-gray-600 space-y-0.5">
-              <div className="flex items-center gap-1">
-                <Home size={12} />
-                <span>
-                  Tipo: {rentType === "completo" ? "Completo" : "Por espacio"}
-                </span>
-              </div>
-              {rentType === "espacio" && (
-                <>
-                  <div className="flex items-center gap-1">
-                    <Bed size={12} />
-                    <span>Habitación: {selectedRooms}</span>
-                  </div>
-                  {selectedBed && (
-                    <div className="flex items-center gap-1">
-                      <Bed size={12} />
-                      <span>Cama: {selectedBed}</span>
-                    </div>
-                  )}
-                </>
-              )}
-              <div className="flex items-center gap-1">
-                <CalendarDays size={12} />
-                <span>Folio: F2G4DSF</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+  const cuartosVisibles = (room?.cuartos ?? []).filter(
+    (c) => !ESTATUS_OCULTO.includes(c.estatus)
+  );
 
-      <div className="space-y-6">
-        <div>
-          <h4 className="font-medium text-gray-700 mb-2 text-sm">
-            TIPO DE ALOJAMIENTO
-          </h4>
-          <div className="grid grid-cols-2 gap-2">
-            {[
-              {
-                key: "completo",
-                label: "Completo",
-                desc: "Toda la propiedad",
-                icon: <Home size={16} className="text-lime-600" />,
-              },
-              {
-                key: "espacio",
-                label: "Por espacio",
-                desc: "Habitación específica",
-                icon: <Bed size={16} className="text-lime-600" />,
-              },
-            ].map((type) => (
-              <div
-                key={type.key}
-                className={`p-3 border rounded-lg cursor-pointer transition-all flex flex-col items-center justify-center text-center ${
-                  rentType === type.key
-                    ? "border-lime-600 bg-lime-50"
-                    : "border-gray-200 hover:border-gray-300"
-                }`}
-                onClick={() => onRentTypeChange(type.key)}
-              >
-                <div className="mb-2">{type.icon}</div>
-                <div className="font-bold text-gray-800 text-sm">
-                  {type.label}
-                </div>
-                <div className="text-xs text-gray-600 mt-1">{type.desc}</div>
-              </div>
-            ))}
-          </div>
-        </div>
+  const camasDelCuarto = selectedCuarto
+    ? (cuartosVisibles.find((c) => c.id_cuarto === selectedCuarto)?.camas ?? [])
+      .filter((b) => !ESTATUS_OCULTO.includes(b.estatus))
+    : [];
 
-        {rentType === "espacio" && (
-          <>
-            <div>
-              <h4 className="font-medium text-gray-700 mb-2 text-sm">
-                Habitación
-              </h4>
-              <div className="grid grid-cols-3 gap-2">
-                {[1, 2, 3].map((num) => (
-                  <div
-                    key={num}
-                    className={`p-3 border rounded-lg text-center cursor-pointer transition-all ${
-                      selectedRooms === num
-                        ? "border-lime-600 bg-lime-50"
-                        : "border-gray-200 hover:border-gray-300"
-                    }`}
-                    onClick={() => onSelectedRoomsChange(num)}
-                  >
-                    <div className="text-sm font-bold text-gray-800">{num}</div>
-                    <div className="text-xs text-gray-600">
-                      {num === 1 ? "Habitación" : "Habitaciones"}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <h4 className="font-medium text-gray-700 mb-2 text-sm">
-                Camas disponibles
-              </h4>
-              <div className="grid grid-cols-2 gap-2">
-                {["Cama 1", "Cama 2"].map((cama) => (
-                  <div
-                    key={cama}
-                    className={`p-3 border rounded-lg text-center cursor-pointer transition-all ${
-                      selectedBed === cama
-                        ? "border-lime-600 bg-lime-50"
-                        : "border-gray-200 hover:border-gray-300"
-                    }`}
-                    onClick={() => onSelectedBedChange(cama)}
-                  >
-                    <div className="text-sm font-medium text-gray-800">
-                      {cama}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </>
-        )}
-
-        <div>
-          <h4 className="font-medium text-gray-700 mb-2 text-sm">
-            PLAZO DE RENTA
-          </h4>
-          <div className="grid grid-cols-3 gap-2">
-            {[
-              { months: 12, price: 100, label: "12 Meses" },
-              { months: 6, price: 200, label: "6 Meses" },
-              { months: 3, price: 300, label: "3 Meses" },
-            ].map((option) => (
-              <div
-                key={option.months}
-                className={`p-3 border rounded-lg text-center cursor-pointer transition-all ${
-                  rentPeriod === option.months
-                    ? "border-lime-600 bg-lime-50"
-                    : "border-gray-200 hover:border-gray-300"
-                }`}
-                onClick={() => onRentPeriodChange(option.months)}
-              >
-                <div className="text-sm font-bold text-gray-800">
-                  {option.months}
-                </div>
-                <div className="text-gray-500 text-xs mb-1">{option.label}</div>
-                <div className="text-sm font-bold text-lime-600">
-                  ${option.price}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {services.length > 0 && (
-          <div>
-            <h4 className="font-medium text-gray-700 mb-2 text-sm">
-              SERVICIOS ADICIONALES
-            </h4>
-            <div className="border border-gray-200 rounded-lg bg-white p-4 mb-3">
-              {loading ? (
-                <div className="flex justify-center py-8">
-                  <Loader2 className="animate-spin text-lime-600" />
-                </div>
-              ) : (
-                <>
-                  <div className="mb-4">
-                    <div className="text-xs font-medium text-gray-700 mb-2">
-                      INCLUIDOS EN EL PRECIO
-                    </div>
-                    <div className="flex gap-2 flex-wrap">
-                      {includedServices.slice(0, 4).map((service, index) => (
-                        <div
-                          key={service.id || index}
-                          className="flex-1 min-w-[100px] flex flex-col items-center justify-center p-3 border border-gray-200 rounded-md"
-                        >
-                          <div className="text-lime-600 mb-1">
-                            {service.icon}
-                          </div>
-                          <span className="text-xs font-medium text-center">
-                            {service.name}
-                          </span>
-                        </div>
-                      ))}
-                      {services.length > 4 && (
-                        <button
-                          className="w-12 flex items-center justify-center p-3 border border-gray-200 rounded-md text-gray-600 hover:bg-gray-50"
-                          onClick={() =>
-                            setShowExtraServices(!showExtraServices)
-                          }
-                        >
-                          <Plus size={16} />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-
-                  {showExtraServices && (
-                    <div>
-                      <Divider className="my-3" />
-                      <div className="text-xs font-medium text-gray-700 mb-2">
-                        SERVICIOS PREMIUM
-                      </div>
-                      <div className="grid grid-cols-3 gap-2">
-                        {extraServices.map((service, index) => (
-                          <div
-                            key={service.id || index}
-                            className={`p-3 border rounded-lg cursor-pointer transition-all flex flex-col items-center text-center ${
-                              selectedServices.includes(service.name)
-                                ? "border-lime-600 bg-lime-50"
-                                : "border-gray-200 hover:border-gray-300"
-                            }`}
-                            onClick={() => handleServiceToggle(service.name)}
-                          >
-                            <div className="text-lime-600 mb-2">
-                              {service.icon}
-                            </div>
-                            <div className="text-xs font-medium text-gray-800 mb-1">
-                              {service.name}
-                            </div>
-                            <div className="text-xs font-bold text-lime-600">
-                              +${service.price}/mes
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
-          </div>
-        )}
-
-        <div className="bg-gray-50 rounded-lg p-4">
-          <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <span className="text-gray-600 text-sm">Subtotal</span>
-              <span className="font-bold text-gray-800 text-sm">
-                ${prices.subtotal.toFixed(2)}
-              </span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-gray-600 text-sm">IVA (16%)</span>
-              <span className="font-bold text-gray-800 text-sm">
-                ${prices.iva.toFixed(2)}
-              </span>
-            </div>
-            <Divider className="my-1" />
-            <div className="flex justify-between items-center">
-              <span className="font-bold text-gray-800">Total</span>
-              <span className="text-lg font-bold text-lime-600">
-                ${prices.total.toFixed(2)} MXN
-              </span>
-            </div>
-          </div>
-        </div>
-
-        <Button
-          type="default"
-          className="w-full !bg-lime-600 hover:!bg-lime-600 !border-lime-600 !text-white h-12 text-lg font-bold rounded-lg"
-          onClick={() => onStepChange(3)}
-          loading={loading}
-          disabled={loading}
-        >
-          RESERVAR AHORA
-        </Button>
-      </div>
-    </div>,
-    <div key="3" className="text-center py-6">
-      <CheckCircle size={48} className="text-green-500 mx-auto mb-3" />
-      <h3 className="text-lg font-bold text-gray-800 mb-1">
-        ¡Reservación en proceso!
-      </h3>
-      <p className="text-gray-600 text-sm mb-4">
-        Tu reservación ha sido procesada exitosamente.
-      </p>
-      <Button
-        type="default"
-        className="!bg-lime-600 hover:!bg-lime-600 !border-lime-600 !text-white"
-        onClick={() => {
-          onSaveReservation();
-          window.location.href = "/estudiante/reservas";
-        }}
-        loading={loading}
-        disabled={loading}
-      >
-        Ir a Mis Reservaciones
-      </Button>
-    </div>,
-  ];
+  const StatusBadge = ({ estatus }) => {
+    if (estatus === "OCUPADO") return (
+      <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400 shrink-0">
+        Ocupado
+      </span>
+    );
+    if (estatus === "MANTENIMIENTO") return (
+      <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400 shrink-0">
+        Mantenimiento
+      </span>
+    );
+    return (
+      <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 shrink-0">
+        Disponible
+      </span>
+    );
+  };
 
   return (
-    <Modal
-      open={open}
-      onCancel={onClose}
-      footer={null}
-      centered
-      width={480}
-      closable={false}
-      className="[&_.ant-modal-content]:rounded-xl [&_.ant-modal-body]:p-0"
-    >
-      <div className="absolute top-3 right-3 z-10">
-        <Button
-          type="text"
-          icon={<X size={16} />}
-          onClick={onClose}
-          className="text-gray-500 hover:text-lime-600 w-6 h-6 flex items-center justify-center"
-          aria-label="Cerrar"
-          disabled={loading}
-        />
-      </div>
+    <ConfigProvider locale={esES}>
+      <div className="space-y-5">
 
-      <div className="pt-6">
-        <Steps
-          current={step - 1}
-          items={items}
-          className="mb-6 px-6"
-          responsive={false}
-          size="small"
-          titlePlacement="vertical"
-        />
-        <Divider className="my-0" />
-        <div className="px-3 py-0 max-h-[65vh] overflow-y-auto">
-          {stepContents[step - 1]}
+        {/* Tipo de renta — solo muestra el botón correspondiente */}
+        <div>
+          <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
+            Tipo de renta
+          </p>
+
+          {isAlojamientoCompleto ? (
+            // Solo opción: Alojamiento completo
+            <div className="flex items-center gap-2.5 p-3 rounded-lg bg-lime-50 dark:bg-lime-900/20 text-lime-700 dark:text-lime-400">
+              <Layers size={17} className="text-lime-600" />
+              <span className="text-sm font-medium">Alojamiento completo</span>
+            </div>
+          ) : (
+            // Solo opción: Por espacio
+            <div className="flex items-center gap-2.5 p-3 rounded-lg bg-lime-50 dark:bg-lime-900/20 text-lime-700 dark:text-lime-400">
+              <BedDouble size={17} className="text-lime-600" />
+              <span className="text-sm font-medium">Por espacio</span>
+            </div>
+          )}
+        </div>
+
+        {/* Lista de cuartos (solo si ESPACIO) */}
+        {!isAlojamientoCompleto && (
+          <div>
+            <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
+              Selecciona un cuarto
+            </p>
+            {cuartosVisibles.length === 0 ? (
+              <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No hay cuartos disponibles" />
+            ) : (
+              <div className="flex flex-col gap-3 max-h-44 overflow-y-auto pr-1">
+                {cuartosVisibles.map((cuarto) => {
+                  const disabled = ESTATUS_DISABLED.includes(cuarto.estatus);
+                  const selected = selectedCuarto === cuarto.id_cuarto;
+                  return (
+                    <button
+                      key={cuarto.id_cuarto}
+                      disabled={disabled}
+                      onClick={() => {
+                        if (!disabled) {
+                          onSelectedCuartoChange(selected ? null : cuarto.id_cuarto);
+                          onSelectedCamaChange(null);
+                        }
+                      }}
+                      className={`w-full flex items-center justify-between p-3 rounded-lg border-2 text-left transition-colors
+                        ${disabled
+                          ? "border-gray-100 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-800/50 cursor-not-allowed opacity-60"
+                          : selected
+                            ? "border-lime-500 bg-lime-50 dark:bg-lime-900/20"
+                            : "border-gray-200 dark:border-zinc-700 hover:border-gray-300"}`}
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <BedDouble size={14} className={selected && !disabled ? "text-lime-600" : "text-gray-400"} />
+                        <span className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{cuarto.name}</span>
+                        {cuarto.price > 0 && (
+                          <span className="text-xs text-gray-400 shrink-0">· ${Number(cuarto.price).toLocaleString()}/mes</span>
+                        )}
+                      </div>
+                      <StatusBadge estatus={cuarto.estatus} />
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Lista de camas (solo si hay cuarto seleccionado y tiene camas) */}
+        {!isAlojamientoCompleto && selectedCuarto && camasDelCuarto.length > 0 && (
+          <div>
+            <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
+              Cama <span className="normal-case font-normal text-gray-400">(opcional)</span>
+            </p>
+            <div className="flex flex-col gap-3 max-h-36 overflow-y-auto pr-1">
+              {camasDelCuarto.map((cama) => {
+                const disabled = ESTATUS_DISABLED.includes(cama.estatus);
+                const selected = selectedCama === cama.id_cama;
+                return (
+                  <button
+                    key={cama.id_cama}
+                    disabled={disabled}
+                    onClick={() => {
+                      if (!disabled) onSelectedCamaChange(selected ? null : cama.id_cama);
+                    }}
+                    className={`w-full flex items-center justify-between p-3 rounded-lg border-2 text-left transition-colors
+                      ${disabled
+                        ? "border-gray-100 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-800/50 cursor-not-allowed opacity-60"
+                        : selected
+                          ? "border-lime-500 bg-lime-50 dark:bg-lime-900/20"
+                          : "border-gray-200 dark:border-zinc-700 hover:border-gray-300"}`}>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <BedDouble size={13} className={selected && !disabled ? "text-lime-600" : "text-gray-400"} />
+                      <span className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{cama.name}</span>
+                      {cama.price > 0 && (
+                        <span className="text-xs text-gray-400 shrink-0">· ${Number(cama.price).toLocaleString()}/mes</span>
+                      )}
+                    </div>
+                    <StatusBadge estatus={cama.estatus} />
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Periodo y fecha */}
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1">
+              <Clock size={11} /> Meses a pagar
+            </p>
+            <Select
+              size="large"
+              value={rentPeriod}
+              onChange={onRentPeriodChange}
+              className="w-full"
+              options={Array.from({ length: 12 }, (_, i) => ({
+                value: i + 1,
+                label: `${i + 1} ${i + 1 === 1 ? "mes" : "meses"}`,
+              }))}
+            />
+          </div>
+          <div>
+            <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1">
+              <CalendarDays size={11} /> Fecha de entrada
+            </p>
+            <DatePicker
+              size="large"
+              className="w-full"
+              value={fechaEntrada}
+              onChange={onFechaEntradaChange}
+              disabledDate={(current) => current && current < dayjs().startOf("day")}
+              format="DD/MM/YYYY"
+              placeholder="Seleccionar"
+            />
+          </div>
         </div>
       </div>
-    </Modal>
+    </ConfigProvider>
+  );
+}
+
+function StepServices({ room, selectedServices, onSelectedServicesChange }) {
+  const services = room?.services ?? [];
+
+  const toggle = (id) => {
+    onSelectedServicesChange((prev) =>
+      prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]
+    );
+  };
+
+  if (services.length === 0) {
+    return (
+      <div className="flex items-center justify-center py-10">
+        <Empty
+          image={Empty.PRESENTED_IMAGE_SIMPLE}
+          description={<span className="text-gray-400 dark:text-zinc-500 text-sm">No hay servicios disponibles</span>}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
+        Servicios adicionales
+      </p>
+      <div className="flex flex-col gap-3">
+        {services.map((s) => {
+          const checked = selectedServices.includes(s.id);
+          const esGratis = Number(s.costo) === 0;
+          return (
+            <button
+              key={s.id}
+              onClick={() => toggle(s.id)}
+              className={`w-full flex items-center justify-between p-3 rounded-lg border-2 transition-colors
+                ${checked
+                  ? "border-lime-500 bg-lime-50 dark:bg-lime-900/20"
+                  : "border-gray-200 dark:border-zinc-700 hover:border-gray-300 dark:hover:border-zinc-600"}`}>
+              <div className="flex items-center gap-2.5">
+                <div className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-colors
+                  ${checked ? "border-lime-500 bg-lime-500" : "border-gray-300 dark:border-zinc-600"}`}>
+                  {checked && <CheckCircle2 size={12} className="text-white" />}
+                </div>
+                {s.icon && <ServiceIconRenderer iconKey={s.icon} size={18} />}
+                <span className="text-sm font-medium text-gray-800 dark:text-gray-200 text-left">{s.name}</span>
+              </div>
+              {esGratis ? (
+                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400 shrink-0">
+                  Gratuito
+                </span>
+              ) : (
+                <span className="text-sm font-semibold text-gray-600 dark:text-gray-400 shrink-0">
+                  +${Number(s.costo).toLocaleString("es-MX")}
+                  <span className="text-xs font-normal text-gray-400">/mes</span>
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function StepSummary({ room, rentType, selectedCuarto, selectedCama, rentPeriod, fechaEntrada, selectedServices }) {
+  const services = (room?.services ?? []).filter((s) => selectedServices.includes(s.id));
+
+  const getBasePrice = () => {
+    if (rentType === "ALOJAMIENTO_COMPLETO") return Number(room?.price ?? 0);
+    if (selectedCama) {
+      const cama = (room?.cuartos ?? []).flatMap((c) => c.camas ?? []).find((b) => b.id_cama === selectedCama);
+      return Number(cama?.price ?? 0);
+    }
+    if (selectedCuarto) {
+      const cuarto = (room?.cuartos ?? []).find((c) => c.id_cuarto === selectedCuarto);
+      return Number(cuarto?.price ?? 0);
+    }
+    return Number(room?.price ?? 0);
+  };
+
+  const getSelectionLabel = () => {
+    if (rentType === "ALOJAMIENTO_COMPLETO") return "Alojamiento completo";
+    if (selectedCama) {
+      const cama = (room?.cuartos ?? []).flatMap((c) => c.camas ?? []).find((b) => b.id_cama === selectedCama);
+      return `Cama: ${cama?.name ?? "—"}`;
+    }
+    if (selectedCuarto) {
+      const cuarto = (room?.cuartos ?? []).find((c) => c.id_cuarto === selectedCuarto);
+      return `Cuarto: ${cuarto?.name ?? "—"}`;
+    }
+    return "—";
+  };
+
+  const basePrice = getBasePrice();
+  const servicesCost = services.reduce((sum, s) => sum + Number(s.costo ?? 0), 0);
+  const totalMensual = basePrice + servicesCost;
+  const totalPeriodo = totalMensual * rentPeriod;
+
+  return (
+    <div className="space-y-4">
+      <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+        Resumen de reservación
+      </p>
+
+      {/* Info alojamiento */}
+      <div className="flex gap-3 p-3 bg-gray-50 dark:bg-zinc-800 rounded-lg">
+        <div className="w-16 h-14 rounded-lg overflow-hidden bg-gray-200 dark:bg-zinc-700 shrink-0">
+          {room?.mainImage ? (
+            <img src={room.mainImage} alt="" className="w-full h-full object-cover" />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <ImageOff size={16} className="text-gray-400" />
+            </div>
+          )}
+        </div>
+        <div className="min-w-0 flex flex-col">
+          <span className="font-semibold text-gray-900 dark:text-white text-sm truncate">{room?.name}</span>
+          <span className="text-xs text-gray-400 mt-0.5 truncate">{room?.address}</span>
+          <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">{getSelectionLabel()}</span>
+        </div>
+      </div>
+
+      {/* Fechas */}
+      <div className="grid grid-cols-2 gap-3">
+        <div className="p-3 bg-gray-50 dark:bg-zinc-800 rounded-lg">
+          <span className="text-xs text-gray-400 mb-1 flex items-center gap-1"><CalendarDays size={11} /> Fecha de entrada</span>
+          <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+            {fechaEntrada ? dayjs(fechaEntrada).format("DD [de] MMM, YYYY") : "—"}
+          </span>
+        </div>
+        <div className="p-3 bg-gray-50 dark:bg-zinc-800 rounded-lg">
+          <span className="text-xs text-gray-400 mb-1 flex items-center gap-1"><Clock size={11} /> Duración</span>
+          <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+            {rentPeriod} {rentPeriod === 1 ? "mes" : "meses"}
+          </span>
+        </div>
+      </div>
+
+      {/* Desglose precios */}
+      <div className="p-3 bg-gray-50 dark:bg-zinc-800 rounded-lg space-y-2">
+        <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
+          <span>Renta base</span>
+          <span>${basePrice.toLocaleString("es-MX")}/mes</span>
+        </div>
+        {services.map((s) => (
+          <div key={s.id} className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
+            <span className="flex items-center gap-1">
+              {s.icon && <ServiceIconRenderer iconKey={s.icon} size={14} />}
+              {s.name}
+            </span>
+            {Number(s.costo) === 0 ? (
+              <span className="text-green-600 dark:text-green-400 text-xs font-semibold">Gratuito</span>
+            ) : (
+              <span>+${Number(s.costo).toLocaleString("es-MX")}/mes</span>
+            )}
+          </div>
+        ))}
+        <div className="border-t border-gray-200 dark:border-zinc-700 pt-2 space-y-1">
+          <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
+            <span>Total mensual</span>
+            <span className="font-semibold">${totalMensual.toLocaleString("es-MX")} MXN</span>
+          </div>
+          <div className="flex justify-between text-base font-bold text-gray-900 dark:text-white">
+            <span>Total {rentPeriod} {rentPeriod === 1 ? "mes" : "meses"}</span>
+            <span className="text-lime-600 dark:text-lime-400">${totalPeriodo.toLocaleString("es-MX")} MXN</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SuccessModal({ open, onGoToReservas }) {
+  if (!open) return null;
+  return (
+    <>
+      <div className="fixed inset-0 bg-black/80 z-[60]" />
+      <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+        <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-2xl w-full max-w-sm p-8 flex flex-col items-center text-center">
+          <div className="w-16 h-16 rounded-full bg-lime-50 dark:bg-lime-900/20 flex items-center justify-center mb-4">
+            <CheckCircle2 size={36} className="text-lime-600" />
+          </div>
+          <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">¡Reservación enviada!</h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+            Tu solicitud fue registrada correctamente. Serás redirigido a{" "}
+            <strong className="text-gray-700 dark:text-gray-300">Mis reservas</strong> para ver su estado.
+          </p>
+          <button
+            onClick={onGoToReservas}
+            className="w-full bg-lime-600 hover:bg-lime-700 text-white font-semibold py-2.5 rounded-lg transition-colors"
+          >
+            Ir a Mis reservas
+          </button>
+        </div>
+      </div>
+    </>
+  );
+}
+
+const ReservationModal = ({ open, onClose, room, hasDocuments }) => {
+  const navigate = useNavigate();
+
+  const { user } = useAuth();
+  const { postData: createRenta, loading, error: apiError } = useApi("/renta", {}, false);
+
+  const [step, setStep] = useState(1);
+  const [rentType, setRentType] = useState("ALOJAMIENTO_COMPLETO");
+  const [selectedCuarto, setSelectedCuarto] = useState(null);
+  const [selectedCama, setSelectedCama] = useState(null);
+  const [rentPeriod, setRentPeriod] = useState(1);
+  const [fechaEntrada, setFechaEntrada] = useState(null);
+  const [selectedServices, setSelectedServices] = useState([]);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(false);
+
+  // Reset al abrir
+  useEffect(() => {
+    if (open) {
+      setStep(1);
+      setRentType("ALOJAMIENTO_COMPLETO");
+      setSelectedCuarto(null);
+      setSelectedCama(null);
+      setRentPeriod(1);
+      setFechaEntrada(null);
+      setSelectedServices([]);
+      setError(null);
+      setSuccess(false);
+    }
+  }, [open]);
+
+  useEffect(() => {
+    const handleKey = (e) => { if (e.key === "Escape" && !success) onClose(); };
+    if (open) {
+      document.body.style.overflow = "hidden";
+      window.addEventListener("keydown", handleKey);
+    }
+    return () => {
+      document.body.style.overflow = "";
+      window.removeEventListener("keydown", handleKey);
+    };
+  }, [open, onClose, success]);
+
+  if (!open) return null;
+
+  const canGoNext = () => {
+    if (step === 1) return hasDocuments;
+    if (step === 2) {
+      if (!fechaEntrada || !rentPeriod) return false;
+      if (rentType === "ESPACIO" && !selectedCuarto) return false;
+      return true;
+    }
+    return true;
+  };
+
+  const handleConfirm = async () => {
+    setError(null);
+    try {
+      const userId = Number(user?.id);
+
+      const payload = {
+        tipo_renta: rentType,
+        fecha_entrada: dayjs(fechaEntrada).format("YYYY-MM-DD"),
+        meses_a_pagar: rentPeriod,
+        id_usuario: userId,
+        serviciosSeleccionados: selectedServices,
+      };
+
+      if (rentType === "ALOJAMIENTO_COMPLETO") {
+        payload.id_alojamiento = room?.id;
+      } else if (selectedCama) {
+        payload.tipo_renta = "CAMA";
+        payload.id_cama = selectedCama;
+      } else if (selectedCuarto) {
+        payload.tipo_renta = "CUARTO";
+        payload.id_cuarto = selectedCuarto;
+      }
+
+      await createRenta(payload, false);
+      setSuccess(true);
+    } catch (err) {
+      setError(err.response?.data?.message ?? err.message ?? "Error al procesar la reservación");
+    }
+  };
+
+  const handleNext = () => {
+    if (step < STEPS.length) setStep((s) => s + 1);
+    else handleConfirm();
+  };
+
+  const ok = canGoNext();
+
+  return (
+    <>
+      <div className="fixed inset-0 bg-black/80 z-50" onClick={() => !loading && onClose()} />
+
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div
+          className="bg-white dark:bg-zinc-900 rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden"
+          onClick={(e) => e.stopPropagation()}>
+          {/* Header */}
+          <div className="flex items-center justify-between p-5 border-b border-gray-200 dark:border-zinc-700 shrink-0">
+            <div>
+              <span className="text-xl font-medium text-gray-900 dark:text-white">Reservar alojamiento</span>
+              {room?.name && (
+                <h1 className="text-sm text-gray-500 dark:text-gray-400 mt-0.5 truncate max-w-xs">{room.name}</h1>
+              )}
+            </div>
+            <button onClick={() => !loading && onClose()} className="p-2 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg transition-colors">
+              <X size={22} className="text-gray-500 dark:text-gray-400" />
+            </button>
+          </div>
+
+          {/* Steps */}
+          <div className="flex items-center px-6 pt-4 pb-2 shrink-0">
+            {STEPS.map((s, i) => (
+              <div key={i} className="contents">
+                <StepDot step={i + 1} current={step} label={s.label} />
+                {i < STEPS.length - 1 && <StepLine done={step > i + 1} />}
+              </div>
+            ))}
+          </div>
+
+          {/* Body */}
+          <div className="flex-1 overflow-y-auto px-6 py-4">
+            {loading ? (
+              <div className="flex flex-col items-center justify-center h-48 gap-3">
+                <Spin size="large" />
+                <p className="text-sm text-gray-500 dark:text-gray-400">Procesando reservación...</p>
+              </div>
+            ) : (
+              <>
+                {(error || apiError) && (
+                  <Alert
+                    message={error || apiError}
+                    type="error"
+                    showIcon
+                    className="mb-4"
+                    closable
+                    onClose={() => setError(null)}
+                  />
+                )}
+                {step === 1 && <StepDocuments hasDocuments={hasDocuments} />}
+                {step === 2 && (
+                  <StepRentType
+                    room={room}
+                    rentType={rentType} onRentTypeChange={setRentType}
+                    selectedCuarto={selectedCuarto} onSelectedCuartoChange={setSelectedCuarto}
+                    selectedCama={selectedCama} onSelectedCamaChange={setSelectedCama}
+                    rentPeriod={rentPeriod} onRentPeriodChange={setRentPeriod}
+                    fechaEntrada={fechaEntrada} onFechaEntradaChange={setFechaEntrada}
+                  />
+                )}
+                {step === 3 && (
+                  <StepServices
+                    room={room}
+                    selectedServices={selectedServices}
+                    onSelectedServicesChange={setSelectedServices}
+                  />
+                )}
+                {step === 4 && (
+                  <StepSummary
+                    room={room}
+                    rentType={rentType}
+                    selectedCuarto={selectedCuarto}
+                    selectedCama={selectedCama}
+                    rentPeriod={rentPeriod}
+                    fechaEntrada={fechaEntrada}
+                    selectedServices={selectedServices}
+                  />
+                )}
+              </>
+            )}
+          </div>
+
+          {/* Footer */}
+          <div className="flex items-center justify-between gap-3 px-5 py-4 border-t border-gray-200 dark:border-zinc-700 shrink-0 bg-gray-50 dark:bg-zinc-800/50">
+            <button
+              disabled={loading}
+              onClick={step === 1 ? onClose : () => setStep((s) => s - 1)}
+              className="px-5 py-2 rounded-lg border border-gray-200 dark:border-zinc-700 text-gray-600 dark:text-gray-400 text-sm font-medium hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors disabled:opacity-50">
+              {step === 1 ? "Cancelar" : "Atrás"}
+            </button>
+            <button
+              onClick={handleNext}
+              disabled={!ok || loading}
+              className={`px-6 py-2 rounded-lg text-sm font-semibold transition-colors
+                ${ok && !loading
+                  ? "bg-lime-600 hover:bg-lime-700 active:bg-lime-800 text-white"
+                  : "bg-gray-100 dark:bg-zinc-700 text-gray-400 dark:text-zinc-500 cursor-not-allowed"}`}>
+              {loading ? "Procesando..." : step === STEPS.length ? "Confirmar reservación" : "Continuar"}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <SuccessModal open={success} onGoToReservas={() => { setSuccess(false); onClose(); navigate("/estudiante/reservas"); }} />
+    </>
   );
 };
 
