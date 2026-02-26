@@ -1,448 +1,499 @@
-import React from "react";
+import { useEffect, useState } from "react";
 import {
-  Modal,
-  Button,
-  Space,
-  Spin,
-  Alert,
-  Carousel,
-  Collapse,
-  Tag,
-} from "antd";
-import {
-  Wifi,
-  Droplets,
-  Zap,
-  Sparkles,
-  Utensils,
-  Shirt,
-  Wind,
-  Tv,
-  Car,
-  Dumbbell,
-  Waves,
-  Coffee,
-  Sandwich,
-  Moon,
+  X,
+  MapPin,
+  Star,
+  Phone,
+  Mail,
+  BedDouble,
+  ChevronLeft,
+  ChevronRight,
   Home,
   Transgender,
-  User,
-  Mail,
-  Phone,
-  Star as StarIcon,
-  MapPin as MapPinIcon,
-  X,
+  MapPinIcon,
 } from "lucide-react";
+import { Spin, Empty, Button } from "antd";
+import { getServiceIcon } from "../icon/serviceIconsConfig";
 
-const ICON_MAP = {
-  "fat-wifi": Wifi,
-  "fat-droplets": Droplets,
-  "fat-zap": Zap,
-  "fat-sparkles": Sparkles,
-  "fat-utensils": Utensils,
-  "fat-shirt": Shirt,
-  "fat-wind": Wind,
-  "fat-tv": Tv,
-  "fat-car": Car,
-  "fat-dumbbell": Dumbbell,
-  "fat-waves": Waves,
-  "fat-coffee": Coffee,
-  "fat-sandwich": Sandwich,
-  "fat-moon": Moon,
-  internet: Wifi,
-  water: Droplets,
-  electricidad: Zap,
-  cable: Zap,
-  wifi: Wifi,
-  aire: Wind,
-  tv: Tv,
-  estacionamiento: Car,
-  gimnasio: Dumbbell,
-  piscina: Waves,
+const GENDER_LABEL = {
+  femenino: {
+    label: "Solo mujeres",
+    cls: "bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400",
+  },
+  masculino: {
+    label: "Solo hombres",
+    cls: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+  },
+  mixto: {
+    label: "Mixto",
+    cls: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+  },
 };
+
+const TYPE_LABEL = {
+  casa: "Casa",
+  departamento: "Departamento",
+  habitacion: "Habitación",
+  estudio: "Estudio",
+};
+
+const ESTATUS_CONFIG = {
+  ACTIVO: {
+    label: "Activo",
+    dot: "bg-green-500",
+    text: "text-green-600 dark:text-green-400",
+  },
+  INACTIVO: {
+    label: "Inactivo",
+    dot: "bg-gray-400",
+    text: "text-gray-500 dark:text-gray-400",
+  },
+  OCUPADO: {
+    label: "Ocupado",
+    dot: "bg-red-500",
+    text: "text-red-600 dark:text-red-400",
+  },
+  MANTENIMIENTO: {
+    label: "Mantenimiento",
+    dot: "bg-amber-400",
+    text: "text-amber-600 dark:text-amber-400",
+  },
+  PENDIENTE: {
+    label: "Pendiente",
+    dot: "bg-blue-400",
+    text: "text-blue-600 dark:text-blue-400",
+  },
+};
+
+function EstatusTag({ estatus }) {
+  const cfg = ESTATUS_CONFIG[estatus?.toUpperCase()] ?? ESTATUS_CONFIG.INACTIVO;
+  return (
+    <div className="flex items-center gap-1.5">
+      <span className={`w-2 h-2 rounded-full shrink-0 ${cfg.dot}`} />
+      <span className={`text-xs capitalize ${cfg.text}`}>{cfg.label}</span>
+    </div>
+  );
+}
+
+function PhotoCarousel({ fotos = [], mainImage }) {
+  const [active, setActive] = useState(0);
+  const images =
+    fotos.length > 0 ? fotos : mainImage ? [{ url: mainImage }] : [];
+
+  if (images.length === 0) {
+    return (
+      <div className="w-full h-56 bg-gray-100 dark:bg-zinc-800 rounded-lg flex items-center justify-center">
+        <Empty
+          image={Empty.PRESENTED_IMAGE_SIMPLE}
+          description={
+            <span className="text-gray-400 dark:text-zinc-500 text-sm">
+              Sin imágenes disponibles
+            </span>
+          }
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      <div className="relative w-full h-56 bg-gray-100 dark:bg-zinc-800 rounded-lg overflow-hidden">
+        <img
+          src={images[active]?.url}
+          alt="foto"
+          className="w-full h-full object-cover"
+        />
+        {images.length > 1 && (
+          <>
+            <button
+              onClick={() =>
+                setActive((a) => (a > 0 ? a - 1 : images.length - 1))
+              }
+              className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white rounded-full w-7 h-7 flex items-center justify-center transition-colors"
+            >
+              <ChevronLeft size={15} />
+            </button>
+            <button
+              onClick={() =>
+                setActive((a) => (a < images.length - 1 ? a + 1 : 0))
+              }
+              className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white rounded-full w-7 h-7 flex items-center justify-center transition-colors"
+            >
+              <ChevronRight size={15} />
+            </button>
+            <span className="absolute bottom-2 right-3 text-xs text-white bg-black/40 rounded-full px-2 py-0.5">
+              {active + 1}/{images.length}
+            </span>
+          </>
+        )}
+      </div>
+      {images.length > 1 && (
+        <div
+          className="flex gap-2 overflow-x-auto pb-0.5"
+          style={{ scrollbarWidth: "none" }}
+        >
+          {images.map((img, i) => (
+            <button
+              key={i}
+              onClick={() => setActive(i)}
+              className={`shrink-0 w-14 h-11 rounded-md overflow-hidden border-2 transition-all ${
+                i === active
+                  ? "border-lime-500"
+                  : "border-transparent opacity-50 hover:opacity-80"
+              }`}
+            >
+              <img
+                src={img.url}
+                alt=""
+                className="w-full h-full object-cover"
+              />
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 const RoomDetailsModal = ({
   open,
   onClose,
   room,
   userRating,
-  hasRated,
   onRate,
   onRequestRoom,
   services = [],
-  imageUrl = "https://s03.s3c.es/imag/_v0/1200x655/0/f/c/habitacion.jpg",
   loading = false,
   error = null,
 }) => {
-  if (!room) return null;
-
-  const formatCost = (cost) => {
-    if (cost === null || cost === "0" || cost === 0) return "FREE";
-    return `+ $${cost}`;
-  };
-
-  const fotosOrdenadas = Array.isArray(room?.fotos)
-    ? [...room.fotos].sort((a, b) => {
-        if (a.esPrincipal === b.esPrincipal) return 0;
-        return b.esPrincipal ? 1 : -1;
-      })
-    : [];
-
-  const renderServiceIcon = (iconName) => {
-    if (!iconName) return <Sparkles size={16} className="text-lime-500" />;
-
-    const IconComponent =
-      ICON_MAP[iconName.toLowerCase()] || ICON_MAP[iconName];
-    return IconComponent ? (
-      <IconComponent size={16} className="text-lime-500" />
-    ) : (
-      <Sparkles size={16} className="text-lime-500" />
-    );
-  };
-
-  const STATUS_CONFIG = {
-    ACTIVO: { label: "Disponible", color: "green" },
-    INACTIVO: { label: "No disponible", color: "red" },
-    PENDIENTE: { label: "Pendiente", color: "gold" },
-    OCUPADO: { label: "Ocupado", color: "gold" },
-    MANTENIMIENTO: { label: "Mantenimiento", color: "gold" },
-  };
-
-  const getStatusTag = (status) => {
-    const config = STATUS_CONFIG[status] || {
-      label: status,
-      color: "default",
+  useEffect(() => {
+    const handleKey = (e) => {
+      if (e.key === "Escape") onClose();
     };
+    if (open) {
+      document.body.style.overflow = "hidden";
+      window.addEventListener("keydown", handleKey);
+    }
+    return () => {
+      document.body.style.overflow = "";
+      window.removeEventListener("keydown", handleKey);
+    };
+  }, [open, onClose]);
 
-    return <Tag color={config.color}>{config.label}</Tag>;
+  if (!open) return null;
+
+  const TYPE_INCOME_LABEL = {
+    ESPACIO: {
+      label: "Por espacios",
+      cls: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
+    },
+    CUARTO: {
+      label: "Por cuarto",
+      cls: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400",
+    },
+    CAMA: {
+      label: "Por cama",
+      cls: "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400",
+    },
+    ALOJAMIENTO_COMPLETO: {
+      label: "Alojamiento completo",
+      cls: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400",
+    },
   };
 
-  const isBedAvailable = (status) => status === "ACTIVO";
-
-  const propietario = room.propietario || {};
-  const ownerName =
-    propietario.namePersonal && propietario.lastName
-      ? `${propietario.namePersonal} ${propietario.lastName}`
-      : propietario.namePersonal || "Propietario";
-  const ownerEmail = propietario.emailPersonal || propietario.email || "";
-  const ownerPhone = propietario.phone
-    ? `+${propietario.code || ""} ${propietario.phone}`
-    : "";
+  const normalizedGender = room?.gender?.toLowerCase() ?? "mixto";
+  const genderInfo = GENDER_LABEL[normalizedGender] ?? GENDER_LABEL.mixto;
+  const typeLabel =
+    TYPE_LABEL[room?.type?.toLowerCase()] ?? room?.type ?? "Alojamiento";
+  const incomeInfo = TYPE_INCOME_LABEL[room?.typeIncome?.toUpperCase()] ?? null;
 
   return (
-    <Modal
-      open={open}
-      footer={null}
-      onCancel={onClose}
-      centered
-      width={480}
-      closable={false}
-      className="[&_.ant-modal-content]:rounded-2xl [&_.ant-modal-body]:p-0"
-    >
-      <div className="absolute top-4 right-4 z-10">
-        <Button
-          type="text"
-          icon={<X size={18} />}
-          onClick={onClose}
-          className="text-gray-500 hover:text-lime-500"
-          aria-label="Cerrar"
-          disabled={loading}
-        />
-      </div>
-
-      {error && (
-        <Alert
-          title="Error"
-          description={error}
-          type="error"
-          showIcon
-          className="m-4"
-          closable
-        />
-      )}
-
-      {loading ? (
-        <div className="flex justify-center items-center py-20">
-          <Spin size="large" />
-        </div>
-      ) : (
-        <div className="overflow-hidden">
-          <div className="relative h-56">
-            {fotosOrdenadas.length > 0 ? (
-              <Carousel autoplay dots>
-                {fotosOrdenadas.map((foto) => (
-                  <div key={foto.id_foto} className="h-60">
-                    <img
-                      src={foto.url}
-                      alt={`Foto ${foto.id_foto}`}
-                      className="w-full h-60 object-cover rounded-lg"
-                    />
-                  </div>
-                ))}
-              </Carousel>
-            ) : (
-              <div className="w-full h-64 flex items-center justify-center bg-gray-100 text-gray-500 rounded-lg">
-                Sin imágenes disponibles
-              </div>
-            )}
-            <div className="absolute bottom-4 left-4 right-4">
-              <div className="flex justify-between items-end">
-                <div>
-                  <h3 className="text-xl font-bold text-white mb-1">
-                    {room.name}
-                  </h3>
-                  <div className="flex items-center gap-2">
-                    <MapPinIcon size={14} className="text-lime-200" />
-                    <span className="text-lime-100 text-xs">
-                      {room.location ||
-                        room.address ||
-                        "Ubicación no disponible"}
-                    </span>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-2xl font-bold text-white">
-                    ${room.precio_completo || room.price}
-                    <span className="text-sm text-lime-100 ml-1">/mes</span>
-                  </div>
-                </div>
-              </div>
+    <>
+      <div className="fixed inset-0 bg-black/85 z-50" onClick={onClose} />
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div
+          className="bg-white dark:bg-zinc-900 rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Header */}
+          <div className="flex items-center justify-between p-5 border-b border-gray-200 dark:border-zinc-700 shrink-0">
+            <div className="flex flex-col">
+              <span className="text-xl font-bold text-gray-900 dark:text-white">
+                {room?.name ?? "Alojamiento"}
+              </span>
+              <span className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+                Detalles del alojamiento
+              </span>
             </div>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+            >
+              <X size={22} className="text-gray-500 dark:text-gray-400" />
+            </button>
           </div>
 
-          <div className="p-5 my-2">
-            <Space orientation="vertical" size={16} className="w-full">
-              <div className="flex justify-between items-start">
-                <div>
-                  <h4 className="text-base font-semibold text-lime-500 my-3">
-                    Propietario
-                  </h4>
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2 dark:text-white">
-                      <User
-                        size={16}
-                        className="text-gray-600 dark:text-white"
-                      />
-                      <span className="text-gray-700 text-sm dark:text-white">
-                        {ownerName}
-                      </span>
-                    </div>
-                    {ownerEmail && (
-                      <div className="flex items-center gap-2">
-                        <Mail
-                          size={14}
-                          className="text-gray-600 dark:text-white"
-                        />
-                        <span className="text-gray-500 text-xs dark:text-white">
-                          {ownerEmail}
+          {/* Body */}
+          <div className="flex-1 overflow-y-auto">
+            {loading ? (
+              <div className="flex items-center justify-center h-64">
+                <Spin size="large" tip="Cargando detalles..." />
+              </div>
+            ) : error ? (
+              <div className="flex items-center justify-center h-64 px-8">
+                <Empty
+                  image={Empty.PRESENTED_IMAGE_SIMPLE}
+                  description={<span className="text-red-500">{error}</span>}
+                />
+              </div>
+            ) : (
+              <div className="p-6 space-y-5">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Izquierda */}
+                  <div className="space-y-4">
+                    <PhotoCarousel
+                      fotos={room?.fotos}
+                      mainImage={room?.mainImage}
+                    />
+                    <div className="p-4 bg-gradient-to-br from-lime-50 to-green-50 dark:from-lime-900/20 dark:to-green-900/20 rounded-lg border border-lime-200 dark:border-lime-800">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                        Precio mensual
+                      </p>
+                      <div className="flex items-end gap-1">
+                        <span className="text-3xl font-bold text-gray-900 dark:text-white">
+                          ${Number(room?.price ?? 0).toLocaleString("es-MX")}
+                        </span>
+                        <span className="text-sm text-gray-400 dark:text-gray-500 mb-0.5">
+                          MXN/mes
                         </span>
                       </div>
-                    )}
-                    {ownerPhone && (
-                      <div className="flex items-center gap-2">
-                        <Phone
-                          size={14}
-                          className="text-gray-600 dark:text-white"
-                        />
-                        <span className="text-gray-500 text-xs dark:text-white">
-                          {ownerPhone}
+                    </div>
+                  </div>
+
+                  {/* Derecha */}
+                  <div className="space-y-3">
+                    <div className="flex flex-wrap gap-2">
+                      {incomeInfo && (
+                        <span
+                          className={`text-xs font-semibold px-2.5 py-1 rounded-full ${incomeInfo.cls}`}
+                        >
+                          {incomeInfo.label}
                         </span>
+                      )}
+                      <span
+                        className={`text-xs font-semibold px-2.5 py-1 rounded-full ${genderInfo.cls}`}
+                      >
+                        {genderInfo.label}
+                      </span>
+                      <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-gray-100 dark:bg-zinc-700 text-gray-600 dark:text-gray-300">
+                        {typeLabel}
+                      </span>
+                    </div>
+
+                    <div className="p-3 bg-gray-200 dark:bg-zinc-800 rounded-lg">
+                      <div className="flex items-center gap-2 mb-1">
+                        <MapPin size={14} className="text-gray-400" />
+                        <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                          Ubicación
+                        </p>
+                      </div>
+                      <p className="text-sm text-gray-800 dark:text-gray-200 pl-5">
+                        {room?.address ?? "No disponible"}
+                      </p>
+                    </div>
+
+                    <div className="p-3 bg-gray-200 flex-col dark:bg-zinc-800 rounded-lg flex items-center">
+                      <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                        Puntuación
+                      </span>
+
+                      <div className="flex flex-row items-center gap-2">
+                        <Star
+                          size={15}
+                          className="text-lime-400 fill-lime-400 shrink-0"
+                        />
+                        <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+                          {room?.rating > 0
+                            ? Number(room.rating).toFixed(1)
+                            : "0"}{" "}
+                          / 5
+                        </span>
+                      </div>
+                    </div>
+
+                    {room?.propietario && (
+                      <div className="p-3 bg-gray-200 dark:bg-zinc-800 rounded-lg">
+                        <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
+                          Propietario
+                        </p>
+                        <div className="flex items-center gap-3 mb-2">
+                          <div className="w-8 h-8 rounded-full bg-lime-100 dark:bg-lime-900/30 flex items-center justify-center shrink-0">
+                            <span className="text-lime-700 dark:text-lime-400 font-bold text-sm">
+                              {room.propietario.namePersonal?.[0] ?? "?"}
+                            </span>
+                          </div>
+                          <p className="font-semibold text-gray-800 dark:text-gray-200 text-sm">
+                            {room.propietario.namePersonal}{" "}
+                            {room.propietario.lastName}
+                          </p>
+                        </div>
+                        <div className="space-y-1.5 pl-1">
+                          {room.propietario.emailPersonal && (
+                            <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                              <Mail size={13} className="shrink-0" />
+                              <span className="truncate">
+                                {room.propietario.emailPersonal}
+                              </span>
+                            </div>
+                          )}
+                          {room.propietario.phone && (
+                            <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                              <Phone size={13} className="shrink-0" />
+                              <span>
+                                +{room.propietario.code}{" "}
+                                {room.propietario.phone}
+                              </span>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     )}
                   </div>
                 </div>
-                {hasRated ? (
-                  <div className="text-right">
-                    <div className="text-sm font-medium text-lime-600 mb-1">
-                      Tu calificación:
-                    </div>
 
-                    <div className="flex items-center justify-end gap-1">
-                      <span className="text-xs text-gray-500 dark:text-white">
-                        {userRating} / 5
-                      </span>
-                      <StarIcon size={16} fill="#84cc16" color="#84cc16" />
+                {/* ── Servicios ── */}
+                {services.length > 0 && (
+                  <div>
+                    <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                      Servicios incluidos
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {services.map((s) => {
+                        const { icon: IconComponent, color } = getServiceIcon(
+                          s.icon,
+                        );
+                        return (
+                          <div
+                            key={s.id}
+                            className="flex items-center gap-1.5 bg-lime-50 dark:bg-lime-900/20 border border-lime-200 dark:border-lime-800 text-lime-700 dark:text-lime-400 rounded-lg px-2.5 py-1.5 text-sm"
+                          >
+                            <IconComponent size={15} color={color} />
+                            <span className="font-medium">{s.name}</span>
+                            {s.costo > 0 && (
+                              <span className="text-xs text-lime-500 font-semibold">
+                                +${s.costo}
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
-                ) : (
-                  <div className="text-right">
-                    <div className="text-xs text-gray-500 mb-1 dark:text-white">
-                      Tu calificación
+                )}
+
+                {/* ── Property Details ── */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
+                  <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg dark:bg-neutral-900">
+                    <Home size={18} className="text-lime-500" />
+                    <div className="min-w-0">
+                      <div className="text-xs text-gray-500 uppercase tracking-wide dark:text-white">
+                        Tipo de propiedad
+                      </div>
+                      <div className="text-sm font-medium truncate text-gray-800 dark:text-white">
+                        {room.typeProperty || "No especificado"}
+                      </div>
                     </div>
-                    <div className="flex gap-1">
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <StarIcon
-                          key={star}
-                          size={16}
-                          className="cursor-pointer"
-                          fill={userRating >= star ? "#84cc16" : "none"}
-                          color={userRating >= star ? "#84cc16" : "#d1d5db"}
-                          onClick={() => onRate(room.id, star)}
-                        />
+                  </div>
+                  <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg dark:bg-neutral-900">
+                    <Transgender size={18} className="text-lime-500" />
+                    <div className="min-w-0">
+                      <div className="text-xs text-gray-500 uppercase tracking-wide dark:text-white">
+                        Género
+                      </div>
+                      <div className="text-sm font-medium text-gray-800 truncate dark:text-white">
+                        {room.gender === "femenino"
+                          ? "Solo mujeres"
+                          : room.gender === "masculino"
+                            ? "Solo hombres"
+                            : "Mixto"}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg col-span-2 dark:bg-neutral-900">
+                    <MapPinIcon size={18} className="text-lime-500" />
+                    <div className="min-w-0">
+                      <div className="text-xs text-gray-500 uppercase tracking-wide dark:text-white">
+                        Dirección
+                      </div>
+                      <div className="text-xs font-medium text-gray-800 truncate dark:text-white">
+                        {room.address || "Dirección no disponible"}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* ── Cuartos ── */}
+                {room?.cuartos?.length > 0 && (
+                  <div>
+                    <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                      Cuartos disponibles ({room.cuartos.length})
+                    </p>
+                    <div className="space-y-2">
+                      {room.cuartos.map((cuarto) => (
+                        <div
+                          key={cuarto.id_cuarto}
+                          className="border border-gray-200 dark:border-zinc-700 rounded-lg p-3"
+                        >
+                          <div className="flex items-center justify-between mb-1.5">
+                            <span className="font-semibold text-gray-800 dark:text-gray-200 text-sm">
+                              {cuarto.name}
+                            </span>
+                            {/* Estado del cuarto */}
+                            <EstatusTag estatus={cuarto.estatus} />
+                          </div>
+                          {cuarto.camas?.length > 0 && (
+                            <div className="flex flex-wrap gap-1.5 mt-2">
+                              {cuarto.camas.map((cama) => (
+                                <div
+                                  key={cama.id_cama}
+                                  className="flex items-center gap-1.5 text-xs bg-gray-50 dark:bg-zinc-800 rounded-md px-2 py-1.5 text-gray-600 dark:text-gray-400 border border-gray-100 dark:border-zinc-700"
+                                >
+                                  <BedDouble size={11} />
+                                  <span>{cama.name}</span>
+                                  {cama.price > 0 && (
+                                    <span className="text-gray-400">
+                                      · ${Number(cama.price).toLocaleString()}
+                                    </span>
+                                  )}
+                                  {/* Estado de la cama */}
+                                  <EstatusTag estatus={cama.estatus} />
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       ))}
                     </div>
                   </div>
                 )}
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="flex items-center gap-3 p-3 rounded-lg bg-gray-50 border border-transparent dark:bg-neutral-900">
-                  <Home size={18} className="text-lime-500" />
-                  <div className="min-w-0">
-                    <div className="text-xs uppercase tracking-wide truncate text-gray-500 dark:text-white">
-                      Tipo
-                    </div>
 
-                    <div className="text-sm font-medium truncate text-gray-800 dark:text-white">
-                      {room.typeProperty || "No especificado"}
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg dark:bg-neutral-900">
-                  <Transgender size={18} className="text-lime-500" />
-                  <div className="min-w-0">
-                    <div className="text-xs text-gray-500 uppercase tracking-wide dark:text-white">
-                      Género
-                    </div>
-                    <div className="text-sm font-medium text-gray-800 truncate dark:text-white">
-                      {room.gender === "femenino"
-                        ? "Solo mujeres"
-                        : room.gender === "masculino"
-                          ? "Solo hombres"
-                          : "Mixto"}
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg col-span-2 dark:bg-neutral-900">
-                  <MapPinIcon size={18} className="text-lime-500" />
-                  <div className="min-w-0">
-                    <div className="text-xs text-gray-500 uppercase tracking-wide dark:text-white">
-                      Dirección
-                    </div>
-                    <div className="text-xs font-medium text-gray-800 truncate dark:text-white">
-                      {room.address || "Dirección no disponible"}
-                    </div>
-                  </div>
-                </div>
-                <div className="col-span-2">
-                  <h4 className="text-base font-semibold text-lime-500 mb-1">
-                    Cuartos y camas
-                  </h4>
-                  {room.cuartos && room.cuartos.length > 0 ? (
-                    <Collapse accordion ghost>
-                      {room.cuartos.map((cuarto) => {
-                        const cuartoActivo = cuarto.estatus === "ACTIVO";
-
-                        return (
-                          <Collapse.Panel
-                            key={cuarto.id_cuarto}
-                            header={
-                              <div className="flex justify-between items-center w-full">
-                                <span className="font-medium text-gray-800 dark:text-white">
-                                  {cuarto.name}
-                                </span>
-
-                                <div className="flex items-center gap-2">
-                                  {getStatusTag(cuarto.estatus)}
-                                  <span className="text-sm font-semibold text-lime-500">
-                                    + ${cuarto.price}
-                                  </span>
-                                </div>
-                              </div>
-                            }
-                          >
-                            {cuartoActivo ? (
-                              cuarto.camas && cuarto.camas.length > 0 ? (
-                                <div className="space-y-2">
-                                  {cuarto.camas.map((cama) => (
-                                    <div
-                                      key={cama.id_cama}
-                                      className="flex items-center justify-between p-3 rounded-lg bg-white border-gray-200 dark:bg-neutral-900"
-                                    >
-                                      <div>
-                                        <p className="text-sm font-medium text-gray-500 dark:text-white">
-                                          {cama.name}
-                                        </p>
-                                      </div>
-                                      <div className="flex items-center gap-2">
-                                        {getStatusTag(cama.estatus)}
-                                        <span className="text-sm font-semibold">
-                                          + ${cama.price}
-                                        </span>
-                                      </div>
-                                    </div>
-                                  ))}
-                                </div>
-                              ) : (
-                                <p className="text-sm text-gray-500">
-                                  Este cuarto no tiene camas registradas
-                                </p>
-                              )
-                            ) : (
-                              <p className="text-sm text-gray-500">
-                                Este cuarto no está disponible para selección
-                              </p>
-                            )}
-                          </Collapse.Panel>
-                        );
-                      })}
-                    </Collapse>
-                  ) : (
-                    <p className="text-sm text-gray-500">
-                      No hay cuartos disponibles para esta habitación
-                    </p>
-                  )}
-                </div>
-              </div>
-              <div className="w-full">
-                <h4 className="text-base font-semibold text-lime-500 mb-3">
-                  Servicios disponibles
-                </h4>
-
-                {services.length > 0 ? (
-                  <div className="grid grid-cols-2 gap-2 mt-2 ">
-                    {services.map((service) => (
-                      <div
-                        key={service.id}
-                        className="flex items-center justify-between bg-gray-50 p-2 rounded-lg dark:bg-neutral-900"
-                      >
-                        <div className="flex items-center gap-2">
-                          {renderServiceIcon(service.icon)}
-                          <span className="text-sm text-gray-700 dark:text-white">
-                            {service.name}
-                          </span>
-                        </div>
-                        <span className="text-xs font-medium text-gray-600 dark:text-white">
-                          {formatCost(service.costo)}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-gray-500 text-sm">
-                    No hay servicios disponibles
-                  </p>
-                )}
-              </div>
-
-              {onRequestRoom && (
                 <Button
-                  className="w-full !bg-lime-500 hover:!bg-lime-500 !border-lime-500 !text-white h-12 text-lg font-bold rounded-lg"
+                  type="primary"
+                  size="large"
                   onClick={() => {
-                    onRequestRoom(room.id_alojamiento);
                     onClose();
+                    onRequestRoom?.(room?.id);
                   }}
-                  aria-label="Solicitar habitación"
-                  loading={loading}
-                  disabled={loading}
+                  className="w-full"
                 >
-                  Solicitar habitación
+                  Solicitar alojamiento
                 </Button>
-              )}
-            </Space>
+              </div>
+            )}
           </div>
         </div>
-      )}
-    </Modal>
+      </div>
+    </>
   );
 };
 

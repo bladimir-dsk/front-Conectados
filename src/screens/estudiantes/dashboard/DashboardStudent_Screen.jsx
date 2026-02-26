@@ -240,28 +240,22 @@ export default function DashboardStudent_Screen() {
         descripcion: foto.descripcion,
       }));
 
-      const totalBeds =
-        details.cuartos?.reduce(
-          (total, cuarto) => total + (cuarto.camas?.length || 0),
-          0,
-        ) ?? 0;
-
       const allServices = (details.servicios || []).map((s) => ({
-        id: s.servicio.id_servicio,
+        id: s.id,
         name: s.servicio.name,
         icon: s.servicio.icon,
-        costo: s.costo,
+        costo: s.costo != null ? Number(s.costo) : 0,
       }));
 
       const cuartos = (details.cuartos || []).map((cuarto) => ({
         id_cuarto: cuarto.id_cuarto,
         name: cuarto.name,
-        price: cuarto.price,
+        price: Number(cuarto.price ?? 0),
         estatus: cuarto.estatus,
         camas: (cuarto.camas || []).map((cama) => ({
           id_cama: cama.id_cama,
           name: cama.name,
-          price: cama.price,
+          price: Number(cama.price ?? 0),
           estatus: cama.estatus,
         })),
       }));
@@ -282,8 +276,9 @@ export default function DashboardStudent_Screen() {
         address: `${details.address}, ${details.city}, ${details.country}`,
         services: allServices,
         fotos,
-        mainImage: fotos[0]?.url || IMAGE_URL,
+        mainImage: fotos[0]?.url || null,
         cuartos,
+        rating: details.calificacion ?? 0,
       };
 
       setSelectedRoom(enrichedRoom);
@@ -300,13 +295,7 @@ export default function DashboardStudent_Screen() {
   const saveReservation = async () => {};
 
   const handleRequestRoom = async (roomId) => {
-    const room = allAccommodations.find((r) => r.id === roomId);
-    if (room) {
-      setSelectedRoom(room);
-      calculatePrices(room.price, rentPeriod, selectedServices);
-    }
     await fetchDocumentStatus();
-    setReservationStep(1);
     setReservationModalOpen(true);
   };
 
@@ -516,36 +505,9 @@ export default function DashboardStudent_Screen() {
 
           <ReservationModal
             open={reservationModalOpen}
-            onClose={() => {
-              setReservationModalOpen(false);
-              setReservationStep(1);
-              setSelectedServices([]);
-              setError(null);
-            }}
-            step={reservationStep}
-            onStepChange={setReservationStep}
+            onClose={() => setReservationModalOpen(false)}
             room={selectedRoom}
             hasDocuments={hasDocuments}
-            rentType={rentType}
-            onRentTypeChange={setRentType}
-            selectedRooms={selectedRooms}
-            onSelectedRoomsChange={setSelectedRooms}
-            selectedBed={selectedBed}
-            onSelectedBedChange={setSelectedBed}
-            rentPeriod={rentPeriod}
-            onRentPeriodChange={(period) => {
-              setRentPeriod(period);
-              if (selectedRoom) {
-                calculatePrices(selectedRoom.price, period, selectedServices);
-              }
-            }}
-            selectedServices={selectedServices}
-            onSelectedServicesChange={setSelectedServices}
-            services={[]}
-            prices={prices}
-            onSaveReservation={saveReservation}
-            loading={loading.reservation}
-            error={error}
           />
         </div>
       </div>
