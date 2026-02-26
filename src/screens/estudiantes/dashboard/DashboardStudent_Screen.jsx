@@ -34,6 +34,19 @@ export default function DashboardStudent_Screen() {
   const [selectedRoom, setSelectedRoom] = useState(null);
   const [userRating, setUserRating] = useState({});
   const [reservationModalOpen, setReservationModalOpen] = useState(false);
+  const [reservationStep, setReservationStep] = useState(1);
+  const [rentType, setRentType] = useState("completo");
+  const [selectedRooms, setSelectedRooms] = useState(1);
+  const [selectedBed, setSelectedBed] = useState("");
+  const [rentPeriod, setRentPeriod] = useState(12);
+  const [hasRated, setHasRated] = useState({});
+  const [selectedServices, setSelectedServices] = useState([]);
+
+  const [prices, setPrices] = useState({
+    subtotal: 0,
+    iva: 0,
+    total: 0,
+  });
   const [hasDocuments, setHasDocuments] = useState(false);
   const [loading, setLoading] = useState({
     rooms: false,
@@ -51,12 +64,46 @@ export default function DashboardStudent_Screen() {
     false,
   );
 
+  const loadUserRating = async (roomId) => {
+    try {
+      const res = await api.get(`/calificacion/mi-calificacion/${roomId}`);
+
+      return res.data?.puntuacion ?? null;
+    } catch (error) {
+      if (error.response?.status === 404) {
+        return null;
+      }
+      console.error("Error cargando mi calificación", error);
+      return null;
+    }
+  };
+
   const [allAccommodations, setAllAccommodations] = useState([]);
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 9,
     total: 0,
   });
+
+  const loadRatingStats = async (roomId) => {
+    try {
+      const res = await api.get(`/calificacion/estadistica/${roomId}`);
+
+      setAllAccommodations((prev) =>
+        prev.map((room) =>
+          room.id === roomId
+            ? {
+                ...room,
+                rating: res.data.promedio ?? 0,
+                totalVotos: res.data.totalVotos ?? 0,
+              }
+            : room,
+        ),
+      );
+    } catch (error) {
+      console.error("Error cargando estadísticas", error);
+    }
+  };
 
   const [displayedRooms, setDisplayedRooms] = useState([]);
 
@@ -116,6 +163,7 @@ export default function DashboardStudent_Screen() {
       });
 
       setAllAccommodations(mappedRooms);
+      await Promise.all(mappedRooms.map((room) => loadRatingStats(room.id)));
       setPagination((prev) => ({ ...prev, total: mappedRooms.length }));
       setError(null);
     } catch (err) {
@@ -149,7 +197,11 @@ export default function DashboardStudent_Screen() {
   };
 
   const handleViewMap = (roomId) => {
-    navigate(`/estudiante/search/${roomId}`, { state: { roomId } });
+    navigate(`/estudiante/search/${roomId}`, {
+      state: {
+        openRouteModal: true,
+      },
+    });
   };
 
   const openRoomDetails = async (roomId) => {
@@ -160,6 +212,18 @@ export default function DashboardStudent_Screen() {
     try {
       const res = await api.get(`/alojamientos/${roomId}/details`);
       const details = res.data;
+
+      const rating = await loadUserRating(roomId);
+
+      setUserRating((prev) => ({
+        ...prev,
+        [roomId]: rating ?? 0,
+      }));
+
+      setHasRated((prev) => ({
+        ...prev,
+        [roomId]: rating !== null,
+      }));
 
       const normalizeGender = (gender) => {
         if (!gender) return "mixto";
@@ -199,9 +263,8 @@ export default function DashboardStudent_Screen() {
       const enrichedRoom = {
         id: details.id_alojamiento,
         name: details.name,
-        price: Number(details.precio_completo ?? 0),
-        type: details.typeProperty,
-        typeIncome: details.typeIncome,
+        price: details.precio_completo,
+        typeProperty: details.typeProperty,
         gender: normalizeGender(details.gender),
         propietario: {
           namePersonal: details.propietario?.namePersonal,
@@ -221,16 +284,15 @@ export default function DashboardStudent_Screen() {
       setSelectedRoom(enrichedRoom);
     } catch (error) {
       console.error(error);
-      setDetailsError("No se pudieron cargar los detalles de la habitación");
+      setDetailsError("No se pudieron cargar los detalles");
     } finally {
       setLoading((prev) => ({ ...prev, details: false }));
     }
   };
 
+  const calculatePrices = (roomPrice, period, servicesSelected) => {};
 
-  const handleRate = (roomId, value) => {
-    setUserRating((prev) => ({ ...prev, [roomId]: value }));
-  };
+  const saveReservation = async () => {};
 
   const handleRequestRoom = async (roomId) => {
     await fetchDocumentStatus();
@@ -255,6 +317,24 @@ export default function DashboardStudent_Screen() {
       </div>
     );
   }
+  const handleRate = async (roomId, value) => {
+    if (hasRated[roomId]) return;
+
+    setUserRating((prev) => ({ ...prev, [roomId]: value }));
+
+    try {
+      await api.post("/calificacion", {
+        id_alojamiento: roomId,
+        puntuacion: value,
+      });
+
+      await loadRatingStats(roomId);
+    } catch (error) {
+      if (error.response?.status !== 400) {
+        console.error("Error al guardar calificación", error);
+      }
+    }
+  };
 
   return (
     <ConfigProvider locale={esES}>
@@ -415,6 +495,7 @@ export default function DashboardStudent_Screen() {
             }}
             room={selectedRoom}
             userRating={userRating[selectedRoom?.id]}
+            hasRated={hasRated[selectedRoom?.id]}
             onRate={handleRate}
             onRequestRoom={handleRequestRoom}
             services={selectedRoom?.services || []}
