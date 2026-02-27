@@ -1,62 +1,298 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useApi } from "../../../hooks/useApi";
-import api from "../../../api/axiosConfig";
 import {
   Row,
   Col,
   Button,
-  InputNumber,
-  DatePicker,
+  Select,
+  Input,
   ConfigProvider,
-  Popover,
   Pagination,
   Alert,
   Spin,
+  Empty,
+  Tooltip,
 } from "antd";
 import esES from "antd/locale/es_ES";
-import { Users, Search, CalendarDays } from "lucide-react";
-import dayjs from "dayjs";
-import "dayjs/locale/es";
+import {
+  Search,
+  MapPin,
+  Star,
+  Home,
+  Building2,
+  Heart,
+  X,
+} from "lucide-react";
 
 import RoomDetailsModal from "../../../components/modals/RoomDetailsModal";
 import ReservationModal from "../../../components/modals/ReservationModal";
-import RoomCard from "../../../components/cards/RoomCard";
 
-const { RangePicker } = DatePicker;
-const IMAGE_URL = "https://s03.s3c.es/imag/_v0/1200x655/0/f/c/habitacion.jpg";
+const ESTATUS_CONFIG = {
+  ACTIVO: {
+    label: "Disponible",
+    cls: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+    dot: "bg-green-500",
+  },
+  PENDIENTE: {
+    label: "Pendiente",
+    cls: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+    dot: "bg-blue-400",
+  },
+  OCUPADO: {
+    label: "Ocupado",
+    cls: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+    dot: "bg-red-500",
+  },
+  MANTENIMIENTO: {
+    label: "Mantenimiento",
+    cls: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+    dot: "bg-amber-400",
+  },
+  INACTIVO: {
+    label: "Inactivo",
+    cls: "bg-gray-100 text-gray-500 dark:bg-zinc-700 dark:text-gray-400",
+    dot: "bg-gray-400",
+  },
+};
+
+const GENDER_LABEL = {
+  Masculino: {
+    label: "Solo hombres",
+    cls: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+  },
+  Femenino: {
+    label: "Solo mujeres",
+    cls: "bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400",
+  },
+  Mixto: {
+    label: "Mixto",
+    cls: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+  },
+};
+
+const TYPE_INCOME_LABEL = {
+  ALOJAMIENTO_COMPLETO: {
+    label: "Alojamiento completo",
+    cls: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400",
+  },
+  ESPACIO: {
+    label: "Por espacios",
+    cls: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
+  },
+  CUARTO: {
+    label: "Por cuarto",
+    cls: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400",
+  },
+  CAMA: {
+    label: "Por cama",
+    cls: "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400",
+  },
+};
+
+function CardImage({ fotos = [], typeProperty = "" }) {
+  const main = fotos.find((f) => f.esPrincipal) ?? fotos[0];
+  if (!main) {
+    return (
+      <div className="w-full h-44 bg-gradient-to-br from-lime-50 to-emerald-100 dark:from-zinc-800 dark:to-zinc-700 flex flex-col items-center justify-center gap-2 relative overflow-hidden">
+        <div className="absolute -top-6 -right-6 w-24 h-24 rounded-full bg-lime-200/40 dark:bg-lime-900/20" />
+        <div className="absolute -bottom-4 -left-4 w-16 h-16 rounded-full bg-emerald-200/40 dark:bg-emerald-900/20" />
+        <div className="w-14 h-14 rounded-2xl bg-white/70 dark:bg-zinc-600/50 flex items-center justify-center shadow-sm">
+          <Building2 size={28} className="text-lime-500 dark:text-lime-400" />
+        </div>
+        <p className="text-xs font-medium text-lime-600 dark:text-lime-400 z-10">
+          {typeProperty || "Alojamiento"}
+        </p>
+        <p className="text-[10px] text-gray-400 dark:text-zinc-500 z-10">Sin fotografías</p>
+      </div>
+    );
+  }
+  return (
+    <img
+      src={main.url}
+      alt="foto alojamiento"
+      className="w-full h-44 object-cover"
+      loading="lazy"
+    />
+  );
+}
+
+function RoomCard({ room, isFav, onToggleFavorite, onViewDetails, onViewMap }) {
+  const estatus =
+    ESTATUS_CONFIG[room.estatus?.toUpperCase()] ?? ESTATUS_CONFIG.INACTIVO;
+  const gender = GENDER_LABEL[room.gender] ?? GENDER_LABEL.Mixto;
+  const income = TYPE_INCOME_LABEL[room.typeIncome?.toUpperCase()];
+
+  return (
+    <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-sm! hover:shadow-md! hover:shadow-lime-400 transition-all duration-200 flex flex-col overflow-hidden h-full">
+      <div className="relative overflow-hidden rounded-t-xl">
+        <CardImage fotos={room.fotos} typeProperty={room.typeProperty} />
+        <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-white dark:from-zinc-900 to-transparent pointer-events-none" />
+        <div
+          className={`absolute top-2.5 left-2.5 flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold backdrop-blur-sm ${estatus.cls}`}
+        >
+          <span className={`w-1.5 h-1.5 rounded-full ${estatus.dot}`} />
+          {estatus.label}
+        </div>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleFavorite?.(room.id);
+          }}
+          className="absolute top-2.5 right-2.5 w-8 h-8 rounded-full bg-white/80 dark:bg-zinc-800/80 backdrop-blur-sm flex items-center justify-center hover:scale-110 transition-transform"
+        >
+          <Heart
+            size={15}
+            className={
+              isFav
+                ? "fill-red-500 text-red-500"
+                : "text-gray-400 dark:text-zinc-500"
+            }
+          />
+        </button>
+      </div>
+
+      <div className="p-4 flex flex-col gap-2.5 flex-1">
+        <div className="flex items-start justify-between gap-2">
+          <h3 className="font-semibold text-gray-900 dark:text-white text-sm leading-snug line-clamp-1">
+            {room.name}
+          </h3>
+          <div className="text-right shrink-0">
+            <span className="text-base font-bold text-lime-600 dark:text-lime-400">
+              ${Number(room.price).toLocaleString("es-MX")}
+            </span>
+            <span className="text-xs text-gray-400 dark:text-zinc-500 block -mt-0.5">
+              MXN/mes
+            </span>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-zinc-400">
+          <MapPin size={12} className="shrink-0 text-gray-400" />
+          <span className="line-clamp-1">{room.address}</span>
+        </div>
+
+        <div className="flex flex-wrap gap-1.5">
+          {room.typeProperty && (
+            <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-300 font-medium">
+              <Home size={11} />
+              {room.typeProperty}
+            </span>
+          )}
+          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${gender.cls}`}>
+            {gender.label}
+          </span>
+          {income && (
+            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${income.cls}`}>
+              {income.label}
+            </span>
+          )}
+        </div>
+
+        <div className="flex items-center gap-1.5 mt-auto pt-1">
+          <Star
+            size={13}
+            className={
+              room.calificacion > 0
+                ? "fill-amber-400 text-amber-400"
+                : "text-gray-300 dark:text-zinc-600"
+            }
+          />
+          <span className="text-xs font-medium text-gray-700 dark:text-zinc-300">
+            {room.calificacion > 0
+              ? Number(room.calificacion).toFixed(1)
+              : "Sin calificación"}
+          </span>
+        </div>
+
+        <div className="mt-1 flex gap-2">
+          <button
+            onClick={() => onViewDetails(room.id)}
+            className="flex-1 py-2 rounded-lg bg-lime-500 hover:bg-lime-600 text-black! text-sm font-semibold transition-colors"
+          >
+            Ver detalles
+          </button>
+          <Tooltip title="Ver ubicación en el mapa" placement="top" color="red">
+            <button
+              onClick={() => onViewMap(room.id)}
+              className="px-3 py-2 rounded-lg border border-red-200 dark:border-red-700 hover:bg-red-50 dark:hover:bg-red-800 text-red-600! dark:text-red-400! transition-colors"
+            >
+              <MapPin size={16} />
+            </button>
+          </Tooltip>
+
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function DashboardStudent_Screen() {
+  const navigate = useNavigate();
+
+  const [page, setPage] = useState(1);
   const [favorites, setFavorites] = useState([]);
-  const [dateRange, setDateRange] = useState(null);
-  const [guests, setGuests] = useState(1);
+
+  // Filtros
+  const [filters, setFilters] = useState({
+    typeProperty: null,
+    gender: null,
+    typeIncome: null,
+    city: "",
+  });
+  // Filtros aplicados (los que se usan en la URL)
+  const [appliedFilters, setAppliedFilters] = useState({
+    typeProperty: null,
+    gender: null,
+    typeIncome: null,
+    city: "",
+  });
+
+  // Modal detalles
   const [openDetails, setOpenDetails] = useState(false);
   const [selectedRoom, setSelectedRoom] = useState(null);
-  const [userRating, setUserRating] = useState({});
-  const [reservationModalOpen, setReservationModalOpen] = useState(false);
-  const [reservationStep, setReservationStep] = useState(1);
-  const [rentType, setRentType] = useState("completo");
-  const [selectedRooms, setSelectedRooms] = useState(1);
-  const [selectedBed, setSelectedBed] = useState("");
-  const [rentPeriod, setRentPeriod] = useState(12);
-  const [hasRated, setHasRated] = useState({});
-  const [selectedServices, setSelectedServices] = useState([]);
-
-  const [prices, setPrices] = useState({
-    subtotal: 0,
-    iva: 0,
-    total: 0,
-  });
-  const [hasDocuments, setHasDocuments] = useState(false);
-  const [loading, setLoading] = useState({
-    rooms: false,
-    reservation: false,
-    details: false,
-  });
-  const [error, setError] = useState(null);
+  const [loadingDetails, setLoadingDetails] = useState(false);
   const [detailsError, setDetailsError] = useState(null);
+  const [detailRoomId, setDetailRoomId] = useState(null);
 
-  const navigate = useNavigate();
+  // Modal reservación
+  const [reservationModalOpen, setReservationModalOpen] = useState(false);
+  const [hasDocuments, setHasDocuments] = useState(false);
+
+  const construirURL = (pagina = 1, f = appliedFilters) => {
+    const params = new URLSearchParams({ page: pagina, limit: 10, estatus: "ACTIVO" });
+    if (f.typeProperty) params.set("typeProperty", f.typeProperty);
+    if (f.gender) params.set("gender", f.gender);
+    if (f.typeIncome) params.set("typeIncome", f.typeIncome);
+    if (f.city?.trim()) params.set("city", f.city.trim());
+    return `/alojamientos?${params.toString()}`;
+  };
+
+  const [endpoint, setEndpoint] = useState(() => construirURL(1, {
+    typeProperty: null,
+    gender: null,
+    typeIncome: null,
+    city: "",
+  }));
+
+  const { data, loading, error, fetchData } = useApi(endpoint, {}, false);
+
+  const accommodations = data?.data ?? [];
+  const meta = data?.meta ?? {};
+
+  useEffect(() => {
+    setEndpoint(construirURL(page, appliedFilters));
+  }, [page, appliedFilters]);
+
+  useEffect(() => {
+    if (endpoint) fetchData();
+  }, [endpoint]);
+
+  const { fetchData: fetchRoomDetail } = useApi(
+    detailRoomId ? `/alojamientos/${detailRoomId}/details` : "/alojamientos",
+    {},
+    false,
+  );
 
   const { fetchData: fetchDocumentsStatus } = useApi(
     "/documentacion/status/approved",
@@ -64,243 +300,119 @@ export default function DashboardStudent_Screen() {
     false,
   );
 
-  const loadUserRating = async (roomId) => {
-    try {
-      const res = await api.get(`/calificacion/mi-calificacion/${roomId}`);
-
-      return res.data?.puntuacion ?? null;
-    } catch (error) {
-      if (error.response?.status === 404) {
-        return null;
-      }
-      console.error("Error cargando mi calificación", error);
-      return null;
-    }
-  };
-
-  const [allAccommodations, setAllAccommodations] = useState([]);
-  const [pagination, setPagination] = useState({
-    current: 1,
-    pageSize: 9,
-    total: 0,
-  });
-
-  const loadRatingStats = async (roomId) => {
-    try {
-      const res = await api.get(`/calificacion/estadistica/${roomId}`);
-
-      setAllAccommodations((prev) =>
-        prev.map((room) =>
-          room.id === roomId
-            ? {
-                ...room,
-                rating: res.data.promedio ?? 0,
-                totalVotos: res.data.totalVotos ?? 0,
-              }
-            : room,
-        ),
-      );
-    } catch (error) {
-      console.error("Error cargando estadísticas", error);
-    }
-  };
-
-  const [displayedRooms, setDisplayedRooms] = useState([]);
-
-  const handleDateChange = (dates) => {
-    setDateRange(dates);
-    setPagination((prev) => ({ ...prev, current: 1 }));
-  };
-
-  const handleGuestsChange = (value) => {
-    setGuests(value);
-    setPagination((prev) => ({ ...prev, current: 1 }));
-  };
-
-  const loadAllAccommodations = async () => {
-    setLoading((prev) => ({ ...prev, rooms: true }));
-    try {
-      let page = 1;
-      let allItems = [];
-      let total = 0;
-      const limit = 100;
-
-      do {
-        const params = {
-          startDate: dateRange?.[0]?.format("YYYY-MM-DD"),
-          endDate: dateRange?.[1]?.format("YYYY-MM-DD"),
-          guests,
-          page,
-          limit,
-        };
-        const res = await api.get("/alojamientos", { params });
-        const items = res.data?.data ?? res.data ?? [];
-        total = res.data?.meta?.total ?? items.length;
-        allItems = [...allItems, ...items];
-        page++;
-      } while (allItems.length < total);
-
-      const mappedRooms = allItems.map((item) => {
-        const fotos = (item.fotos || []).map((foto) => ({
-          id: foto.id_foto,
-          url: foto.url,
-          esPrincipal: foto.esPrincipal,
-        }));
-
-        const mainPhoto =
-          fotos.find((f) => f.esPrincipal === true) || fotos[0] || null;
-
-        return {
-          id: item.id_alojamiento,
-          name: item.name,
-          price: item.precio_completo,
-          address: `${item.address}, ${item.city}, ${item.country}`,
-          fotos,
-          mainImage: mainPhoto?.url || IMAGE_URL,
-          rating: item.rating ?? 0,
-          reviews: item.reviews ?? 0,
-        };
-      });
-
-      setAllAccommodations(mappedRooms);
-      await Promise.all(mappedRooms.map((room) => loadRatingStats(room.id)));
-      setPagination((prev) => ({ ...prev, total: mappedRooms.length }));
-      setError(null);
-    } catch (err) {
-      console.error(err);
-      setError("Error al cargar los alojamientos");
-    } finally {
-      setLoading((prev) => ({ ...prev, rooms: false }));
-    }
-  };
-
-  useEffect(() => {
-    loadAllAccommodations();
-  }, [dateRange, guests]);
-
-  useEffect(() => {
-    const start = (pagination.current - 1) * pagination.pageSize;
-    const end = start + pagination.pageSize;
-    setDisplayedRooms(allAccommodations.slice(start, end));
-  }, [allAccommodations, pagination.current, pagination.pageSize]);
-
   const fetchDocumentStatus = async () => {
     try {
       const response = await fetchDocumentsStatus();
-      const approved = response?.approved === true;
-      setHasDocuments(approved);
-      return approved;
+      setHasDocuments(response?.approved === true);
     } catch {
       setHasDocuments(false);
-      return false;
     }
   };
 
   const handleViewMap = (roomId) => {
     navigate(`/estudiante/search/${roomId}`, {
-      state: {
-        openRouteModal: true,
-      },
+      state: { openRouteModal: true },
     });
   };
 
-  const openRoomDetails = async (roomId) => {
-    setLoading((prev) => ({ ...prev, details: true }));
+  const openRoomDetails = (roomId) => {
+    setLoadingDetails(true);
     setDetailsError(null);
     setOpenDetails(true);
-
-    try {
-      const res = await api.get(`/alojamientos/${roomId}/details`);
-      const details = res.data;
-
-      const rating = await loadUserRating(roomId);
-
-      setUserRating((prev) => ({
-        ...prev,
-        [roomId]: rating ?? 0,
-      }));
-
-      setHasRated((prev) => ({
-        ...prev,
-        [roomId]: rating !== null,
-      }));
-
-      const normalizeGender = (gender) => {
-        if (!gender) return "mixto";
-        const value = gender.toLowerCase();
-        if (value === "mujer" || value === "femenino") return "femenino";
-        if (value === "hombre" || value === "masculino") return "masculino";
-        return "mixto";
-      };
-
-      const fotos = (details.fotos || []).map((foto) => ({
-        id: foto.id_foto,
-        url: foto.url,
-        principal: foto.esPrincipal,
-        descripcion: foto.descripcion,
-      }));
-
-      const allServices = (details.servicios || []).map((s) => ({
-        id: s.id,
-        name: s.servicio.name,
-        icon: s.servicio.icon,
-        costo: s.costo != null ? Number(s.costo) : 0,
-      }));
-
-      const cuartos = (details.cuartos || []).map((cuarto) => ({
-        id_cuarto: cuarto.id_cuarto,
-        name: cuarto.name,
-        price: Number(cuarto.price ?? 0),
-        estatus: cuarto.estatus,
-        camas: (cuarto.camas || []).map((cama) => ({
-          id_cama: cama.id_cama,
-          name: cama.name,
-          price: Number(cama.price ?? 0),
-          estatus: cama.estatus,
-        })),
-      }));
-
-      const enrichedRoom = {
-        id: details.id_alojamiento,
-        name: details.name,
-        price: details.precio_completo,
-        typeProperty: details.typeProperty,
-        gender: normalizeGender(details.gender),
-        propietario: {
-          namePersonal: details.propietario?.namePersonal,
-          lastName: details.propietario?.lastName,
-          emailPersonal: details.propietario?.emailPersonal,
-          phone: details.propietario?.phone,
-          code: details.propietario?.code,
-        },
-        address: `${details.address}, ${details.city}, ${details.country}`,
-        services: allServices,
-        fotos,
-        mainImage: fotos[0]?.url || null,
-        cuartos,
-        rating: details.calificacion ?? 0,
-      };
-
-      setSelectedRoom(enrichedRoom);
-    } catch (error) {
-      console.error(error);
-      setDetailsError("No se pudieron cargar los detalles");
-    } finally {
-      setLoading((prev) => ({ ...prev, details: false }));
-    }
+    setDetailRoomId(roomId);
   };
 
-  const calculatePrices = (roomPrice, period, servicesSelected) => {};
+  useEffect(() => {
+    if (!detailRoomId) return;
 
-  const saveReservation = async () => {};
+    const load = async () => {
+      try {
+        const details = await fetchRoomDetail();
 
-  const handleRequestRoom = async (roomId) => {
+        const normalizeGender = (g) => {
+          if (!g) return "mixto";
+          const v = g.toLowerCase();
+          if (v === "mujer" || v === "femenino") return "femenino";
+          if (v === "hombre" || v === "masculino") return "masculino";
+          return "mixto";
+        };
+
+        const fotos = (details.fotos || []).map((f) => ({
+          id: f.id_foto,
+          url: f.url,
+          principal: f.esPrincipal,
+          descripcion: f.descripcion,
+        }));
+
+        const cuartos = (details.cuartos || []).map((cuarto) => ({
+          id_cuarto: cuarto.id_cuarto,
+          name: cuarto.name,
+          price: Number(cuarto.price ?? 0),
+          estatus: cuarto.estatus,
+          camas: (cuarto.camas || []).map((cama) => ({
+            id_cama: cama.id_cama,
+            name: cama.name,
+            price: Number(cama.price ?? 0),
+            estatus: cama.estatus,
+          })),
+        }));
+
+        setSelectedRoom({
+          id: details.id_alojamiento,
+          name: details.name,
+          price: details.precio_completo,
+          typeProperty: details.typeProperty,
+          typeIncome: details.typeIncome,
+          gender: normalizeGender(details.gender),
+          propietario: {
+            namePersonal: details.propietario?.namePersonal,
+            lastName: details.propietario?.lastName,
+            emailPersonal: details.propietario?.emailPersonal,
+            phone: details.propietario?.phone,
+            code: details.propietario?.code,
+          },
+          address: `${details.address}, ${details.city}, ${details.country}`,
+          fotos,
+          mainImage: fotos[0]?.url ?? null,
+          cuartos,
+          rating: details.calificacion ?? 0,
+          services: [],
+        });
+      } catch {
+        setDetailsError("No se pudieron cargar los detalles");
+      } finally {
+        setLoadingDetails(false);
+      }
+    };
+
+    load();
+  }, [detailRoomId]);
+
+  const handleRequestRoom = async () => {
     await fetchDocumentStatus();
     setReservationModalOpen(true);
   };
 
-  const handlePaginationChange = (page) => {
-    setPagination((prev) => ({ ...prev, current: page }));
+  const handleSearch = () => {
+    setPage(1);
+    setAppliedFilters({ ...filters });
+  };
+
+  const handleClearFilters = () => {
+    const empty = { typeProperty: null, gender: null, typeIncome: null, city: "" };
+    setFilters(empty);
+    setPage(1);
+    setAppliedFilters(empty);
+  };
+
+  const hasActiveFilters =
+    appliedFilters.typeProperty ||
+    appliedFilters.gender ||
+    appliedFilters.typeIncome ||
+    appliedFilters.city?.trim();
+
+  const handlePaginationChange = (newPage) => {
+    setPage(newPage);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -310,147 +422,145 @@ export default function DashboardStudent_Screen() {
     );
   };
 
-  if (loading.rooms && allAccommodations.length === 0) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Spin size="large" tip="Cargando habitaciones..." fullscreen />
-      </div>
-    );
-  }
-  const handleRate = async (roomId, value) => {
-    if (hasRated[roomId]) return;
-
-    setUserRating((prev) => ({ ...prev, [roomId]: value }));
-
-    try {
-      await api.post("/calificacion", {
-        id_alojamiento: roomId,
-        puntuacion: value,
-      });
-
-      await loadRatingStats(roomId);
-    } catch (error) {
-      if (error.response?.status !== 400) {
-        console.error("Error al guardar calificación", error);
-      }
-    }
-  };
-
   return (
     <ConfigProvider locale={esES}>
-      <div className="min-h-screen bg-gray-50 flex justify-center w-full mb-0 dark:bg-neutral-800">
-        <div className="w-full max-w-7xl px-4 py-8 mb-0">
+      <div className="min-h-screen flex justify-center w-full">
+        <div className="w-full max-w-7xl px-4 py-8">
+
           {error && (
             <Alert
-              title="Error"
               description={error}
               type="error"
               showIcon
               className="mb-4"
               closable
-              onClose={() => setError(null)}
             />
           )}
 
-          <div className="relative mx-auto mb-2 bg-white rounded-2xl border border-gray-200 h-14 max-w-lg flex items-center shadow-sm dark:bg-neutral-900 dark:border-neutral-700">
-            <div className="flex-1 flex justify-center items-center gap-6 px-4">
-              <Popover
-                trigger="click"
-                placement="bottom"
-                content={
-                  <RangePicker
-                    inline
-                    value={dateRange}
-                    onChange={handleDateChange}
-                    allowClear={false}
-                  />
-                }
+          {/* Barra de filtros */}
+          <div className="mx-auto mb-6 bg-white dark:bg-neutral-900 rounded-2xl border border-gray-200 dark:border-neutral-700 shadow-sm p-3">
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Tipo de propiedad */}
+              <Select
+                placeholder="Tipo de propiedad"
+                value={filters.typeProperty}
+                onChange={(v) => setFilters((prev) => ({ ...prev, typeProperty: v }))}
+                allowClear
+                className="min-w-[160px] flex-1"
+                options={[
+                  { value: "Casa", label: "Casa" },
+                  { value: "Departamento", label: "Departamento" },
+                  { value: "Cuarto", label: "Cuarto" },
+                ]}
+              />
+
+              {/* Género */}
+              <Select
+                placeholder="Género"
+                value={filters.gender}
+                onChange={(v) => setFilters((prev) => ({ ...prev, gender: v }))}
+                allowClear
+                className="min-w-[140px] flex-1"
+                options={[
+                  { value: "Masculino", label: "Solo hombres" },
+                  { value: "Femenino", label: "Solo mujeres" },
+                  { value: "Mixto", label: "Mixto" },
+                ]}
+              />
+
+              {/* Tipo de ingreso */}
+              <Select
+                placeholder="Tipo de renta"
+                value={filters.typeIncome}
+                onChange={(v) => setFilters((prev) => ({ ...prev, typeIncome: v }))}
+                allowClear
+                className="min-w-[160px] flex-1"
+                options={[
+                  { value: "ALOJAMIENTO_COMPLETO", label: "Alojamiento completo" },
+                  { value: "ESPACIO", label: "Por espacios" },
+                ]}
+              />
+
+              {/* Ciudad */}
+              <Input
+                placeholder="Ciudad"
+                value={filters.city}
+                onChange={(e) => setFilters((prev) => ({ ...prev, city: e.target.value }))}
+                onPressEnter={handleSearch}
+                className="min-w-[130px] flex-1"
+                allowClear
+              />
+
+              {/* Botón buscar */}
+              <Button
+                type="primary"
+                icon={<Search size={16} />}
+                onClick={handleSearch}
+                className="bg-lime-500 hover:bg-lime-600 border-lime-500 hover:border-lime-600 text-black font-semibold shrink-0 h-8"
               >
-                <div className="flex items-center gap-3 cursor-pointer">
-                  <CalendarDays
-                    size={18}
-                    className="text-gray-600dark:text-white "
-                  />
-                  <div className="flex flex-col">
-                    <span className="text-xs text-gray-500 font-medium dark:text-white">
-                      FECHAS
-                    </span>
-                    <span className="text-sm font-medium text-gray-800 dark:text-white">
-                      {dateRange && dateRange[0] && dateRange[1] ? (
-                        `${dayjs(dateRange[0]).format("DD MMM")} - ${dayjs(
-                          dateRange[1],
-                        ).format("DD MMM")}`
-                      ) : (
-                        <span className="text-gray-400">Seleccionar</span>
-                      )}
-                    </span>
-                  </div>
-                </div>
-              </Popover>
-              <div className="w-px h-6 bg-gray-300" />
-              <div className="flex items-center gap-3">
-                <Users size={18} className="text-gray-600 dark:text-white" />
-                <div className="flex flex-col">
-                  <span className="text-xs text-gray-500 font-medium dark:text-white">
-                    HUÉSPEDES
-                  </span>
-                  <div className="flex items-center">
-                    <InputNumber
-                      min={1}
-                      max={20}
-                      value={guests}
-                      onChange={handleGuestsChange}
-                      variant="borderless"
-                      className="w-12 text-base font-medium text-gray-800 p-0"
-                      controls={false}
-                    />
-                  </div>
-                </div>
-              </div>
+                Buscar
+              </Button>
+
+              {/* Botón limpiar */}
+              {hasActiveFilters && (
+                <Button
+                  icon={<X size={15} />}
+                  onClick={handleClearFilters}
+                  className="shrink-0 h-8 text-gray-500 dark:text-zinc-400 border-gray-200 dark:border-zinc-700 hover:border-red-400 hover:text-red-500"
+                >
+                  Limpiar
+                </Button>
+              )}
             </div>
-
-            <Button
-              className="absolute right-4 bg-lime-600 border-none rounded-full w-11 h-11 text-white hover:bg-lime-600 shadow-md"
-              icon={<Search size={18} />}
-              onClick={() => {
-                loadAllAccommodations();
-              }}
-              aria-label="Buscar habitaciones"
-            />
           </div>
 
-          <div className="mb-3 text-sm text-gray-600 dark:text-white">
-            Mostrando {displayedRooms.length} de {allAccommodations.length}{" "}
-            habitaciones
-            {dateRange && dateRange[0] && dateRange[1] && (
-              <span>
-                {" "}
-                para las fechas {dayjs(dateRange[0]).format(
-                  "DD/MM/YYYY",
-                )} - {dayjs(dateRange[1]).format("DD/MM/YYYY")}
-              </span>
-            )}
-            {guests > 1 && <span> con capacidad para {guests} huéspedes</span>}
-          </div>
+          {/* Contador */}
+          {!loading && (
+            <p className="mb-4 text-sm text-gray-500 dark:text-zinc-400">
+              {meta.totalItems ?? 0} alojamientos disponibles
+              {hasActiveFilters && (
+                <span className="ml-1 text-lime-600 dark:text-lime-400 font-medium">
+                  · Filtros aplicados
+                </span>
+              )}
+            </p>
+          )}
 
-          {loading.rooms ? (
-            <div className="text-center py-12">
-              <Spin size="large" tip="Cargando habitaciones..." />
+          {/* Grid */}
+          {loading ? (
+            <div className="flex items-center justify-center py-16">
+              <Spin size="large" tip="Cargando alojamientos..." />
+            </div>
+          ) : accommodations.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16">
+              <Empty
+                image={Empty.PRESENTED_IMAGE_SIMPLE}
+                description={
+                  <span className="text-gray-400 dark:text-zinc-500">
+                    No hay alojamientos disponibles
+                  </span>
+                }
+              />
             </div>
           ) : (
             <>
               <Row gutter={[24, 24]}>
-                {displayedRooms.map((room, index) => (
-                  <Col
-                    key={room.id ?? `room-${index}`}
-                    xs={24}
-                    sm={12}
-                    lg={8}
-                    xl={8}
-                  >
+                {accommodations.map((item) => (
+                  <Col key={item.id_alojamiento} xs={24} sm={12} lg={8}>
                     <RoomCard
-                      room={room}
-                      isFav={favorites.includes(room.id)}
+                      room={{
+                        id: item.id_alojamiento,
+                        name: item.name,
+                        price: item.precio_completo,
+                        address: `${item.address}, ${item.city}, ${item.country}`,
+                        fotos: item.fotos ?? [],
+                        typeProperty: item.typeProperty,
+                        typeIncome: item.typeIncome,
+                        gender: item.gender,
+                        estatus: item.estatus,
+                        calificacion: item.calificacion ?? 0,
+                      }}
+                      isFav={favorites.includes(item.id_alojamiento)}
                       onToggleFavorite={toggleFavorite}
                       onViewDetails={openRoomDetails}
                       onViewMap={handleViewMap}
@@ -459,57 +569,44 @@ export default function DashboardStudent_Screen() {
                 ))}
               </Row>
 
-              {allAccommodations.length === 0 && (
-                <div className="text-center py-12">
-                  <Search size={48} className="mx-auto text-gray-300 mb-4" />
-                  <h3 className="text-lg font-semibold text-gray-700 mb-2">
-                    No se encontraron habitaciones
-                  </h3>
-                  <p className="text-gray-500">
-                    No hay habitaciones disponibles con los filtros
-                    seleccionados. Intenta con otras fechas o número de
-                    huéspedes.
-                  </p>
-                </div>
-              )}
-
-              {allAccommodations.length > pagination.pageSize && (
-                <div className="flex justify-center mt-12">
+              {meta.totalItems > 10 && (
+                <div className="flex justify-center mt-10">
                   <Pagination
-                    current={pagination.current}
-                    pageSize={pagination.pageSize}
-                    total={allAccommodations.length}
+                    current={page}
+                    pageSize={10}
+                    total={meta.totalItems ?? 0}
                     onChange={handlePaginationChange}
-                    className="[&_.ant-pagination-item]:rounded-full [&_.ant-pagination-item-active]:bg-lime-600 [&_.ant-pagination-item-active]:border-lime-600 [&_.ant-pagination-item-active_a]:text-white"
+                    showSizeChanger={false}
+                    className="[&_.ant-pagination-item-active]:bg-lime-500 [&_.ant-pagination-item-active]:border-lime-500 [&_.ant-pagination-item-active_a]:text-white"
                   />
                 </div>
               )}
             </>
           )}
-
-          <RoomDetailsModal
-            open={openDetails}
-            onClose={() => {
-              setOpenDetails(false);
-              setDetailsError(null);
-            }}
-            room={selectedRoom}
-            userRating={userRating[selectedRoom?.id]}
-            hasRated={hasRated[selectedRoom?.id]}
-            onRate={handleRate}
-            onRequestRoom={handleRequestRoom}
-            services={selectedRoom?.services || []}
-            loading={loading.details}
-            error={detailsError}
-          />
-
-          <ReservationModal
-            open={reservationModalOpen}
-            onClose={() => setReservationModalOpen(false)}
-            room={selectedRoom}
-            hasDocuments={hasDocuments}
-          />
         </div>
+
+        {/* Modal detalles */}
+        <RoomDetailsModal
+          open={openDetails}
+          onClose={() => {
+            setOpenDetails(false);
+            setDetailsError(null);
+            setDetailRoomId(null);
+          }}
+          room={selectedRoom}
+          onRequestRoom={handleRequestRoom}
+          services={[]}
+          loading={loadingDetails}
+          error={detailsError}
+        />
+
+        {/* Modal reservación */}
+        <ReservationModal
+          open={reservationModalOpen}
+          onClose={() => setReservationModalOpen(false)}
+          room={selectedRoom}
+          hasDocuments={hasDocuments}
+        />
       </div>
     </ConfigProvider>
   );
