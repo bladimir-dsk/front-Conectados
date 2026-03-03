@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from "react";
+import { useApi } from "../../../hooks/useApi";
+import api from "../../../api/axiosConfig";
 import {
   Form,
   Input,
@@ -20,14 +22,19 @@ import {
   CloudUpload,
   Save,
   Fingerprint,
+  Edit,
 } from "lucide-react";
 
 export default function ProfileStudent_Screen() {
   const [form] = Form.useForm();
   const [estados, setEstados] = useState([]);
-  const [municipios, setMunicipios] = useState([]);
-  const [localidades, setLocalidades] = useState([]);
   const [avatar, setAvatar] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [userId, setUserId] = useState(null);
+  const [hasPersonalInfo, setHasPersonalInfo] = useState(false);
+  const [avatarFile, setAvatarFile] = useState(null);
+  const [studentInfoId, setStudentInfoId] = useState(null);
+  const [originalStudentInfo, setOriginalStudentInfo] = useState(null);
 
   const notify = (type, title, description) => {
     notification[type]({
@@ -57,83 +64,197 @@ export default function ProfileStudent_Screen() {
       });
   }, []);
 
-  const onEstadoChange = (estado) => {
-    form.resetFields(["municipio", "localidad"]);
-    setMunicipios([]);
-    setLocalidades([]);
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const { data } = await api.get("/auth/profile");
 
-    fetch(`https://gaia.inegi.org.mx/wscatgeo/mgem/${estado}`)
-      .then((response) => response.json())
-      .then((data) => {
-        const municipiosData = data.datos.map((municipio) => ({
-          label: municipio.nom_agem,
-          value: municipio.cve_agem,
-        }));
-        setMunicipios(municipiosData);
+        setUserId(data.id);
 
-        const ticul = municipiosData.find(
-          (municipio) => municipio.label === "Ticul",
+        form.setFieldsValue({
+          nombre: data.name,
+          paterno: data.firstName,
+          materno: data.middleName,
+          email: data.email,
+          codigo: data.code,
+          telefono: data.phone,
+        });
+      } catch (error) {
+        notify(
+          "error",
+          "Error al cargar perfil",
+          "No se pudo obtener la información del usuario",
         );
-        if (ticul) {
-          form.setFieldsValue({ municipio: ticul.value });
-          onMunicipioChange(ticul.value, estado);
-        }
+      }
+    };
+
+    fetchProfile();
+  }, []);
+
+  const fetchStudentInformation = async () => {
+    try {
+      const { data } = await api.get("/student-information");
+      const direccion = data?.datosDireccion?.[0];
+
+      if (!direccion) return;
+
+      setStudentInfoId(direccion.id_student_information);
+
+      setOriginalStudentInfo({
+        curp: direccion.curp,
+        genero: direccion.genero,
+        estado: direccion.estado,
+        localidad: direccion.localidad,
+        codigoPostal: direccion.codigoPostal,
+        direccion: direccion.direccion,
       });
+
+      form.setFieldsValue({
+        curp: direccion.curp,
+        sexo: direccion.genero,
+        estado: direccion.estado,
+        localidad: direccion.localidad,
+        codigoPostal: direccion.codigoPostal,
+        direccion: direccion.direccion,
+      });
+
+      if (direccion.imgUrl) {
+        setAvatar(direccion.imgUrl);
+      }
+
+      setHasPersonalInfo(true);
+    } catch (error) {
+      console.error("Error al obtener student-information", error);
+    }
   };
 
-  const onMunicipioChange = (municipio, estadoParam) => {
-    const estado = estadoParam || form.getFieldValue("estado");
-    form.resetFields(["localidad"]);
-    setLocalidades([]);
+  useEffect(() => {
+    fetchStudentInformation();
+  }, []);
 
-    fetch(
-      `https://gaia.inegi.org.mx/wscatgeo/localidades/${estado}/${municipio}`,
-    )
-      .then((response) => response.json())
-      .then((data) => {
-        const localidadesData = data.datos.map((localidad) => ({
-          label: localidad.nom_loc,
-          value: localidad.cve_loc,
-        }));
-        setLocalidades(localidadesData);
+  const createStudentInformation = async () => {
+    const values = await form.validateFields([
+      "curp",
+      "sexo",
+      "estado",
+      "localidad",
+      "codigoPostal",
+      "direccion",
+    ]);
 
-        const ticulLoc = localidadesData.find(
-          (localidad) => localidad.label === "Ticul",
-        );
-        if (ticulLoc) {
-          form.setFieldsValue({ localidad: ticulLoc.value });
-        }
-      });
+    if (!avatarFile) {
+      throw new Error("AVATAR_REQUIRED");
+    }
+
+    const formData = new FormData();
+    formData.append("curp", values.curp);
+    formData.append("genero", values.sexo);
+    formData.append("estado", values.estado);
+    formData.append("localidad", values.localidad);
+    formData.append("codigoPostal", values.codigoPostal);
+    formData.append("direccion", values.direccion);
+    formData.append("file", avatarFile);
+
+    await api.post("/student-information", formData);
   };
+
+  const updateStudentInformation = async () => {
+    const values = await form.validateFields([
+      "curp",
+      "sexo",
+      "estado",
+      "localidad",
+      "codigoPostal",
+      "direccion",
+    ]);
+
+    const hasChanges =
+      values.curp !== originalStudentInfo.curp ||
+      values.sexo !== originalStudentInfo.genero ||
+      values.estado !== originalStudentInfo.estado ||
+      values.localidad !== originalStudentInfo.localidad ||
+      values.codigoPostal !== originalStudentInfo.codigoPostal ||
+      values.direccion !== originalStudentInfo.direccion ||
+      avatarFile;
+
+    if (!hasChanges) {
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("curp", values.curp);
+    formData.append("genero", values.sexo);
+    formData.append("estado", values.estado);
+    formData.append("localidad", values.localidad);
+    formData.append("codigoPostal", values.codigoPostal);
+    formData.append("direccion", values.direccion);
+
+    if (avatarFile) {
+      formData.append("file", avatarFile);
+    }
+
+    await api.patch(`/student-information/${studentInfoId}`, formData);
+  };
+
+  const onEstadoChange = () => {};
 
   const beforeUpload = (file) => {
+    setAvatarFile(file);
+
     const reader = new FileReader();
     reader.onload = () => setAvatar(reader.result);
     reader.readAsDataURL(file);
+
     return false;
   };
 
-  const onSave = () => {
-    notify(
-      "success",
-      "Archivos guardados correctamente",
-      "La documentación fue registrada con éxito",
-    );
+  const onSave = async () => {
+    try {
+      const values = await form.validateFields();
+
+      const payload = {
+        name: values.nombre,
+        firstName: values.paterno,
+        middleName: values.materno,
+        email: values.email,
+        code: values.codigo,
+        phone: values.telefono,
+      };
+
+      await api.patch(`/auth/estudiante/${userId}`, payload);
+
+      if (hasPersonalInfo && studentInfoId) {
+        await updateStudentInformation();
+      } else {
+        await createStudentInformation();
+      }
+
+      await fetchStudentInformation();
+
+      notify(
+        "success",
+        "Perfil actualizado",
+        "Toda la información se guardó correctamente",
+      );
+
+      setIsEditing(false);
+    } catch (error) {
+      if (error.message === "AVATAR_REQUIRED") {
+        notify(
+          "warning",
+          "Imagen requerida",
+          "Debes subir una imagen de perfil",
+        );
+        return;
+      }
+
+      notify("error", "Error", "No se pudo guardar la información personal");
+    }
   };
 
-  const initialValues = {
-    nombre: "Karla Lizeth",
-    paterno: "Dorantes",
-    materno: "Tec",
-    email: "karla@email.com",
-    curp: "DOTK010101MYNRLR09",
-    codigo: "+52",
-    telefono: "9994238130",
-    sexo: "Femenino",
-    direccion: "Calle 35A x 22 y 22A Centro",
-    cp: "97860",
-    escuela: "Universidad Tecnológica del Sur",
-    matricula: "UTS-2024-0098",
+  const onEdit = () => {
+    setIsEditing(true);
+    notify("info", "Modo edición", "Ahora puedes modificar los campos");
   };
 
   const sexoOptions = [
@@ -162,89 +283,129 @@ export default function ProfileStudent_Screen() {
         </div>
       </div>
 
-      <Form layout="vertical" form={form} initialValues={initialValues}>
-        <Row gutter={[8, 8]}>
-          <Col xs={24} sm={12} md={8}>
-            <Form.Item label="Nombre" name="nombre">
-              <Input prefix={<User size={16} />} />
-            </Form.Item>
-          </Col>
-          <Col xs={24} sm={12} md={8}>
-            <Form.Item label="Apellido Paterno" name="paterno">
-              <Input />
-            </Form.Item>
-          </Col>
-          <Col xs={24} sm={12} md={8}>
-            <Form.Item label="Apellido Materno" name="materno">
-              <Input />
-            </Form.Item>
-          </Col>
+      <Form layout="vertical" form={form}>
+        <Card className="mb-6 rounded-xl bg-gray-50 p-4">
+          <h3 className="text-base font-semibold mb-3 flex items-center gap-2">
+            <User size={18} />
+            Datos personales
+          </h3>
+          <Row gutter={[8, 8]}>
+            <Col xs={24} sm={12} md={8}>
+              <Form.Item label="Nombre" name="nombre">
+                <Input prefix={<User size={16} />} disabled={!isEditing} />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12} md={8}>
+              <Form.Item label="Apellido Paterno" name="paterno">
+                <Input disabled={!isEditing} />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12} md={8}>
+              <Form.Item label="Apellido Materno" name="materno">
+                <Input disabled={!isEditing} />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12} md={6}>
+              <Form.Item label="Código" name="codigo">
+                <Input disabled={!isEditing} />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12} md={10}>
+              <Form.Item label="Teléfono" name="telefono">
+                <Input prefix={<Phone size={16} />} disabled={!isEditing} />
+              </Form.Item>
+            </Col>
+            <Col xs={24} md={8}>
+              <Form.Item label="Email" name="email">
+                <Input disabled={!isEditing} prefix={<Mail size={16} />} />
+              </Form.Item>
+            </Col>
+          </Row>
+        </Card>
 
-          <Col xs={24} md={12}>
-            <Form.Item label="Email" name="email">
-              <Input disabled prefix={<Mail size={16} />} />
-            </Form.Item>
-          </Col>
+        <Card className="mb-6 rounded-xl bg-gray-50 p-4">
+          <h3 className="text-base font-semibold mb-3 flex items-center gap-2">
+            <Fingerprint size={18} />
+            Información personal
+          </h3>
+          <Row gutter={[8, 8]}>
+            <Col xs={24} md={12}>
+              <Form.Item
+                label="CURP"
+                name="curp"
+                rules={[
+                  { required: true, message: "Este campo es obligatorio" },
+                ]}
+              >
+                <Input
+                  prefix={<Fingerprint size={16} />}
+                  disabled={!isEditing}
+                />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12} md={12}>
+              <Form.Item
+                label="Sexo"
+                name="sexo"
+                rules={[
+                  { required: true, message: "Este campo es obligatorio" },
+                ]}
+              >
+                <Select options={sexoOptions} disabled={!isEditing} />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12} md={12}>
+              <Form.Item
+                label="Estado"
+                name="estado"
+                rules={[
+                  { required: true, message: "Este campo es obligatorio" },
+                ]}
+              >
+                <Select
+                  options={estados}
+                  onChange={onEstadoChange}
+                  disabled={!isEditing}
+                />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12} md={12}>
+              <Form.Item
+                label="Localidad"
+                name="localidad"
+                rules={[
+                  { required: true, message: "Este campo es obligatorio" },
+                ]}
+              >
+                <Input disabled={!isEditing} />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12} md={8}>
+              <Form.Item
+                label="Código Postal"
+                name="codigoPostal"
+                rules={[
+                  { required: true, message: "Este campo es obligatorio" },
+                ]}
+              >
+                <Input disabled={!isEditing} />
+              </Form.Item>
+            </Col>
+            <Col xs={24} md={16}>
+              <Form.Item
+                label="Dirección"
+                name="direccion"
+                rules={[
+                  { required: true, message: "Este campo es obligatorio" },
+                ]}
+              >
+                <Input prefix={<MapPin size={16} />} disabled={!isEditing} />
+              </Form.Item>
+            </Col>
+          </Row>
+        </Card>
 
-          <Col xs={24} md={12}>
-            <Form.Item label="CURP" name="curp">
-              <Input prefix={<Fingerprint size={16} />} />
-            </Form.Item>
-          </Col>
-
-          <Col xs={24} sm={12} md={6}>
-            <Form.Item label="Código" name="codigo">
-              <Input />
-            </Form.Item>
-          </Col>
-
-          <Col xs={24} sm={12} md={10}>
-            <Form.Item label="Teléfono" name="telefono">
-              <Input prefix={<Phone size={16} />} />
-            </Form.Item>
-          </Col>
-
-          <Col xs={24} sm={12} md={8}>
-            <Form.Item label="Código Postal" name="cp">
-              <Input />
-            </Form.Item>
-          </Col>
-
-          <Col xs={24} sm={12} md={8}>
-            <Form.Item label="Estado" name="estado">
-              <Select options={estados} onChange={onEstadoChange} />
-            </Form.Item>
-          </Col>
-
-          <Col xs={24} sm={12} md={8}>
-            <Form.Item label="Municipio" name="municipio">
-              <Select
-                options={municipios}
-                onChange={(value) => onMunicipioChange(value)}
-              />
-            </Form.Item>
-          </Col>
-
-          <Col xs={24} sm={12} md={8}>
-            <Form.Item label="Localidad" name="localidad">
-              <Select options={localidades} />
-            </Form.Item>
-          </Col>
-
-          <Col xs={24} md={16}>
-            <Form.Item label="Dirección" name="direccion">
-              <Input prefix={<MapPin size={16} />} />
-            </Form.Item>
-          </Col>
-
-          <Col xs={24} sm={12} md={8}>
-            <Form.Item label="Sexo" name="sexo">
-              <Select options={sexoOptions} />
-            </Form.Item>
-          </Col>
-        </Row>
-
-        <Card className="mt-4 rounded-xl bg-gray-50">
+        <Card className="mb-6 rounded-xl bg-gray-50 p-4">
           <h3 className="text-base font-semibold mb-3 flex items-center gap-2">
             <School size={18} />
             Información escolar
@@ -263,7 +424,16 @@ export default function ProfileStudent_Screen() {
           </Row>
         </Card>
 
-        <div className="flex justify-end mt-6">
+        <div className="flex justify-end gap-4 mt-6">
+          <Button
+            type="default"
+            icon={<Edit size={16} />}
+            onClick={onEdit}
+            className="w-full sm:w-auto"
+            disabled={isEditing}
+          >
+            Editar
+          </Button>
           <Button
             type="primary"
             icon={<Save size={16} />}
@@ -273,6 +443,7 @@ export default function ProfileStudent_Screen() {
             }}
             className="hover:bg-lime-600 hover:border-lime-600 text-white w-full sm:w-auto"
             onClick={onSave}
+            disabled={!isEditing}
           >
             Guardar cambios
           </Button>
