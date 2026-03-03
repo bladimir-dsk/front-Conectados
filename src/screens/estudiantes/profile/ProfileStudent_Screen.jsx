@@ -317,17 +317,10 @@ export default function ProfileStudent_Screen() {
             </Col>
             <Col xs={24} md={8}>
               <Form.Item label="Email" name="email">
-                <Input disabled={!isEditing} prefix={<Mail size={16} />} />
+                <Input disabled prefix={<Mail size={16} />} />
               </Form.Item>
             </Col>
           </Row>
-        </Card>
-
-        <Card className="mb-6 rounded-xl bg-gray-50 p-4">
-          <h3 className="text-base font-semibold mb-3 flex items-center gap-2">
-            <Fingerprint size={18} />
-            Información personal
-          </h3>
           <Row gutter={[8, 8]}>
             <Col xs={24} md={12}>
               <Form.Item
