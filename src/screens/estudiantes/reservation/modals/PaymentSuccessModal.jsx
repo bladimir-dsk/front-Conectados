@@ -20,7 +20,7 @@ export default function PaymentSuccessModal({ open, onClose, reservation }) {
         <div
             ref={overlayRef}
             onClick={handleOverlayClick}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 px-4"
             style={{ animation: "fadeIn 0.2s ease" }}
         >
             <div

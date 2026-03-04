@@ -10,19 +10,19 @@ import {
     EyeOutlined,
     ToolOutlined,
 } from "@ant-design/icons";
-import { Building2, House, Images, Warehouse } from "lucide-react";
+import { House, Images, Warehouse } from "lucide-react";
 import Highlighter from "react-highlight-words";
 import dayjs from "dayjs";
 import "dayjs/locale/es";
 import { useDeleteConfirmation } from "../../../../hooks/useDeleteConfirmation";
 import { useApi } from "../../../../hooks/useApi";
-import AccommodationModal_Admin from "../../accommodations/modals/AccommodationModal_Admin";
 import AccommodationDetailModal_Admin from "../../accommodations/modals/AccommodationDetailModal_Admin";
 import AccommodationServicesModal_Admin from "../../accommodations/modals/AccommodationServicesModal_Admin";
 import OwnerRoomsView_Admin from "../OwnerRoomsView_Admin";
 import { Dropdown } from "antd";
 import { MoreOutlined } from "@ant-design/icons";
 import AccommodationPhotosModal_Admin from "../../accommodations/modals/AccommodationPhotosModal_Admin";
+import AccommodationOwnerModal_Admin from "../modals/AccommodationOwnerModal_Admin";
 
 
 dayjs.locale("es");
@@ -444,6 +444,19 @@ export default function OwnersPropertiesScreen_Admin() {
             render: (price) => formatPrice(price),
         },
         {
+            title: "Capacidad",
+            dataIndex: "capacity",
+            key: "capacity",
+            align: "center",
+            sorter: (a, b) => (a.capacity || 0) - (b.capacity || 0),
+            render: (capacity) =>
+                capacity ? (
+                    <Tag color="blue">{capacity} persona{capacity !== 1 ? "s" : ""}</Tag>
+                ) : (
+                    <span className="text-gray-400">—</span>
+                ),
+        },
+        {
             title: "Estado",
             dataIndex: "estatus",
             key: "estatus",
@@ -613,19 +626,19 @@ export default function OwnersPropertiesScreen_Admin() {
                 </div>
             </div>
 
-            {/* Modal – Agregar alojamiento */}
-            <AccommodationModal_Admin
+            <AccommodationOwnerModal_Admin
                 visible={modalState.add}
                 onClose={() => closeModal("add")}
                 onSave={handleSaveAccommodation}
+                ownerId={ownerId}
                 isEditing={false}
             />
 
-            {/* Modal – Editar alojamiento */}
-            <AccommodationModal_Admin
+            <AccommodationOwnerModal_Admin
                 visible={modalState.edit}
                 onClose={() => closeModal("edit")}
                 onSave={handleSaveAccommodation}
+                ownerId={ownerId}
                 editData={selectedAccommodation}
                 isEditing={true}
             />

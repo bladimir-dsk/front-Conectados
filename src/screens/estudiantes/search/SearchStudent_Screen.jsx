@@ -488,8 +488,8 @@ export default function SearchStudent_Screen() {
             <Marker
               position={university}
               icon={{
-                url: "/edificio-escolar.png",
-                scaledSize: new window.google.maps.Size(36, 36),
+                url: "/Maker-school.webp",
+                scaledSize: new window.google.maps.Size(50, 50),
               }}
             />
             {rooms.map((room) => (
@@ -497,8 +497,8 @@ export default function SearchStudent_Screen() {
                 key={room.id}
                 position={{ lat: room.lat, lng: room.lng }}
                 icon={{
-                  url: "/casa.png",
-                  scaledSize: new window.google.maps.Size(32, 32),
+                  url: "/Maker-house.webp",
+                  scaledSize: new window.google.maps.Size(50, 50),
                 }}
                 onClick={async () => {
                   await fetchRoomDetails(room.id);

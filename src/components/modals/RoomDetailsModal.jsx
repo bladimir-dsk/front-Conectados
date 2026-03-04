@@ -136,11 +136,10 @@ function PhotoCarousel({ fotos = [], mainImage }) {
             <button
               key={i}
               onClick={() => setActive(i)}
-              className={`shrink-0 w-14 h-11 rounded-md overflow-hidden border-2 transition-all ${
-                i === active
+              className={`shrink-0 w-14 h-11 rounded-md overflow-hidden border-2 transition-all ${i === active
                   ? "border-lime-500"
                   : "border-transparent opacity-50 hover:opacity-80"
-              }`}
+                }`}
             >
               <img
                 src={img.url}
@@ -362,13 +361,13 @@ const RoomDetailsModal = ({
                 </div>
 
                 {/* ── Servicios ── */}
-                {services.length > 0 && (
+                {(room?.services ?? []).length > 0 && (
                   <div>
                     <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
                       Servicios incluidos
                     </p>
                     <div className="flex flex-wrap gap-2">
-                      {services.map((s) => {
+                      {(room.services).map((s) => {
                         const { icon: IconComponent, color } = getServiceIcon(
                           s.icon,
                         );

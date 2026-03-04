@@ -1,5 +1,5 @@
 import { Button, Form, Select, Input, App, InputNumber, Spin } from "antd";
-import { useEffect, useState, useCallback, useRef, useMemo, memo } from "react";
+import { useEffect, useState, useCallback, useRef, memo } from "react";
 import FormInput from "../../../../components/inputs/FormInput";
 import { X } from "lucide-react";
 import { useApi } from "../../../../hooks/useApi";
@@ -24,8 +24,8 @@ const MAP_OPTIONS = {
     fullscreenControl: true,
     clickableIcons: false,
     gestureHandling: "greedy",
-    draggableCursor: 'default',
-    draggingCursor: 'grabbing',
+    draggableCursor: "default",
+    draggingCursor: "grabbing",
 };
 
 const MemoizedMap = memo(({ center, zoom, onClick, onLoad, markerPosition }) => (
@@ -68,10 +68,24 @@ const STATUS_OPTIONS = [
     { value: "PENDIENTE", label: "Pendiente" },
 ];
 
-const AccommodationModal_Admin = ({
+/**
+ * Modal para agregar/editar un alojamiento dentro de la vista de un propietario.
+ * El id del propietario se recibe por prop (ownerId) y se envía
+ * directamente al payload, sin mostrar el selector de propietario.
+ *
+ * Props:
+ *   visible     {boolean}
+ *   onClose     {() => void}
+ *   onSave      {() => void}
+ *   ownerId     {string | number}  — id_propietario que se asigna automáticamente
+ *   editData    {object | null}    — datos del alojamiento al editar
+ *   isEditing   {boolean}
+ */
+const AccommodationOwnerModal_Admin = ({
     visible,
     onClose,
     onSave,
+    ownerId,
     editData = null,
     isEditing = false,
 }) => {
@@ -80,31 +94,16 @@ const AccommodationModal_Admin = ({
     const [initialData, setInitialData] = useState(null);
     const [markerPosition, setMarkerPosition] = useState(null);
     const [submittable, setSubmittable] = useState(false);
-    const mapRef = useRef(null);
-    const mapCenterRef = useRef(DEFAULT_CENTER);
     const [loadingModal, setLoadingModal] = useState(true);
+    const mapRef = useRef(null);
+    const mapCenter = useRef(DEFAULT_CENTER);
+    const mapZoom = useRef(10);
     const { message } = App.useApp();
 
     const { postData: createAccommodation, loading: creating } = useApi("/alojamientos", {}, false);
     const { patchData: updateAccommodation, loading: updating } = useApi("/alojamientos", {}, false);
 
-    const { data: ownersResponse, loading: loadingOwners } = useApi(
-        "/propietarios?paginaActual=1&limite=10",
-        {},
-        visible
-    );
-
-    const ownersList = ownersResponse?.data || [];
-
-    const ownerOptions = useMemo(
-        () =>
-            ownersList.map((owner) => ({
-                value: owner.id_propietario,
-                label: `${owner.namePersonal} ${owner.lastName} — ${owner.emailPersonal}`,
-            })),
-        [ownersList]
-    );
-
+    // ── Spinner inicial al abrir ──────────────────────────────────────────────
     useEffect(() => {
         if (visible) {
             setLoadingModal(true);
@@ -113,58 +112,87 @@ const AccommodationModal_Admin = ({
         }
     }, [visible, editData]);
 
+    // ── Poblar / limpiar formulario ───────────────────────────────────────────
     useEffect(() => {
-        if (visible) {
-            requestAnimationFrame(() => {
-                if (isEditing && editData) {
-                    const initialValues = {
-                        name: editData.name || "",
-                        description: editData.description || "",
-                        typeProperty: editData.typeProperty || undefined,
-                        gender: editData.gender || undefined,
-                        typeIncome: editData.typeIncome || undefined,
-                        estatus: editData.estatus || "PENDIENTE",
-                        precio_completo: editData.precio_completo
-                            ? Number(editData.precio_completo)
-                            : undefined,
-                        country: editData.country || "México",
-                        city: editData.city || "",
-                        codePostal: editData.codePostal || "",
-                        address: editData.address || "",
-                        id_propietario: editData.propietario?.id_propietario || undefined,
-                        capacity: editData.capacity ? Number(editData.capacity) : undefined,
+        if (!visible) return;
+
+        requestAnimationFrame(() => {
+            if (isEditing && editData) {
+                const initialValues = {
+                    name: editData.name || "",
+                    description: editData.description || "",
+                    typeProperty: editData.typeProperty || undefined,
+                    gender: editData.gender || undefined,
+                    typeIncome: editData.typeIncome || undefined,
+                    estatus: editData.estatus || "PENDIENTE",
+                    precio_completo: editData.precio_completo
+                        ? Number(editData.precio_completo)
+                        : undefined,
+                    country: editData.country || "México",
+                    city: editData.city || "",
+                    codePostal: editData.codePostal || "",
+                    address: editData.address || "",
+                    capacity: editData.capacity ? Number(editData.capacity) : undefined,
+                };
+
+                form.setFieldsValue(initialValues);
+                setInitialData(initialValues);
+                setHasChanges(false);
+
+                if (editData.latitude && editData.longitude) {
+                    const pos = {
+                        lat: parseFloat(editData.latitude),
+                        lng: parseFloat(editData.longitude),
                     };
-
-                    form.setFieldsValue(initialValues);
-                    setInitialData(initialValues);
-                    setHasChanges(false);
-
-                    if (editData.latitude && editData.longitude) {
-                        const pos = {
-                            lat: parseFloat(editData.latitude),
-                            lng: parseFloat(editData.longitude),
-                        };
-                        setMarkerPosition(pos);
-                        mapCenterRef.current = pos;
-                    } else {
-                        setMarkerPosition(null);
-                        mapCenterRef.current = DEFAULT_CENTER;
-                    }
+                    setMarkerPosition(pos);
+                    mapCenter.current = pos;
+                    mapZoom.current = 15;
                 } else {
-                    form.resetFields();
-                    form.setFieldsValue({ country: "México", estatus: "PENDIENTE" });
-                    setInitialData(null);
-                    setHasChanges(false);
                     setMarkerPosition(null);
-                    mapCenterRef.current = DEFAULT_CENTER;
+                    mapCenter.current = DEFAULT_CENTER;
+                    mapZoom.current = 10;
                 }
-            });
-        }
+            } else {
+                form.resetFields();
+                form.setFieldsValue({ country: "México", estatus: "PENDIENTE" });
+                setInitialData(null);
+                setHasChanges(false);
+                setMarkerPosition(null);
+                mapCenter.current = DEFAULT_CENTER;
+                mapZoom.current = 10;
+            }
+        });
     }, [visible, isEditing, editData, form]);
 
+    // ── Sincronizar mapa al abrir ─────────────────────────────────────────────
+    useEffect(() => {
+        if (mapRef.current && visible) {
+            if (editData?.latitude && editData?.longitude) {
+                mapRef.current.setZoom(15);
+                mapRef.current.panTo({
+                    lat: parseFloat(editData.latitude),
+                    lng: parseFloat(editData.longitude),
+                });
+            } else {
+                mapRef.current.setZoom(10);
+                mapRef.current.panTo(DEFAULT_CENTER);
+            }
+        }
+    }, [visible, editData]);
+
+    // ── Validar si el formulario está completo ────────────────────────────────
     const validateSubmittable = useCallback(() => {
         const values = form.getFieldsValue();
-        const { name, typeProperty, gender, typeIncome, estatus, precio_completo, city, address, id_propietario } = values;
+        const {
+            name,
+            typeProperty,
+            gender,
+            typeIncome,
+            estatus,
+            precio_completo,
+            city,
+            address,
+        } = values;
 
         const complete =
             name?.trim() &&
@@ -175,7 +203,6 @@ const AccommodationModal_Admin = ({
             precio_completo &&
             city?.trim() &&
             address?.trim() &&
-            id_propietario &&
             markerPosition;
 
         setSubmittable(!!complete);
@@ -185,14 +212,15 @@ const AccommodationModal_Admin = ({
         validateSubmittable();
     }, [markerPosition]);
 
-    const checkForChanges = (changedValues, allValues) => {
+    // ── Detectar cambios en el form ───────────────────────────────────────────
+    const checkForChanges = (_changedValues, allValues) => {
         if (!isEditing || !initialData) {
             setHasChanges(true);
             validateSubmittable();
             return;
         }
 
-        const hasChanged =
+        const changed =
             allValues.name !== initialData.name ||
             allValues.description !== initialData.description ||
             allValues.typeProperty !== initialData.typeProperty ||
@@ -204,19 +232,15 @@ const AccommodationModal_Admin = ({
             allValues.city !== initialData.city ||
             allValues.codePostal !== initialData.codePostal ||
             allValues.address !== initialData.address ||
-            allValues.capacity !== initialData.capacity ||
-            allValues.id_propietario !== initialData.id_propietario;
+            allValues.capacity !== initialData.capacity;
 
-        setHasChanges(hasChanged);
+        setHasChanges(changed);
         validateSubmittable();
     };
 
+    // ── Handlers del mapa ─────────────────────────────────────────────────────
     const handleMapClick = useCallback((e) => {
-        const newPosition = {
-            lat: e.latLng.lat(),
-            lng: e.latLng.lng(),
-        };
-        setMarkerPosition(newPosition);
+        setMarkerPosition({ lat: e.latLng.lat(), lng: e.latLng.lng() });
         setHasChanges(true);
     }, []);
 
@@ -224,32 +248,7 @@ const AccommodationModal_Admin = ({
         mapRef.current = map;
     }, []);
 
-    useEffect(() => {
-        if (mapRef.current && visible) {
-            if (editData?.latitude && editData?.longitude) {
-                mapRef.current.setZoom(14);
-                mapRef.current.panTo({ lat: parseFloat(editData.latitude), lng: parseFloat(editData.longitude) });
-            } else {
-                mapRef.current.setZoom(10);
-                mapRef.current.panTo(DEFAULT_CENTER);
-            }
-        }
-    }, [visible, editData]);
-
-    const mapCenter = useRef(DEFAULT_CENTER);
-    const mapZoom = useRef(10);
-
-    // Solo actualiza en el useEffect cuando cambia editData
-    useEffect(() => {
-        if (isEditing && editData?.latitude && editData?.longitude) {
-            mapCenter.current = { lat: parseFloat(editData.latitude), lng: parseFloat(editData.longitude) };
-            mapZoom.current = 15;
-        } else {
-            mapCenter.current = DEFAULT_CENTER;
-            mapZoom.current = 10;
-        }
-    }, [isEditing, editData]);
-
+    // ── Submit ────────────────────────────────────────────────────────────────
     const handleSubmit = async () => {
         try {
             const values = await form.validateFields();
@@ -268,7 +267,7 @@ const AccommodationModal_Admin = ({
                 address: values.address,
                 latitude: markerPosition?.lat?.toString() || "",
                 longitude: markerPosition?.lng?.toString() || "",
-                id_Propietario: values.id_propietario,
+                id_Propietario: parseInt(ownerId, 10),  // 👈 viene por prop, parseado a entero
                 capacity: values.capacity ?? null,
             };
 
@@ -319,7 +318,10 @@ const AccommodationModal_Admin = ({
                             {isEditing ? "Editar alojamiento" : "Agregar alojamiento"}
                         </h2>
                         <button onClick={handleCancel}>
-                            <X size={24} className="text-gray-400 hover:text-gray-600 transition-colors" />
+                            <X
+                                size={24}
+                                className="text-gray-400 hover:text-gray-600 transition-colors"
+                            />
                         </button>
                     </div>
 
@@ -330,7 +332,8 @@ const AccommodationModal_Admin = ({
                                 form={form}
                                 layout="vertical"
                                 autoComplete="off"
-                                onValuesChange={checkForChanges}>
+                                onValuesChange={checkForChanges}
+                            >
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4">
                                     {/* Nombre */}
                                     <FormInput
@@ -347,7 +350,10 @@ const AccommodationModal_Admin = ({
                                     <Form.Item
                                         name="precio_completo"
                                         label="Precio"
-                                        rules={[{ required: true, message: "El precio es requerido" }]}>
+                                        rules={[
+                                            { required: true, message: "El precio es requerido" },
+                                        ]}
+                                    >
                                         <InputNumber
                                             placeholder="Ej: 5000"
                                             size="large"
@@ -364,7 +370,10 @@ const AccommodationModal_Admin = ({
                                     <Form.Item
                                         name="typeProperty"
                                         label="Tipo de propiedad"
-                                        rules={[{ required: true, message: "Seleccione el tipo" }]}>
+                                        rules={[
+                                            { required: true, message: "Seleccione el tipo" },
+                                        ]}
+                                    >
                                         <Select
                                             size="large"
                                             placeholder="Seleccionar"
@@ -377,7 +386,10 @@ const AccommodationModal_Admin = ({
                                     <Form.Item
                                         name="gender"
                                         label="Género"
-                                        rules={[{ required: true, message: "Seleccione el género" }]}>
+                                        rules={[
+                                            { required: true, message: "Seleccione el género" },
+                                        ]}
+                                    >
                                         <Select
                                             size="large"
                                             placeholder="Seleccionar"
@@ -386,11 +398,17 @@ const AccommodationModal_Admin = ({
                                         />
                                     </Form.Item>
 
-                                    {/* Tipo de ingreso */}
+                                    {/* Tipo de renta */}
                                     <Form.Item
                                         name="typeIncome"
                                         label="Tipo de renta"
-                                        rules={[{ required: true, message: "Seleccione el tipo de ingreso" }]}>
+                                        rules={[
+                                            {
+                                                required: true,
+                                                message: "Seleccione el tipo de ingreso",
+                                            },
+                                        ]}
+                                    >
                                         <Select
                                             size="large"
                                             placeholder="Seleccionar"
@@ -403,7 +421,9 @@ const AccommodationModal_Admin = ({
                                     <Form.Item
                                         name="estatus"
                                         label="Estado"
-                                        rules={[{ required: true, message: "El estado es requerido" }]}
+                                        rules={[
+                                            { required: true, message: "El estado es requerido" },
+                                        ]}
                                     >
                                         <Select
                                             size="large"
@@ -413,29 +433,8 @@ const AccommodationModal_Admin = ({
                                         />
                                     </Form.Item>
 
-                                    {/* Propietario */}
-                                    <div className="md:col-span-2">
-                                        <Form.Item
-                                            name="id_propietario"
-                                            label="Propietario"
-                                            rules={[{ required: true, message: "Seleccione un propietario" }]}>
-                                            <Select
-                                                size="large"
-                                                placeholder="Buscar propietario..."
-                                                loading={loadingOwners}
-                                                showSearch
-                                                optionFilterProp="label"
-                                                options={ownerOptions}
-                                                allowClear
-                                            />
-                                        </Form.Item>
-                                    </div>
-
                                     {/* Capacidad */}
-                                    <Form.Item
-                                        name="capacity"
-                                        label="Capacidad"
-                                    >
+                                    <Form.Item name="capacity" label="Capacidad">
                                         <InputNumber
                                             placeholder="Ej: 4"
                                             size="large"
@@ -447,9 +446,14 @@ const AccommodationModal_Admin = ({
 
                                     {/* Descripción */}
                                     <div className="md:col-span-2">
-                                        <Form.Item name="description" label="Descripción"
+                                        <Form.Item
+                                            name="description"
+                                            label="Descripción"
                                             rules={[
-                                                { required: true, message: "La descripción es requerida" },
+                                                {
+                                                    required: true,
+                                                    message: "La descripción es requerida",
+                                                },
                                             ]}
                                         >
                                             <TextArea
@@ -468,15 +472,22 @@ const AccommodationModal_Admin = ({
                                         </p>
                                     </div>
 
-                                    <FormInput name="country" label="País" placeholder="México" rules={[
-                                        { required: true, message: "El país es requerido" },
-                                    ]} />
+                                    <FormInput
+                                        name="country"
+                                        label="País"
+                                        placeholder="México"
+                                        rules={[
+                                            { required: true, message: "El país es requerido" },
+                                        ]}
+                                    />
 
                                     <FormInput
                                         name="city"
                                         label="Ciudad"
                                         placeholder="Ej: Mérida"
-                                        rules={[{ required: true, message: "La ciudad es requerida" }]}
+                                        rules={[
+                                            { required: true, message: "La ciudad es requerida" },
+                                        ]}
                                     />
 
                                     <FormInput
@@ -484,7 +495,10 @@ const AccommodationModal_Admin = ({
                                         label="Código postal"
                                         placeholder="Ej: 97000"
                                         rules={[
-                                            { required: true, message: "El código postal es requerido" },
+                                            {
+                                                required: true,
+                                                message: "El código postal es requerido",
+                                            },
                                             {
                                                 pattern: /^\d{5}$/,
                                                 message: "El código postal debe tener 5 dígitos",
@@ -494,9 +508,7 @@ const AccommodationModal_Admin = ({
                                             maxLength: 5,
                                             inputMode: "numeric",
                                             onKeyPress: (e) => {
-                                                if (!/[0-9]/.test(e.key)) {
-                                                    e.preventDefault();
-                                                }
+                                                if (!/[0-9]/.test(e.key)) e.preventDefault();
                                             },
                                         }}
                                     />
@@ -505,7 +517,12 @@ const AccommodationModal_Admin = ({
                                         name="address"
                                         label="Dirección"
                                         placeholder="Ej: Calle 60 x 41"
-                                        rules={[{ required: true, message: "La dirección es requerida" }]}
+                                        rules={[
+                                            {
+                                                required: true,
+                                                message: "La dirección es requerida",
+                                            },
+                                        ]}
                                     />
 
                                     {/* Mapa */}
@@ -592,4 +609,4 @@ const AccommodationModal_Admin = ({
     );
 };
 
-export default AccommodationModal_Admin;
+export default AccommodationOwnerModal_Admin;
