@@ -336,15 +336,20 @@ function StepSummary({ room, rentType, selectedCuarto, selectedCama, rentPeriod,
 
   const getBasePrice = () => {
     if (rentType === "ALOJAMIENTO_COMPLETO") return Number(room?.price ?? 0);
+
     if (selectedCama) {
-      const cama = (room?.cuartos ?? []).flatMap((c) => c.camas ?? []).find((b) => b.id_cama === selectedCama);
+      const cama = (room?.cuartos ?? [])
+        .flatMap((c) => c.camas ?? [])
+        .find((b) => b.id_cama === selectedCama);
       return Number(cama?.price ?? 0);
     }
+
     if (selectedCuarto) {
       const cuarto = (room?.cuartos ?? []).find((c) => c.id_cuarto === selectedCuarto);
-      return Number(cuarto?.price ?? 0);
+      return Number(cuarto?.price ?? 0); // ← nunca caer a room?.price
     }
-    return Number(room?.price ?? 0);
+
+    return 0;
   };
 
   const getSelectionLabel = () => {

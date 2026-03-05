@@ -36,7 +36,7 @@ export default function PaymentSuccessModal({ open, onClose, reservation }) {
                 </button>
 
                 {/* Header verde */}
-                <div className="bg-gradient-to-br from-lime-500 to-lime-600 px-8 pt-10 pb-8 flex flex-col items-center text-white">
+                <div className="bg-linear-to-br from-lime-500 to-lime-600 px-8 pt-10 pb-8 flex flex-col items-center text-white">
                     {/* Icono animado */}
                     <div className="relative mb-4">
                         <div className="w-20 h-20 rounded-full bg-white/20 flex items-center justify-center">
