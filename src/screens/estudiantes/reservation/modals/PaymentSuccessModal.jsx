@@ -21,22 +21,19 @@ export default function PaymentSuccessModal({ open, onClose, reservation }) {
             ref={overlayRef}
             onClick={handleOverlayClick}
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 px-4"
-            style={{ animation: "fadeIn 0.2s ease" }}
-        >
+            style={{ animation: "fadeIn 0.2s ease" }}>
             <div
                 className="relative bg-white dark:bg-zinc-900 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden"
-                style={{ animation: "slideUp 0.3s cubic-bezier(0.34,1.56,0.64,1)" }}
-            >
+                style={{ animation: "slideUp 0.3s cubic-bezier(0.34,1.56,0.64,1)" }}>
                 {/* Cierre */}
                 <button
                     onClick={onClose}
-                    className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors z-10"
-                >
+                    className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors z-10">
                     <X size={20} />
                 </button>
 
                 {/* Header verde */}
-                <div className="bg-gradient-to-br from-lime-500 to-lime-600 px-8 pt-10 pb-8 flex flex-col items-center text-white">
+                <div className="bg-linear-to-br from-lime-500 to-lime-600 px-8 pt-10 pb-8 flex flex-col items-center text-white">
                     {/* Icono animado */}
                     <div className="relative mb-4">
                         <div className="w-20 h-20 rounded-full bg-white/20 flex items-center justify-center">
@@ -49,7 +46,7 @@ export default function PaymentSuccessModal({ open, onClose, reservation }) {
                     </div>
 
                     <h2 className="text-2xl font-extrabold tracking-tight">¡Pago exitoso!</h2>
-                    <p className="text-lime-100 text-sm mt-1">Tu reservación ha sido confirmada</p>
+                    <p className="text-lime-100 text-sm mt-1">Tu reservación ha sido aceptada</p>
                 </div>
 
                 {/* Cuerpo */}
@@ -57,7 +54,7 @@ export default function PaymentSuccessModal({ open, onClose, reservation }) {
                     {reservation && (
                         <>
                             {/* Número de reservación */}
-                            <div className="flex items-center justify-between bg-gray-50 dark:bg-zinc-800 rounded-xl px-4 py-3">
+                            <div className="flex items-center justify-between bg-gray-100 dark:bg-zinc-800 rounded-xl px-4 py-3">
                                 <span className="text-sm text-gray-500">N° Reservación</span>
                                 <span className="font-mono font-bold text-gray-800 dark:text-gray-100">
                                     #{reservation.id_renta}
@@ -66,26 +63,26 @@ export default function PaymentSuccessModal({ open, onClose, reservation }) {
 
                             {/* Lugar */}
                             {(reservation.ubicacion?.cuarto?.nombre || reservation.ubicacion?.alojamiento?.nombre) && (
-                                <div className="flex items-center gap-3 bg-gray-50 dark:bg-zinc-800 rounded-xl px-4 py-3">
+                                <div className="flex items-center gap-3 bg-gray-100 dark:bg-zinc-800 rounded-xl px-4 py-3">
                                     <Home size={16} className="text-lime-500 shrink-0" />
-                                    <div>
-                                        <p className="text-xs text-gray-400">Alojamiento</p>
-                                        <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">
+                                    <div className="flex flex-col items-center">
+                                        <span className="text-xs text-gray-400">Alojamiento</span>
+                                        <span className="text-sm font-semibold text-gray-800 dark:text-gray-100">
                                             {reservation.ubicacion?.cuarto?.nombre || reservation.ubicacion?.alojamiento?.nombre}
-                                        </p>
+                                        </span>
                                     </div>
                                 </div>
                             )}
 
                             {/* Fechas */}
                             {(reservation.fecha_entrada || reservation.fecha_salida) && (
-                                <div className="flex items-center gap-3 bg-gray-50 dark:bg-zinc-800 rounded-xl px-4 py-3">
+                                <div className="flex items-center gap-3 bg-gray-100 dark:bg-zinc-800 rounded-xl px-4 py-3">
                                     <Calendar size={16} className="text-lime-500 shrink-0" />
-                                    <div>
-                                        <p className="text-xs text-gray-400">Período</p>
-                                        <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">
+                                    <div className="flex flex-col">
+                                        <span className="text-xs text-gray-400">Período</span>
+                                        <span className="text-sm font-semibold text-gray-800 dark:text-gray-100">
                                             {reservation.fecha_entrada} → {reservation.fecha_salida}
-                                        </p>
+                                        </span>
                                     </div>
                                 </div>
                             )}
@@ -116,14 +113,12 @@ export default function PaymentSuccessModal({ open, onClose, reservation }) {
                 <div className="px-8 pb-8 flex gap-3">
                     <button
                         onClick={onClose}
-                        className="flex-1 flex items-center justify-center gap-2 bg-lime-600 hover:bg-lime-700 text-white text-sm font-bold py-3 rounded-xl transition-colors"
-                    >
+                        className="flex-1 flex items-center justify-center gap-2 bg-lime-600 hover:bg-lime-700 text-white text-sm font-bold py-3 rounded-xl transition-colors">
                         <CheckCircle size={15} /> Aceptar
                     </button>
                     <button
                         onClick={onClose}
-                        className="flex items-center justify-center gap-2 border border-gray-200 hover:border-lime-500 hover:text-lime-600 text-gray-500 text-sm font-medium py-3 px-4 rounded-xl transition-colors"
-                    >
+                        className="flex items-center justify-center gap-2 border border-gray-200 hover:border-lime-500 hover:text-lime-600! text-gray-500 text-sm font-medium py-3 px-4 rounded-xl transition-colors">
                         <Download size={15} /> Comprobante
                     </button>
                 </div>
