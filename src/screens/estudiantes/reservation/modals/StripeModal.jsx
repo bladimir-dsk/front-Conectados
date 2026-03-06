@@ -23,7 +23,7 @@ const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
 const { Option } = Select;
 
 const countryOptions = Object.entries(countries).map(([code, countryData]) => ({
-  value: countryData.name,
+  value: code,
   label: `${getEmojiFlag(code)} ${countryData.name}`,
 }));
 
@@ -72,7 +72,7 @@ const paymentFormReducer = (state, action) => {
         loading: false,
         error: null,
         cardBrand: null,
-        country: "México",
+        country: "MX",
       };
     default:
       return state;
@@ -86,7 +86,7 @@ const usePaymentForm = (clientSecret, onSuccess) => {
     loading: false,
     error: null,
     cardBrand: null,
-    country: "México",
+    country: "MX",
   });
 
   const handleSubmit = async () => {
@@ -103,6 +103,9 @@ const usePaymentForm = (clientSecret, onSuccess) => {
           card: cardNumberElement,
           billing_details: {
             name: "",
+            address: {
+              country: state.country,
+            },
           },
         },
       });
@@ -232,16 +235,12 @@ const CountrySelectField = ({ value, onChange }) => (
       onChange={onChange}
       className="w-full"
       size="large"
+      options={countryOptions}
       filterOption={(input, option) =>
         option.label.toLowerCase().includes(input.toLowerCase())
       }
-    >
-      {countryOptions.map((c) => (
-        <Option key={c.value} value={c.value}>
-          {c.label}
-        </Option>
-      ))}
-    </Select>
+      placeholder="Selecciona un país"
+    />
   </Form.Item>
 );
 
