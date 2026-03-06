@@ -15,11 +15,13 @@ import {
   BedDouble,
   House,
   XCircle,
+  FileText,
 } from "lucide-react";
 import { useApi } from "../../../hooks/useApi";
 import PaymentSuccessModal from "./modals/PaymentSuccessModal";
-import api from "../../../api/axiosConfig";
 import StripePaymentModal from "./modals/StripePaymentModal";
+import { downloadRentalContract } from "./pdfs/downloadContracts.jsX";
+import { downloadPaymentReceipt } from "./pdfs/downloadContracts.jsX";
 
 const STATUS_CONFIG = {
   PENDIENTE: {
@@ -47,7 +49,7 @@ const STATUS_CONFIG = {
     bg: "bg-red-100",
     text: "text-red-700",
     dot: "bg-red-500",
-    label: "Canceladas",
+    label: "Cancelado",
     icon: <Ban size={11} />,
   },
 };
@@ -135,6 +137,32 @@ function ReservationCard({ reservation, onPaySuccess }) {
   const alojamiento = ubicacion?.alojamiento;
   const cuarto = ubicacion?.cuarto;
   const nombreLugar = cuarto?.nombre || alojamiento?.nombre || "Sin nombre";
+  const [loadingReceipt, setLoadingReceipt] = useState(false);
+  const [loadingContract, setLoadingContract] = useState(false);
+
+  const handleDownloadReceipt = async () => {
+    try {
+      setLoadingReceipt(true);
+      await downloadPaymentReceipt(reservation.id_pago);
+    } catch (err) {
+      setPayError("No se pudo generar el comprobante. Intenta de nuevo.");
+    } finally {
+      setLoadingReceipt(false);
+    }
+  };
+
+  const handleDownloadContract = async () => {
+    try {
+      setLoadingContract(true);
+      await downloadRentalContract(reservation.id_pago);
+    } catch (err) {
+      setPayError("No se pudo generar el contrato. Intenta de nuevo.");
+    } finally {
+      setLoadingContract(false);
+    }
+  };
+
+
 
   const tieneServicios = servicios?.length > 0;
   const totalServicios = totales?.total_servicios;
@@ -218,8 +246,7 @@ function ReservationCard({ reservation, onPaySuccess }) {
             {servicios.map((s) => (
               <span
                 key={s.id_renta_servicio}
-                className="bg-lime-100 dark:bg-lime-900/40 text-slate-700 dark:text-lime-300 text-xs font-medium px-2.5 py-1 rounded-lg"
-              >
+                className="bg-lime-100 dark:bg-lime-900/40 text-slate-700 dark:text-lime-300 text-xs font-medium px-2.5 py-1 rounded-lg">
                 {s.nombre}
                 {Number(s.precio) > 0 && (
                   <span className="ml-1 text-slate-500 dark:text-lime-400/70">
@@ -307,20 +334,54 @@ function ReservationCard({ reservation, onPaySuccess }) {
           </div>
         )}
 
-        {/* ACTIVA: solo Descargar Comprobante */}
         {reservation.estado === "ACTIVA" && (
-          <button className="w-full flex items-center justify-center gap-2 border border-gray-200 dark:border-zinc-700 hover:border-lime-500 hover:text-lime-600! text-gray-600 dark:text-gray-400 text-sm font-medium py-2.5 rounded-xl transition-colors">
-            <Printer size={15} />
-            Descargar comprobante
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={handleDownloadReceipt}
+              disabled={loadingReceipt}
+              className="flex-1 flex items-center justify-center gap-2 border border-gray-200 dark:border-zinc-700 hover:border-lime-500 hover:text-lime-600 text-gray-600 dark:text-gray-400 text-sm font-medium py-2.5 rounded-xl transition-colors disabled:opacity-50"
+            >
+              {loadingReceipt
+                ? <div className="w-3.5 h-3.5 border-2 border-lime-400 border-t-transparent rounded-full animate-spin" />
+                : <Printer size={15} />}
+              Comprobante
+            </button>
+            <button
+              onClick={handleDownloadContract}
+              disabled={loadingContract}
+              className="flex-1 flex items-center justify-center gap-2 border border-gray-200 dark:border-zinc-700 hover:border-blue-500 hover:text-blue-600 text-gray-600 dark:text-gray-400 text-sm font-medium py-2.5 rounded-xl transition-colors disabled:opacity-50"
+            >
+              {loadingContract
+                ? <div className="w-3.5 h-3.5 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+                : <FileText size={15} />}
+              Contrato
+            </button>
+          </div>
         )}
 
-        {/* FINALIZADA: solo Descargar comprobante */}
         {reservation.estado === "FINALIZADA" && (
-          <button className="w-full flex items-center justify-center gap-2 border border-gray-200 dark:border-zinc-700 hover:border-lime-500 hover:text-lime-600 text-gray-600 dark:text-gray-400 text-sm font-medium py-2.5 rounded-xl transition-colors">
-            <Download size={15} />
-            Descargar comprobante
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={handleDownloadReceipt}
+              disabled={loadingReceipt}
+              className="flex-1 flex items-center justify-center gap-2 border border-gray-200 dark:border-zinc-700 hover:border-lime-500 hover:text-lime-600 text-gray-600 dark:text-gray-400 text-sm font-medium py-2.5 rounded-xl transition-colors disabled:opacity-50"
+            >
+              {loadingReceipt
+                ? <div className="w-3.5 h-3.5 border-2 border-lime-400 border-t-transparent rounded-full animate-spin" />
+                : <Download size={15} />}
+              Comprobante
+            </button>
+            <button
+              onClick={handleDownloadContract}
+              disabled={loadingContract}
+              className="flex-1 flex items-center justify-center gap-2 border border-gray-200 dark:border-zinc-700 hover:border-blue-500 hover:text-blue-600 text-gray-600 dark:text-gray-400 text-sm font-medium py-2.5 rounded-xl transition-colors disabled:opacity-50"
+            >
+              {loadingContract
+                ? <div className="w-3.5 h-3.5 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+                : <FileText size={15} />}
+              Contrato
+            </button>
+          </div>
         )}
 
         {/* CANCELADA: sin botón */}
@@ -361,7 +422,7 @@ function TabContent({ estado, onPaySuccess }) {
     return (
       <Alert
         type="error"
-        message="Error al cargar las reservaciones"
+        title="Error al cargar las reservaciones"
         description={error}
         showIcon
         className="rounded-xl"
@@ -447,7 +508,7 @@ export default function ReservationStudent_Screen() {
       label: (
         <span className="flex items-center gap-1.5 font-medium">
           <Download size={13} />
-          Finalizadas
+          Finalizados
         </span>
       ),
       children: (
@@ -463,7 +524,7 @@ export default function ReservationStudent_Screen() {
       label: (
         <span className="flex items-center gap-1.5 font-medium">
           <Ban size={13} />
-          Canceladas
+          Cancelados
         </span>
       ),
       children: (
