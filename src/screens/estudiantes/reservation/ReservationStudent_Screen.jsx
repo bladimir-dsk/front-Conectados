@@ -20,8 +20,8 @@ import {
 import { useApi } from "../../../hooks/useApi";
 import PaymentSuccessModal from "./modals/PaymentSuccessModal";
 import StripePaymentModal from "./modals/StripePaymentModal";
-import { downloadRentalContract } from "./pdfs/downloadContracts.jsX";
-import { downloadPaymentReceipt } from "./pdfs/downloadContracts.jsX";
+import { downloadRentalContract } from "./pdfs/downloadContracts.jsx";
+import { downloadPaymentReceipt } from "./pdfs/downloadContracts.jsx";
 
 const STATUS_CONFIG = {
   PENDIENTE: {
@@ -86,8 +86,18 @@ const formatDate = (dateStr) => {
   if (!dateStr) return "—";
   const [year, month, day] = dateStr.split("-");
   const months = [
-    "ene", "feb", "mar", "abr", "may", "jun",
-    "jul", "ago", "sep", "oct", "nov", "dic",
+    "ene",
+    "feb",
+    "mar",
+    "abr",
+    "may",
+    "jun",
+    "jul",
+    "ago",
+    "sep",
+    "oct",
+    "nov",
+    "dic",
   ];
   return `${day} ${months[parseInt(month, 10) - 1]} ${year}`;
 };
@@ -162,12 +172,9 @@ function ReservationCard({ reservation, onPaySuccess }) {
     }
   };
 
-
-
   const tieneServicios = servicios?.length > 0;
   const totalServicios = totales?.total_servicios;
-  const hayMontoServicios =
-    tieneServicios && Number(totalServicios) > 0;
+  const hayMontoServicios = tieneServicios && Number(totalServicios) > 0;
 
   return (
     <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-md overflow-hidden flex flex-col transition-shadow hover:shadow-xl border border-gray-100 dark:border-zinc-800">
@@ -246,7 +253,8 @@ function ReservationCard({ reservation, onPaySuccess }) {
             {servicios.map((s) => (
               <span
                 key={s.id_renta_servicio}
-                className="bg-lime-100 dark:bg-lime-900/40 text-slate-700 dark:text-lime-300 text-xs font-medium px-2.5 py-1 rounded-lg">
+                className="bg-lime-100 dark:bg-lime-900/40 text-slate-700 dark:text-lime-300 text-xs font-medium px-2.5 py-1 rounded-lg"
+              >
                 {s.nombre}
                 {Number(s.precio) > 0 && (
                   <span className="ml-1 text-slate-500 dark:text-lime-400/70">
@@ -269,7 +277,8 @@ function ReservationCard({ reservation, onPaySuccess }) {
           <DetailRow
             label="Subtotal alojamiento"
             value={
-              totales?.subtotal_alojamiento && Number(totales.subtotal_alojamiento) > 0
+              totales?.subtotal_alojamiento &&
+              Number(totales.subtotal_alojamiento) > 0
                 ? formatCurrency(totales.subtotal_alojamiento)
                 : "No incluido"
             }
@@ -281,10 +290,7 @@ function ReservationCard({ reservation, onPaySuccess }) {
               value={formatCurrency(totalServicios)}
             />
           ) : (
-            <DetailRow
-              label="Total servicios"
-              value="No incluido"
-            />
+            <DetailRow label="Total servicios" value="No incluido" />
           )}
           <DetailRow
             label="Precio mensual"
@@ -341,9 +347,11 @@ function ReservationCard({ reservation, onPaySuccess }) {
               disabled={loadingReceipt}
               className="flex-1 flex items-center justify-center gap-2 border border-gray-200 dark:border-zinc-700 hover:border-lime-500 hover:text-lime-600 text-gray-600 dark:text-gray-400 text-sm font-medium py-2.5 rounded-xl transition-colors disabled:opacity-50"
             >
-              {loadingReceipt
-                ? <div className="w-3.5 h-3.5 border-2 border-lime-400 border-t-transparent rounded-full animate-spin" />
-                : <Printer size={15} />}
+              {loadingReceipt ? (
+                <div className="w-3.5 h-3.5 border-2 border-lime-400 border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <Printer size={15} />
+              )}
               Comprobante
             </button>
             <button
@@ -351,9 +359,11 @@ function ReservationCard({ reservation, onPaySuccess }) {
               disabled={loadingContract}
               className="flex-1 flex items-center justify-center gap-2 border border-gray-200 dark:border-zinc-700 hover:border-blue-500 hover:text-blue-600 text-gray-600 dark:text-gray-400 text-sm font-medium py-2.5 rounded-xl transition-colors disabled:opacity-50"
             >
-              {loadingContract
-                ? <div className="w-3.5 h-3.5 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
-                : <FileText size={15} />}
+              {loadingContract ? (
+                <div className="w-3.5 h-3.5 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <FileText size={15} />
+              )}
               Contrato
             </button>
           </div>
@@ -366,9 +376,11 @@ function ReservationCard({ reservation, onPaySuccess }) {
               disabled={loadingReceipt}
               className="flex-1 flex items-center justify-center gap-2 border border-gray-200 dark:border-zinc-700 hover:border-lime-500 hover:text-lime-600 text-gray-600 dark:text-gray-400 text-sm font-medium py-2.5 rounded-xl transition-colors disabled:opacity-50"
             >
-              {loadingReceipt
-                ? <div className="w-3.5 h-3.5 border-2 border-lime-400 border-t-transparent rounded-full animate-spin" />
-                : <Download size={15} />}
+              {loadingReceipt ? (
+                <div className="w-3.5 h-3.5 border-2 border-lime-400 border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <Download size={15} />
+              )}
               Comprobante
             </button>
             <button
@@ -376,9 +388,11 @@ function ReservationCard({ reservation, onPaySuccess }) {
               disabled={loadingContract}
               className="flex-1 flex items-center justify-center gap-2 border border-gray-200 dark:border-zinc-700 hover:border-blue-500 hover:text-blue-600 text-gray-600 dark:text-gray-400 text-sm font-medium py-2.5 rounded-xl transition-colors disabled:opacity-50"
             >
-              {loadingContract
-                ? <div className="w-3.5 h-3.5 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
-                : <FileText size={15} />}
+              {loadingContract ? (
+                <div className="w-3.5 h-3.5 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <FileText size={15} />
+              )}
               Contrato
             </button>
           </div>
@@ -435,8 +449,7 @@ function TabContent({ estado, onPaySuccess }) {
       <div className="py-20 flex flex-col items-center justify-center text-gray-400 gap-3">
         <House size={40} className="text-gray-300" />
         <p className="text-sm">
-          No tienes reservaciones{" "}
-          {STATUS_CONFIG[estado]?.label.toLowerCase()}
+          No tienes reservaciones {STATUS_CONFIG[estado]?.label.toLowerCase()}
         </p>
       </div>
     );
