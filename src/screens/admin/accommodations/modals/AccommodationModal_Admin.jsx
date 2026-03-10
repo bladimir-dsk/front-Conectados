@@ -89,7 +89,7 @@ const AccommodationModal_Admin = ({
     const { patchData: updateAccommodation, loading: updating } = useApi("/alojamientos", {}, false);
 
     const { data: ownersResponse, loading: loadingOwners } = useApi(
-        "/propietarios?paginaActual=1&limite=10",
+        "/propietarios",
         {},
         visible
     );

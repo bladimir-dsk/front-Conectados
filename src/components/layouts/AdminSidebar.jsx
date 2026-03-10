@@ -66,7 +66,8 @@ export default function AdminSidebar({
       label: "Estudiantes",
       children: [
         { key: "/admin/estudiantes/administracion", label: "Administración" },
-        { key: "/admin/estudiantes/documentacion", label: "Documentación" }
+        { key: "/admin/estudiantes/documentacion", label: "Documentación" },
+        { key: "/admin/escuelas", label: "Escuelas" }
       ]
     },
     {

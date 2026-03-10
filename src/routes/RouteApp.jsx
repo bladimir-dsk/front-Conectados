@@ -18,6 +18,7 @@ import {
   AdminAccommodationsScreen,
   DashboardOwners,
   OwnersAccommodationsScreen,
+  AdminStudentSchool,
 } from "./lazyRoutes.js";
 import { ProtectedRoute } from "./ProtectedRoute";
 import AdminLayout from "../components/layouts/AdminLayout";
@@ -48,6 +49,7 @@ export default function RouteApp() {
           <Route path="estudiantes/documentacion" element={<AdminStudentDocumentation />} />
           <Route path="servicios-alojamiento" element={<AdminServices />} />
           <Route path="alojamientos" element={<AdminAccommodationsScreen />} />
+          <Route path="escuelas" element={<AdminStudentSchool />} />
           {/* <Route path="dashboard" element={<Dashboard />} />
           <Route path="reservas" element={<Reservas />} /> */}
         </Route>
