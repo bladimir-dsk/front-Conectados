@@ -184,11 +184,11 @@ const OwnerModal_Admin = ({
     return (
         <>
             <div
-                className="fixed inset-0 bg-black opacity-50 z-50 transition-opacity"
+                className="fixed inset-0 bg-black/90 z-50 transition-opacity"
                 onClick={handleCancel}
             />
 
-            <div className="fixed inset-0 z-50 flex items-center backdrop-blur-md justify-center p-4 overflow-y-auto">
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
                 <div
                     className="bg-white dark:bg-zinc-900 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col"
                     onClick={(e) => e.stopPropagation()}

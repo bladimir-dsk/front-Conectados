@@ -125,7 +125,7 @@ const AccommodationDetailModal_Admin = ({ visible, onClose, data }) => {
         <>
             {/* Backdrop */}
             <div
-                className="fixed inset-0 bg-black/60 z-50 transition-opacity backdrop-blur-sm"
+                className="fixed inset-0 bg-black/90 z-50 transition-opacity"
                 onClick={onClose}
             />
 

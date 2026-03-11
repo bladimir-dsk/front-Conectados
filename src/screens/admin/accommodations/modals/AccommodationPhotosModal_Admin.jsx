@@ -299,9 +299,7 @@ const AccommodationPhotosModal_Admin = ({
         <>
             {/* Backdrop */}
             <div
-                className={`fixed inset-0 z-50 transition-all duration-300 ${closing ? "opacity-0" : "opacity-100"}`}
-                style={{ backgroundColor: "rgba(0, 0, 0, 0.6)", backdropFilter: "blur(8px)" }}
-                onClick={handleClose}
+                className={`fixed inset-0 z-50 bg-black/90 transition-all duration-300 ${closing ? "opacity-0" : "opacity-100"}`}
             />
 
             {/* Modal */}

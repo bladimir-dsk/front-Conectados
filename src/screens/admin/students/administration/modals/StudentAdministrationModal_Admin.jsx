@@ -66,12 +66,12 @@ const StudentModal_Admin = ({
         <>
             {/* Backdrop */}
             <div
-                className="fixed inset-0 bg-black opacity-50 z-50 transition-opacity"
+                className="fixed inset-0 bg-black/90 z-50 transition-opacity"
                 onClick={onClose}
             />
 
             {/* Modal */}
-            <div className="fixed inset-0 z-50 flex items-center backdrop-blur-md justify-center p-4">
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                 <div
                     className="bg-white dark:bg-zinc-900 rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] flex flex-col"
                     onClick={(e) => e.stopPropagation()}
@@ -240,19 +240,18 @@ const StudentModal_Admin = ({
                     {/* Footer */}
                     <div className="flex items-center justify-end gap-3 p-4 border-t border-gray-200 dark:border-zinc-700">
                         <Button
-                            size="middle"
+                            size="large"
                             danger
-                            ghost
+                            type="primary"
                             onClick={onClose}
                             className="h-8 px-4 rounded-lg"
                         >
                             Cancelar
                         </Button>
                         <Button
-                            size="middle"
-                            type="primary"
+                            size="large"
+                            color="cyan" variant="solid"
                             onClick={handleSubmit}
-                            style={{ backgroundColor: "#52c41a", borderColor: "#52c41a" }}
                             className="h-8 px-4 rounded-lg"
                         >
                             {isEditing ? "Actualizar" : "Guardar"}

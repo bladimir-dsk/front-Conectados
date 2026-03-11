@@ -234,26 +234,26 @@ const StudentDocumentationModal_Admin = ({
         <>
             {/* Backdrop */}
             <div
-                className="fixed inset-0 bg-black opacity-50 z-50 transition-opacity"
+                className="fixed inset-0 bg-black/90 z-50 transition-opacity"
                 onClick={handleCancel}
             />
 
             {/* Modal */}
-            <div className="fixed inset-0 z-50 flex items-center backdrop-blur-md justify-center p-4 overflow-y-auto">
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
                 <div
                     className="bg-white dark:bg-zinc-900 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col"
                     onClick={(e) => e.stopPropagation()}
                 >
                     {/* Header */}
                     <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-zinc-700">
-                        <div>
-                            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                        <div className="flex flex-col">
+                            <span className="text-lg font-semibold text-gray-900 dark:text-white">
                                 {isEditing ? "Editar documento" : "Agregar documento"}
-                            </h2>
+                            </span>
                             {studentData && (
-                                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                                <span className="text-sm text-gray-500 dark:text-gray-400">
                                     Estudiante: {studentData.name}
-                                </p>
+                                </span>
                             )}
                             {isEditing && editData && (
                                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
@@ -375,12 +375,11 @@ const StudentDocumentationModal_Admin = ({
                             Cancelar
                         </Button>
                         <Button
-                            type="primary"
+                            color="cyan" variant="solid"
                             onClick={handleSubmit}
                             size="large"
                             loading={uploading || updating}
                             disabled={isEditing && !hasChanges}
-                            className="bg-green-600 hover:bg-green-700"
                         >
                             {isEditing ? "Actualizar" : "Guardar"}
                         </Button>

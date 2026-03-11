@@ -1,250 +1,583 @@
-import React, { useState, useMemo, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useApi } from "../../../hooks/useApi";
 import {
-  Row,
-  Col,
-  Tag,
   Button,
-  InputNumber,
-  DatePicker,
+  Select,
+  Input,
   ConfigProvider,
-  Popover,
   Pagination,
   Alert,
   Spin,
+  Empty,
+  Tooltip,
+  Slider,
+  Drawer,
+  Badge,
+  Row,
+  Col,
 } from "antd";
 import esES from "antd/locale/es_ES";
 import {
-  Users,
-  Wifi,
-  MapPin,
-  DollarSign,
-  Heart,
   Search,
-  CalendarDays,
-  Home,
-  User,
+  MapPin,
   Star,
-  Bed,
-  MapPin as MapPinIcon,
-  Droplets,
-  Zap,
+  Home,
+  Building2,
+  Heart,
+  X,
+  SlidersHorizontal,
+  Users,
   Sparkles,
-  Utensils,
-  Shirt,
-  Wind,
-  Tv,
-  Car,
-  Dumbbell,
-  Waves,
-  Coffee,
-  Sandwich,
-  Moon,
+  Filter,
+  LayoutGrid,
+  House,
+  BedDouble,
+  UserRound,
+  UsersRound,
+  KeyRound,
+  Proportions,
 } from "lucide-react";
-import dayjs from "dayjs";
-import "dayjs/locale/es";
 
-// Importar componentes de modales
 import RoomDetailsModal from "../../../components/modals/RoomDetailsModal";
 import ReservationModal from "../../../components/modals/ReservationModal";
+import HeroBanner from "./HeroBanner";
 
-const { RangePicker } = DatePicker;
+const ESTATUS_CONFIG = {
+  ACTIVO: {
+    label: "Disponible",
+    cls: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+    dot: "bg-green-500",
+  },
+  PENDIENTE: {
+    label: "Pendiente",
+    cls: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+    dot: "bg-blue-400",
+  },
+  OCUPADO: {
+    label: "Ocupado",
+    cls: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+    dot: "bg-red-500",
+  },
+  MANTENIMIENTO: {
+    label: "Mantenimiento",
+    cls: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+    dot: "bg-amber-400",
+  },
+  INACTIVO: {
+    label: "Inactivo",
+    cls: "bg-gray-100 text-gray-500 dark:bg-zinc-700 dark:text-gray-400",
+    dot: "bg-gray-400",
+  },
+};
 
-const IMAGE_URL = "https://s03.s3c.es/imag/_v0/1200x655/0/f/c/habitacion.jpg";
+const GENDER_LABEL = {
+  Masculino: {
+    label: "Solo hombres",
+    cls: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+  },
+  Femenino: {
+    label: "Solo mujeres",
+    cls: "bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400",
+  },
+  Mixto: {
+    label: "Mixto",
+    cls: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+  },
+};
 
-const SERVICES = [
-  { id: 1, name: "Internet", price: 0, icon: <Wifi size={16} /> },
-  { id: 2, name: "Agua", price: 0, icon: <Droplets size={16} /> },
-  { id: 3, name: "Luz", price: 20, icon: <Zap size={16} /> },
-  { id: 4, name: "Limpieza", price: 15, icon: <Sparkles size={16} /> },
-  { id: 5, name: "Cocina", price: 10, icon: <Utensils size={16} /> },
-  { id: 6, name: "Lavadora", price: 5, icon: <Shirt size={16} /> },
-  { id: 7, name: "Aire acondicionado", price: 25, icon: <Wind size={16} /> },
-  { id: 8, name: "TV", price: 10, icon: <Tv size={16} /> },
-  { id: 9, name: "Parqueadero", price: 30, icon: <Car size={16} /> },
-  { id: 10, name: "Gimnasio", price: 20, icon: <Dumbbell size={16} /> },
-  { id: 11, name: "Piscina", price: 25, icon: <Waves size={16} /> },
-  { id: 12, name: "Desayuno", price: 12, icon: <Coffee size={16} /> },
-  { id: 13, name: "Almuerzo", price: 18, icon: <Sandwich size={16} /> },
-  { id: 14, name: "Cena", price: 22, icon: <Moon size={16} /> },
-];
+const TYPE_INCOME_LABEL = {
+  ALOJAMIENTO_COMPLETO: {
+    label: "Alojamiento completo",
+    cls: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400",
+  },
+  ESPACIO: {
+    label: "Por espacios",
+    cls: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
+  },
+  CUARTO: {
+    label: "Por cuarto",
+    cls: "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400",
+  },
+  CAMA: {
+    label: "Por cama",
+    cls: "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400",
+  },
+};
 
-const RoomCard = ({
-  room,
-  isFav,
-  onToggleFavorite,
-  onViewDetails,
-  onViewMap,
-}) => {
+function CardImage({ fotos = [], typeProperty = "" }) {
+  const main = fotos.find((f) => f.esPrincipal) ?? fotos[0];
+  if (!main) {
+    return (
+      <div className="w-full h-44 bg-gradient-to-br from-lime-50 to-emerald-100 dark:from-zinc-800 dark:to-zinc-700 flex flex-col items-center justify-center gap-2 relative overflow-hidden">
+        <div className="absolute -top-6 -right-6 w-24 h-24 rounded-full bg-lime-200/40 dark:bg-lime-900/20" />
+        <div className="absolute -bottom-4 -left-4 w-16 h-16 rounded-full bg-emerald-200/40 dark:bg-emerald-900/20" />
+        <div className="w-14 h-14 rounded-2xl bg-white/70 dark:bg-zinc-600/50 flex items-center justify-center shadow-sm">
+          <Building2 size={28} className="text-lime-500 dark:text-lime-400" />
+        </div>
+        <p className="text-xs font-medium text-lime-600 dark:text-lime-400 z-10">
+          {typeProperty || "Alojamiento"}
+        </p>
+        <p className="text-[10px] text-gray-400 dark:text-zinc-500 z-10">Sin fotografías</p>
+      </div>
+    );
+  }
   return (
-    <div className="relative h-[400px] rounded-2xl overflow-hidden shadow-lg group">
-      <img
-        src={IMAGE_URL}
-        alt={room.name}
-        className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-      />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-black/20" />
-      <div className="absolute top-3 left-3 right-3 flex justify-between items-start">
-        <Tag className="font-medium bg-white/20 backdrop-blur-sm border-0 text-white text-xs">
-          Disponible
-        </Tag>
+    <img
+      src={main.url}
+      alt="foto alojamiento"
+      className="w-full h-44 object-cover"
+      loading="lazy"
+    />
+  );
+}
+
+function RoomCard({ room, isFav, onToggleFavorite, onViewDetails, onViewMap }) {
+  const estatus = ESTATUS_CONFIG[room.estatus?.toUpperCase()] ?? ESTATUS_CONFIG.INACTIVO;
+  const gender = GENDER_LABEL[room.gender] ?? GENDER_LABEL.Mixto;
+  const income = TYPE_INCOME_LABEL[room.typeIncome?.toUpperCase()];
+
+  return (
+    <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-sm! hover:shadow-md! hover:shadow-lime-400 transition-all duration-200 flex flex-col overflow-hidden h-full">
+      {/* Imagen */}
+      <div className="relative overflow-hidden rounded-t-xl h-44">
+        <CardImage fotos={room.fotos} typeProperty={room.typeProperty} />
+        <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-white dark:from-zinc-900 to-transparent pointer-events-none" />
+        {/* Badge estatus */}
+        <div className={`absolute top-2.5 left-2.5 flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold backdrop-blur-sm ${estatus.cls}`}>
+          <span className={`w-1.5 h-1.5 rounded-full ${estatus.dot}`} />
+          {estatus.label}
+        </div>
+        {/* Favorito */}
         <button
-          className={`bg-white/20 backdrop-blur-sm rounded-full p-1.5 cursor-pointer transition-colors ${
-            isFav ? "text-red-400" : "text-white"
-          }`}
-          onClick={() => onToggleFavorite(room.id)}
-          aria-label={isFav ? "Quitar de favoritos" : "Agregar a favoritos"}
+          onClick={(e) => { e.stopPropagation(); onToggleFavorite?.(room.id); }}
+          className="absolute top-2.5 right-2.5 w-8 h-8 rounded-full bg-white/80 dark:bg-zinc-800/80 backdrop-blur-sm flex items-center justify-center hover:scale-110 transition-transform"
         >
-          <Heart size={16} fill={isFav ? "#ff4d4f" : "none"} />
+          <Heart size={15} className={isFav ? "fill-red-500 text-red-500" : "text-gray-400 dark:text-zinc-500"} />
         </button>
       </div>
-      <div className="absolute bottom-0 left-0 right-0 p-4">
-        <h3 className="text-lg font-bold text-white mb-1">{room.name}</h3>
-        <div className="flex items-center gap-1 mb-2">
-          <MapPin size={12} className="text-gray-300" />
-          <span className="text-gray-300 text-xs">Mérida, Yucatán</span>
-        </div>
-        <div className="flex justify-between items-center mb-3">
-          <div className="flex items-center gap-1">
-            <Star size={12} className="text-yellow-400" fill="#fbbf24" />
-            <span className="text-white font-medium text-sm">
-              {room.rating.toFixed(1)}
+
+      {/* Contenido */}
+      <div className="p-4 flex flex-col gap-2.5 flex-1">
+        {/* Título y precio */}
+        <div className="flex items-start justify-between gap-2">
+          <h3 className="font-semibold text-gray-900 dark:text-white text-sm leading-snug line-clamp-1">
+            {room.name}
+          </h3>
+          <div className="text-right shrink-0">
+            <span className="text-base font-bold text-lime-600 dark:text-lime-400">
+              ${Number(room.price).toLocaleString("es-MX")}
             </span>
-            <span className="text-gray-300 text-xs">({room.reviews})</span>
-          </div>
-          <div className="flex items-baseline">
-            <span className="text-xl font-bold text-white">${room.price}</span>
-            <span className="text-gray-300 text-xs ml-1">/noche</span>
+            <span className="text-[10px] text-gray-400 dark:text-zinc-500 block">MXN/mes</span>
           </div>
         </div>
-        <div className="flex gap-2">
-          <Button
-            className="flex-1 !bg-transparent !border-white font-medium hover:!bg-transparent !text-white h-10 text-sm"
-            onClick={() => onViewDetails(room)}
+
+        {/* Dirección */}
+        <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-zinc-400">
+          <MapPin size={12} className="shrink-0 text-gray-400" />
+          <span className="line-clamp-1">{room.address}</span>
+        </div>
+
+        {/* Tags */}
+        <div className="flex flex-wrap gap-1.5">
+          {room.typeProperty && (
+            <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-300 font-medium">
+              <Home size={11} />
+              {room.typeProperty}
+            </span>
+          )}
+          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${gender.cls}`}>
+            {gender.label}
+          </span>
+          {income && (
+            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${income.cls}`}>
+              {income.label}
+            </span>
+          )}
+          {room.capacity && (
+            <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-zinc-300 font-medium">
+              <Users size={11} />
+              {room.capacity} {room.capacity === 1 ? "persona" : "personas"}
+            </span>
+          )}
+        </div>
+
+        {/* Rating */}
+        <div className="flex items-center gap-1.5 mt-auto pt-1">
+          <Star size={13} className={room.calificacion > 0 ? "fill-amber-400 text-amber-400" : "text-gray-300 dark:text-zinc-600"} />
+          <span className="text-xs font-medium text-gray-700 dark:text-zinc-300">
+            {room.calificacion > 0 ? Number(room.calificacion).toFixed(1) : "Sin calificación"}
+          </span>
+        </div>
+
+        {/* Botones */}
+        <div className="mt-1 flex gap-2">
+          <button
+            onClick={() => onViewDetails(room.id)}
+            className="flex-1 py-2 rounded-lg bg-lime-500 hover:bg-lime-600 text-black! text-sm font-semibold transition-colors"
           >
             Ver detalles
-          </Button>
-          <Button
-            icon={<MapPinIcon size={14} />}
-            className="flex-1 !bg-transparent !border-white font-medium hover:!bg-transparent !text-white h-10 text-sm"
-            onClick={() => onViewMap(room.id)}
-          >
-            Mapa
-          </Button>
+          </button>
+          <Tooltip title="Ver en el mapa" placement="top" color="#ef4444">
+            <button
+              onClick={() => onViewMap(room.id)}
+              className="px-3 py-2 rounded-lg border border-red-200 dark:border-red-700 hover:bg-red-50 dark:hover:bg-red-800 text-red-600! dark:text-red-400! transition-colors"
+            >
+              <MapPin size={16} />
+            </button>
+          </Tooltip>
         </div>
       </div>
     </div>
   );
-};
+}
+
+function FilterSection({ title, children }) {
+  return (
+    <div className="mb-5">
+      <p className="text-xs font-bold text-gray-500 dark:text-zinc-400 uppercase tracking-wider mb-2.5">
+        {title}
+      </p>
+      {children}
+    </div>
+  );
+}
+
+function SidebarFilters({ filters, setFilters, onSearch, onClear, hasActive, loading }) {
+  return (
+    <div className="flex flex-col gap-1">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-lg bg-lime-100 dark:bg-lime-900/30 flex items-center justify-center">
+            <Filter size={14} className="text-lime-600 dark:text-lime-400" />
+          </div>
+          <span className="font-bold text-gray-900 dark:text-white text-sm">Filtros</span>
+        </div>
+        {hasActive && (
+          <button
+            onClick={onClear}
+            className="text-xs text-red-500 hover:text-red-600 font-medium flex items-center gap-1 transition-colors"
+          >
+            <X size={12} />
+            Limpiar
+          </button>
+        )}
+      </div>
+
+      {/* Capacidad */}
+      <FilterSection title="Capacidad de personas">
+        <div className="px-1">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs text-gray-500 dark:text-zinc-400">Personas</span>
+            <span className="text-sm font-bold text-lime-600 dark:text-lime-400 flex items-center gap-1">
+              <Users size={13} />
+              {filters.capacity ? `${filters.capacity}+` : "Cualquiera"}
+            </span>
+          </div>
+          <Slider
+            min={1}
+            max={10}
+            value={filters.capacity ?? 1}
+            onChange={(v) => setFilters((p) => ({ ...p, capacity: v === 1 ? null : v }))}
+            tooltip={{ formatter: (v) => `${v} persona${v > 1 ? "s" : ""}` }}
+            trackStyle={{ backgroundColor: "#84cc16" }}
+            handleStyle={{ borderColor: "#84cc16", backgroundColor: "#84cc16" }}
+          />
+          <div className="flex justify-between text-[10px] text-gray-400 dark:text-zinc-500 mt-1">
+            <span>1</span>
+            <span>5</span>
+            <span>10</span>
+          </div>
+        </div>
+      </FilterSection>
+
+      {/* Ciudad */}
+      <FilterSection title="Ciudad">
+        <Input
+          placeholder="Ej: Mérida, Cancún..."
+          value={filters.city}
+          onChange={(e) => setFilters((p) => ({ ...p, city: e.target.value }))}
+          onPressEnter={onSearch}
+          allowClear
+          prefix={<Search size={13} className="text-gray-400" />}
+          className="rounded-xl"
+          size="middle"
+        />
+      </FilterSection>
+
+      {/* Tipo de propiedad */}
+      <FilterSection title="Tipo de propiedad">
+        <div className="flex flex-col gap-1.5">
+          {[
+            { value: null, label: "Todos", icon: <LayoutGrid size={14} /> },
+            { value: "Casa", label: "Casa", icon: <House size={14} /> },
+            { value: "Departamento", label: "Departamento", icon: <Building2 size={14} /> },
+            { value: "Cuarto", label: "Cuarto", icon: <BedDouble size={14} /> },
+          ].map((opt) => (
+            <button
+              key={String(opt.value)}
+              onClick={() => setFilters((p) => ({ ...p, typeProperty: opt.value }))}
+              className={`w-full text-left px-3 py-2 rounded-xl text-sm transition-all font-medium flex items-center gap-2 ${filters.typeProperty === opt.value
+                  ? "bg-lime-500 text-black shadow-sm"
+                  : "bg-gray-50 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 hover:bg-lime-50 dark:hover:bg-zinc-700"
+                }`}
+            >
+              {opt.icon}
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      </FilterSection>
+
+      {/* Género */}
+      <FilterSection title="Ocupación">
+        <div className="flex flex-col gap-1.5">
+          {[
+            { value: null, label: "Cualquiera", icon: <Users size={14} /> },
+            { value: "Masculino", label: "Solo hombres", icon: <UserRound size={14} /> },
+            { value: "Femenino", label: "Solo mujeres", icon: <UserRound size={14} /> },
+            { value: "Mixto", label: "Mixto", icon: <UsersRound size={14} /> },
+          ].map((opt) => (
+            <button
+              key={String(opt.value)}
+              onClick={() => setFilters((p) => ({ ...p, gender: opt.value }))}
+              className={`w-full text-left px-3 py-2 rounded-xl text-sm transition-all font-medium flex items-center gap-2 ${filters.gender === opt.value
+                  ? "bg-lime-500 text-black shadow-sm"
+                  : "bg-gray-50 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 hover:bg-lime-50 dark:hover:bg-zinc-700"
+                }`}
+            >
+              {opt.icon}
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      </FilterSection>
+
+      {/* Tipo de renta */}
+      <FilterSection title="Tipo de renta">
+        <div className="flex flex-col gap-1.5">
+          {[
+            { value: null, label: "Todos", icon: <LayoutGrid size={14} /> },
+            { value: "ALOJAMIENTO_COMPLETO", label: "Completo", icon: <KeyRound size={14} /> },
+            { value: "ESPACIO", label: "Por espacios", icon: <Proportions size={14} /> },
+          ].map((opt) => (
+            <button
+              key={String(opt.value)}
+              onClick={() => setFilters((p) => ({ ...p, typeIncome: opt.value }))}
+              className={`w-full text-left px-3 py-2 rounded-xl text-sm transition-all font-medium flex items-center gap-2 ${filters.typeIncome === opt.value
+                  ? "bg-lime-500 text-black shadow-sm"
+                  : "bg-gray-50 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 hover:bg-lime-50 dark:hover:bg-zinc-700"
+                }`}
+            >
+              {opt.icon}
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      </FilterSection>
+
+      {/* Botón buscar */}
+      <Button
+        type="primary"
+        icon={<Search size={15} />}
+        onClick={onSearch}
+        loading={loading}
+        className="w-full h-10 rounded-xl bg-lime-500 hover:bg-lime-600 border-lime-500 hover:border-lime-600 text-black font-bold mt-1"
+        size="large"
+      >
+        Buscar alojamientos
+      </Button>
+    </div>
+  );
+}
+
 
 export default function DashboardStudent_Screen() {
+  const navigate = useNavigate();
+  const [page, setPage] = useState(1);
   const [favorites, setFavorites] = useState([]);
-  const [dateRange, setDateRange] = useState(null);
-  const [guests, setGuests] = useState(1);
-  const [appliedFilters, setAppliedFilters] = useState({
-    dateRange: null,
-    guests: 1,
-  });
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(() => window.innerWidth >= 1024);
+
+  useEffect(() => {
+    const handleResize = () => {
+      const desktop = window.innerWidth >= 1024;
+      setIsDesktop(desktop);
+      if (desktop) setDrawerOpen(false);
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  const emptyFilters = {
+    typeProperty: null,
+    gender: null,
+    typeIncome: null,
+    city: "",
+    capacity: null,
+  };
+
+  const [filters, setFilters] = useState(emptyFilters);
+  const [appliedFilters, setAppliedFilters] = useState(emptyFilters);
+
+  // Modal detalles
   const [openDetails, setOpenDetails] = useState(false);
   const [selectedRoom, setSelectedRoom] = useState(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [userRating, setUserRating] = useState({});
-  const [reservationModalOpen, setReservationModalOpen] = useState(false);
-  const [reservationStep, setReservationStep] = useState(1);
-  const [rentType, setRentType] = useState("completo");
-  const [selectedRooms, setSelectedRooms] = useState(1);
-  const [selectedBed, setSelectedBed] = useState("");
-  const [rentPeriod, setRentPeriod] = useState(12);
-  const [selectedServices, setSelectedServices] = useState([]);
-  const { fetchData } = useApi("/documentacion/status/approved", {}, false);
-  const [prices, setPrices] = useState({
-    subtotal: 0,
-    iva: 0,
-    total: 0,
-  });
-  const [hasDocuments, setHasDocuments] = useState(false);
-  const [loading, setLoading] = useState({
-    rooms: false,
-    reservation: false,
-  });
-  const [error, setError] = useState(null);
+  const [loadingDetails, setLoadingDetails] = useState(false);
+  const [detailsError, setDetailsError] = useState(null);
+  const [detailRoomId, setDetailRoomId] = useState(null);
 
-  const navigate = useNavigate();
+  // Modal reservación
+  const [reservationModalOpen, setReservationModalOpen] = useState(false);
+  const [hasDocuments, setHasDocuments] = useState(false);
+
+  const construirURL = (pagina = 1, f = appliedFilters) => {
+    const params = new URLSearchParams({ page: pagina, limit: 9, estatus: "ACTIVO" });
+    if (f.typeProperty) params.set("typeProperty", f.typeProperty);
+    if (f.gender) params.set("gender", f.gender);
+    if (f.typeIncome) params.set("typeIncome", f.typeIncome);
+    if (f.city?.trim()) params.set("city", f.city.trim());
+    if (f.capacity) params.set("capacity", f.capacity);
+    return `/alojamientos?${params.toString()}`;
+  };
+
+  const [endpoint, setEndpoint] = useState(() => construirURL(1, emptyFilters));
+  const { data, loading, error, fetchData } = useApi(endpoint, {}, false);
+
+  const accommodations = data?.data ?? [];
+  const meta = data?.meta ?? {};
+
+  useEffect(() => {
+    setEndpoint(construirURL(page, appliedFilters));
+  }, [page, appliedFilters]);
+
+  useEffect(() => {
+    if (endpoint) fetchData();
+  }, [endpoint]);
+
+  const { fetchData: fetchRoomDetail } = useApi(
+    detailRoomId ? `/alojamientos/${detailRoomId}/details` : "/alojamientos",
+    {},
+    false,
+  );
+
+  const { fetchData: fetchDocumentsStatus } = useApi("/documentacion/status/approved", {}, false);
 
   const fetchDocumentStatus = async () => {
     try {
-      const response = await fetchData();
-      const approved = response?.approved === true;
-      setHasDocuments(approved);
-      return approved;
-    } catch (error) {
+      const response = await fetchDocumentsStatus();
+      setHasDocuments(response?.approved === true);
+    } catch {
       setHasDocuments(false);
-      return false;
     }
   };
 
   const handleViewMap = (roomId) => {
-    navigate(`/estudiante/search/${roomId}`, {
-      state: { roomId },
-    });
+    navigate(`/estudiante/search/${roomId}`, { state: { openRouteModal: true } });
   };
 
-  const pageSize = 6;
+  const openRoomDetails = (roomId) => {
+    setLoadingDetails(true);
+    setDetailsError(null);
+    setOpenDetails(true);
+    setDetailRoomId(roomId);
+  };
 
-  const rooms = useMemo(() => {
-    return Array.from({ length: 24 }, (_, i) => ({
-      id: i + 1,
-      name: `Habitación ${i + 1}`,
-      price: 80 + (i % 5) * 20,
-      owner: "Juan Pérez",
-      gender: "Mixto",
-      type:
-        i % 3 === 0
-          ? "Cuarto privado"
-          : i % 3 === 1
-            ? "Habitación compartida"
-            : "Estudio",
-      beds: i % 2 === 0 ? 1 : 2,
-      address: "Calle 10 #123, Centro, Mérida, Yucatán",
-      rating: 4.0 + i * 0.05,
-      reviews: 10 + i,
-      maxGuests: Math.floor(Math.random() * 5) + 1,
-      availableDates: generateRandomAvailableDates(),
-    }));
-  }, []);
-
-  function generateRandomAvailableDates() {
-    const availableDates = [];
-    const startDate = dayjs();
-    const endDate = dayjs().add(90, "day");
-
-    let currentDate = startDate;
-    while (currentDate.isBefore(endDate)) {
-      if (Math.random() > 0.2) {
-        availableDates.push(currentDate.format("YYYY-MM-DD"));
+  useEffect(() => {
+    if (!detailRoomId) return;
+    const load = async () => {
+      try {
+        const details = await fetchRoomDetail();
+        const normalizeGender = (g) => {
+          if (!g) return "mixto";
+          const v = g.toLowerCase();
+          if (v === "mujer" || v === "femenino") return "femenino";
+          if (v === "hombre" || v === "masculino") return "masculino";
+          return "mixto";
+        };
+        const services = (details.servicios || []).map((s) => ({
+          id: s.id,
+          name: s.servicio.name,
+          icon: s.servicio.icon,
+          costo: Number(s.costo ?? 0),
+        }));
+        const fotos = (details.fotos || []).map((f) => ({
+          id: f.id_foto,
+          url: f.url,
+          principal: f.esPrincipal,
+          descripcion: f.descripcion,
+        }));
+        const cuartos = (details.cuartos || []).map((cuarto) => ({
+          id_cuarto: cuarto.id_cuarto,
+          name: cuarto.name,
+          price: Number(cuarto.price ?? 0),
+          estatus: cuarto.estatus,
+          camas: (cuarto.camas || []).map((cama) => ({
+            id_cama: cama.id_cama,
+            name: cama.name,
+            price: Number(cama.price ?? 0),
+            estatus: cama.estatus,
+          })),
+        }));
+        setSelectedRoom({
+          id: details.id_alojamiento,
+          name: details.name,
+          price: details.precio_completo,
+          typeProperty: details.typeProperty,
+          typeIncome: details.typeIncome,
+          gender: normalizeGender(details.gender),
+          propietario: {
+            namePersonal: details.propietario?.namePersonal,
+            lastName: details.propietario?.lastName,
+            emailPersonal: details.propietario?.emailPersonal,
+            phone: details.propietario?.phone,
+            code: details.propietario?.code,
+          },
+          address: `${details.address}, ${details.city}, ${details.country}`,
+          fotos,
+          mainImage: fotos[0]?.url ?? null,
+          cuartos,
+          rating: details.calificacion ?? 0,
+          services,
+        });
+      } catch {
+        setDetailsError("No se pudieron cargar los detalles");
+      } finally {
+        setLoadingDetails(false);
       }
-      currentDate = currentDate.add(1, "day");
-    }
-    return availableDates;
-  }
+    };
+    load();
+  }, [detailRoomId]);
 
-  const isRoomAvailableInDateRange = (room, startDate, endDate) => {
-    if (!startDate || !endDate) return true;
+  const handleRequestRoom = async () => {
+    await fetchDocumentStatus();
+    setReservationModalOpen(true);
+  };
 
-    const start = dayjs(startDate);
-    const end = dayjs(endDate);
-    let current = start;
+  const handleSearch = () => {
+    setPage(1);
+    setAppliedFilters({ ...filters });
+    setDrawerOpen(false);
+  };
 
-    while (current.isBefore(end) || current.isSame(end, "day")) {
-      const dateStr = current.format("YYYY-MM-DD");
-      if (!room.availableDates.includes(dateStr)) {
-        return false;
-      }
-      current = current.add(1, "day");
-    }
+  const handleClear = () => {
+    setFilters(emptyFilters);
+    setPage(1);
+    setAppliedFilters(emptyFilters);
+    setDrawerOpen(false);
+  };
 
-    return true;
+  const activeFilterCount = Object.entries(appliedFilters).filter(([k, v]) => {
+    if (k === "city") return v?.trim();
+    return v !== null && v !== undefined;
+  }).length;
+
+  const hasActive = activeFilterCount > 0;
+
+  const handlePaginationChange = (newPage) => {
+    setPage(newPage);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const toggleFavorite = (id) => {
@@ -253,328 +586,194 @@ export default function DashboardStudent_Screen() {
     );
   };
 
-  const openRoomDetails = (room) => {
-    setSelectedRoom(room);
-    setOpenDetails(true);
-  };
-
-  const handleRate = (roomId, value) => {
-    setUserRating((prev) => ({ ...prev, [roomId]: value }));
-  };
-
-  const calculatePrices = (roomPrice, period, servicesSelected) => {
-    const periodPrices = {
-      12: 100,
-      6: 200,
-      3: 300,
-    };
-
-    const servicesCost = servicesSelected.reduce((total, serviceName) => {
-      const service = SERVICES.find((s) => s.name === serviceName);
-      return total + (service?.price || 0);
-    }, 0);
-
-    const periodPrice = periodPrices[period] || 0;
-    const subtotal = periodPrice + servicesCost;
-    const iva = subtotal * 0.16;
-    const total = subtotal + iva;
-
-    setPrices({
-      subtotal: Math.round(subtotal * 100) / 100,
-      iva: Math.round(iva * 100) / 100,
-      total: Math.round(total * 100) / 100,
-    });
-  };
-
-  const saveReservation = async () => {
-    if (!selectedRoom) return;
-
-    setLoading((prev) => ({ ...prev, reservation: true }));
-
-    try {
-      const reservationData = {
-        roomId: selectedRoom.id,
-        rentType,
-        selectedRooms,
-        selectedBed,
-        rentPeriod,
-        selectedServices,
-        prices,
-        userId: "current-user-id",
-      };
-
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-
-      console.log("Reservación guardada:", reservationData);
-
-      setLoading((prev) => ({ ...prev, reservation: false }));
-    } catch (err) {
-      setError("Error al guardar la reservación");
-      setLoading((prev) => ({ ...prev, reservation: false }));
-    }
-  };
-
-  const handleRequestRoom = async (roomId) => {
-    const room = filteredRooms.find((r) => r.id === roomId);
-    if (room) {
-      setSelectedRoom(room);
-      calculatePrices(room.price, rentPeriod, selectedServices);
-    }
-
-    await fetchDocumentStatus();
-    setReservationStep(1);
-    setReservationModalOpen(true);
-  };
-
-  const applyFilters = () => {
-    setAppliedFilters({
-      dateRange,
-      guests,
-    });
-    setCurrentPage(1);
-  };
-
-  const filteredRooms = useMemo(() => {
-    return rooms.filter((room) => {
-      if (room.maxGuests < appliedFilters.guests) {
-        return false;
-      }
-
-      if (
-        appliedFilters.dateRange &&
-        appliedFilters.dateRange[0] &&
-        appliedFilters.dateRange[1]
-      ) {
-        const [startDate, endDate] = appliedFilters.dateRange;
-        if (!isRoomAvailableInDateRange(room, startDate, endDate)) {
-          return false;
-        }
-      }
-
-      return true;
-    });
-  }, [rooms, appliedFilters]);
-
-  const currentRooms = useMemo(() => {
-    return filteredRooms.slice(
-      (currentPage - 1) * pageSize,
-      currentPage * pageSize,
-    );
-  }, [filteredRooms, currentPage, pageSize]);
-
-  const handleServicesChange = (newServices) => {
-    setSelectedServices(newServices);
-    if (selectedRoom) {
-      calculatePrices(selectedRoom.price, rentPeriod, newServices);
-    }
-  };
-
-  useEffect(() => {
-    setLoading((prev) => ({ ...prev, rooms: true }));
-    setTimeout(() => {
-      setLoading((prev) => ({ ...prev, rooms: false }));
-    }, 1000);
-  }, []);
-
-  if (loading.rooms && rooms.length === 0) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Spin size="large" tip="Cargando habitaciones..." />
-      </div>
-    );
-  }
-
   return (
     <ConfigProvider locale={esES}>
-      <div className="min-h-screen bg-gray-50 flex justify-center w-full mb-0">
-        <div className="w-full max-w-7xl px-4 py-8 mb-0">
+      <div className="min-h-screen w-full">
+        <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
           {error && (
-            <Alert
-              message="Error"
-              description={error}
-              type="error"
-              showIcon
-              className="mb-4"
-              closable
-              onClose={() => setError(null)}
-            />
+            <Alert description={error} type="error" showIcon className="mb-4" closable />
           )}
 
-          <div className="relative mx-auto mb-2 bg-white rounded-2xl border border-gray-200 h-14 max-w-lg flex items-center shadow-sm">
-            <div className="flex-1 flex justify-center items-center gap-6 px-4">
-              <Popover
-                trigger="click"
-                placement="bottom"
-                content={
-                  <RangePicker
-                    inline
-                    value={dateRange}
-                    onChange={setDateRange}
-                    allowClear={false}
-                  />
-                }
-              >
-                <div className="flex items-center gap-3 cursor-pointer">
-                  <CalendarDays size={18} className="text-gray-600" />
-                  <div className="flex flex-col">
-                    <span className="text-xs text-gray-500 font-medium">
-                      FECHAS
-                    </span>
-                    <span className="text-sm font-medium text-gray-800">
-                      {dateRange && dateRange[0] && dateRange[1] ? (
-                        `${dayjs(dateRange[0]).format("DD MMM")} - ${dayjs(
-                          dateRange[1],
-                        ).format("DD MMM")}`
-                      ) : (
-                        <span className="text-gray-400">Seleccionar</span>
-                      )}
-                    </span>
-                  </div>
-                </div>
-              </Popover>
+          {/* Layout principal */}
+          <div className="flex gap-6 items-start">
 
-              <div className="w-px h-6 bg-gray-300" />
-
-              <div className="flex items-center gap-3">
-                <Users size={18} className="text-gray-600" />
-                <div className="flex flex-col">
-                  <span className="text-xs text-gray-500 font-medium">
-                    HUÉSPEDES
-                  </span>
-                  <div className="flex items-center">
-                    <InputNumber
-                      min={1}
-                      max={20}
-                      value={guests}
-                      onChange={setGuests}
-                      variant="borderless"
-                      className="w-12 text-base font-medium text-gray-800 p-0"
-                      controls={false}
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <Button
-              className="absolute right-4 bg-lime-600 border-none rounded-full w-11 h-11 text-white hover:bg-lime-600 shadow-md"
-              icon={<Search size={18} />}
-              onClick={applyFilters}
-              aria-label="Buscar habitaciones"
-            />
-          </div>
-
-          <div className="mb-3 text-sm text-gray-600">
-            Mostrando {filteredRooms.length} de {rooms.length} habitaciones
-            {appliedFilters.dateRange &&
-              appliedFilters.dateRange[0] &&
-              appliedFilters.dateRange[1] && (
-                <span>
-                  {" "}
-                  para las fechas{" "}
-                  {dayjs(appliedFilters.dateRange[0]).format(
-                    "DD/MM/YYYY",
-                  )} - {dayjs(appliedFilters.dateRange[1]).format("DD/MM/YYYY")}
-                </span>
-              )}
-            {appliedFilters.guests > 1 && (
-              <span> con capacidad para {appliedFilters.guests} huéspedes</span>
-            )}
-          </div>
-
-          {loading.rooms ? (
-            <div className="text-center py-12">
-              <Spin size="large" tip="Cargando habitaciones..." />
-            </div>
-          ) : (
-            <>
-              <Row gutter={[24, 24]}>
-                {currentRooms.map((room) => (
-                  <Col key={room.id} xs={24} sm={12} lg={8} xl={8}>
-                    <RoomCard
-                      room={room}
-                      isFav={favorites.includes(room.id)}
-                      onToggleFavorite={toggleFavorite}
-                      onViewDetails={openRoomDetails}
-                      onViewMap={handleViewMap}
-                    />
-                  </Col>
-                ))}
-              </Row>
-
-              {filteredRooms.length === 0 && (
-                <div className="text-center py-12">
-                  <Search size={48} className="mx-auto text-gray-300 mb-4" />
-                  <h3 className="text-lg font-semibold text-gray-700 mb-2">
-                    No se encontraron habitaciones
-                  </h3>
-                  <p className="text-gray-500">
-                    No hay habitaciones disponibles con los filtros
-                    seleccionados. Intenta con otras fechas o número de
-                    huéspedes.
-                  </p>
-                </div>
-              )}
-
-              <div className="flex justify-center mt-12">
-                <Pagination
-                  current={currentPage}
-                  pageSize={pageSize}
-                  total={filteredRooms.length}
-                  onChange={setCurrentPage}
-                  showSizeChanger={false}
-                  showQuickJumper
-                  className="[&_.ant-pagination-item]:rounded-full [&_.ant-pagination-item-active]:bg-lime-600 [&_.ant-pagination-item-active]:border-lime-600 [&_.ant-pagination-item-active_a]:text-white"
+            {/* ── Sidebar desktop (oculto en móvil) ── */}
+            <aside className="hidden lg:block w-64 xl:w-72 shrink-0 sticky top-6">
+              <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-gray-100 dark:border-zinc-800 shadow-sm p-5">
+                <SidebarFilters
+                  filters={filters}
+                  setFilters={setFilters}
+                  onSearch={handleSearch}
+                  onClear={handleClear}
+                  hasActive={hasActive}
+                  loading={loading}
                 />
               </div>
-            </>
-          )}
+            </aside>
 
-          <RoomDetailsModal
-            open={openDetails}
-            onClose={() => setOpenDetails(false)}
-            room={selectedRoom}
-            userRating={userRating[selectedRoom?.id]}
-            onRate={handleRate}
-            onRequestRoom={handleRequestRoom}
-            services={SERVICES}
-            loading={loading.reservation}
-          />
+            {/* ── Contenido principal ── */}
+            <div className="flex-1 min-w-0">
 
-          <ReservationModal
-            open={reservationModalOpen}
-            onClose={() => {
-              setReservationModalOpen(false);
-              setReservationStep(1);
-              setSelectedServices([]);
-              setError(null);
-            }}
-            step={reservationStep}
-            onStepChange={setReservationStep}
-            room={selectedRoom}
-            hasDocuments={hasDocuments}
-            rentType={rentType}
-            onRentTypeChange={setRentType}
-            selectedRooms={selectedRooms}
-            onSelectedRoomsChange={setSelectedRooms}
-            selectedBed={selectedBed}
-            onSelectedBedChange={setSelectedBed}
-            rentPeriod={rentPeriod}
-            onRentPeriodChange={(period) => {
-              setRentPeriod(period);
-              if (selectedRoom) {
-                calculatePrices(selectedRoom.price, period, selectedServices);
-              }
-            }}
-            selectedServices={selectedServices}
-            onSelectedServicesChange={handleServicesChange}
-            services={SERVICES}
-            prices={prices}
-            onSaveReservation={saveReservation}
-            loading={loading.reservation}
-            error={error}
-          />
+              {/* Hero */}
+              <HeroBanner />
+
+              {/* Toolbar móvil/tablet */}
+              <div className="flex items-center justify-between mb-5">
+                <div>
+                  {!loading && (
+                    <p className="text-sm text-gray-600 dark:text-zinc-400">
+                      <span className="font-bold text-gray-900 dark:text-white">
+                        {meta.totalItems ?? 0}
+                      </span>{" "}
+                      alojamientos disponibles
+                      {hasActive && (
+                        <span className="ml-1.5 text-lime-600 dark:text-lime-400 font-semibold">
+                          · {activeFilterCount} filtro{activeFilterCount > 1 ? "s" : ""} activo{activeFilterCount > 1 ? "s" : ""}
+                        </span>
+                      )}
+                    </p>
+                  )}
+                </div>
+
+                {/* Botón filtros móvil */}
+                <Badge count={activeFilterCount} color="#84cc16" className="lg:hidden">
+                  <Button
+                    icon={<SlidersHorizontal size={16} />}
+                    onClick={() => { if (!isDesktop) setDrawerOpen(true); }}
+                    className="lg:hidden flex items-center gap-2 rounded-xl border-gray-200 dark:border-zinc-700 text-gray-700 dark:text-zinc-300 font-medium"
+                  >
+                    Filtros
+                  </Button>
+                </Badge>
+              </div>
+
+              {/* Grid */}
+              {loading ? (
+                <div className="flex flex-col items-center justify-center py-24 gap-4">
+                  <Spin size="large" />
+                  <p className="text-sm text-gray-400 dark:text-zinc-500 animate-pulse">
+                    Buscando los mejores alojamientos...
+                  </p>
+                </div>
+              ) : accommodations.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-24 bg-white dark:bg-zinc-900 rounded-2xl border border-dashed border-gray-200 dark:border-zinc-700">
+                  <Empty
+                    image={Empty.PRESENTED_IMAGE_SIMPLE}
+                    description={
+                      <div className="text-center">
+                        <p className="text-gray-600 dark:text-zinc-400 font-medium">
+                          No hay alojamientos disponibles
+                        </p>
+                        <p className="text-xs text-gray-400 dark:text-zinc-500 mt-1">
+                          Intenta ajustar los filtros de búsqueda
+                        </p>
+                      </div>
+                    }
+                  />
+                  {hasActive && (
+                    <Button
+                      onClick={handleClear}
+                      className="mt-4 rounded-xl text-lime-600 border-lime-300"
+                    >
+                      Limpiar filtros
+                    </Button>
+                  )}
+                </div>
+              ) : (
+                <>
+                  <Row gutter={[24, 24]}>
+                    {accommodations.map((item) => (
+                      <Col key={item.id_alojamiento} xs={24} sm={12} lg={8}>
+                        <RoomCard
+                          room={{
+                            id: item.id_alojamiento,
+                            name: item.name,
+                            price: item.precio_completo,
+                            address: `${item.address}, ${item.city}, ${item.country}`,
+                            fotos: item.fotos ?? [],
+                            typeProperty: item.typeProperty,
+                            typeIncome: item.typeIncome,
+                            gender: item.gender,
+                            estatus: item.estatus,
+                            calificacion: item.calificacion ?? 0,
+                            capacity: item.capacity,
+                          }}
+                          isFav={favorites.includes(item.id_alojamiento)}
+                          onToggleFavorite={toggleFavorite}
+                          onViewDetails={openRoomDetails}
+                          onViewMap={handleViewMap}
+                        />
+                      </Col>
+                    ))}
+                  </Row>
+
+                  {meta.totalItems > 9 && (
+                    <div className="flex justify-center mt-10">
+                      <Pagination
+                        current={page}
+                        pageSize={9}
+                        total={meta.totalItems ?? 0}
+                        onChange={handlePaginationChange}
+                        showSizeChanger={false}
+                        className="[&_.ant-pagination-item-active]:bg-lime-500 [&_.ant-pagination-item-active]:border-lime-500 [&_.ant-pagination-item-active_a]:text-white"
+                      />
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
         </div>
+
+        {!isDesktop && (
+          <Drawer
+            title={
+              <div className="flex items-center gap-2">
+                <Filter size={16} className="text-lime-500" />
+                <span className="font-bold">Filtros de búsqueda</span>
+              </div>
+            }
+            placement="left"
+            size={300}
+            open={drawerOpen}
+            onClose={() => setDrawerOpen(false)}
+            className="lg:hidden"
+            styles={{ body: { padding: "20px" } }}
+          >
+            <SidebarFilters
+              filters={filters}
+              setFilters={setFilters}
+              onSearch={handleSearch}
+              onClear={handleClear}
+              hasActive={hasActive}
+              loading={loading}
+            />
+          </Drawer>
+        )}
+
+        {/* Modal detalles */}
+        <RoomDetailsModal
+          open={openDetails}
+          onClose={() => {
+            setOpenDetails(false);
+            setDetailsError(null);
+            setDetailRoomId(null);
+          }}
+          room={selectedRoom}
+          onRequestRoom={handleRequestRoom}
+          services={[]}
+          loading={loadingDetails}
+          error={detailsError}
+        />
+
+        {/* Modal reservación */}
+        <ReservationModal
+          open={reservationModalOpen}
+          onClose={() => setReservationModalOpen(false)}
+          room={selectedRoom}
+          hasDocuments={hasDocuments}
+        />
       </div>
     </ConfigProvider>
   );

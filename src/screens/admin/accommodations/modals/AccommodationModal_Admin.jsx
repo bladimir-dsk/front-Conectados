@@ -89,7 +89,7 @@ const AccommodationModal_Admin = ({
     const { patchData: updateAccommodation, loading: updating } = useApi("/alojamientos", {}, false);
 
     const { data: ownersResponse, loading: loadingOwners } = useApi(
-        "/propietarios?paginaActual=1&limite=10",
+        "/propietarios",
         {},
         visible
     );
@@ -132,6 +132,7 @@ const AccommodationModal_Admin = ({
                         codePostal: editData.codePostal || "",
                         address: editData.address || "",
                         id_propietario: editData.propietario?.id_propietario || undefined,
+                        capacity: editData.capacity ? Number(editData.capacity) : undefined,
                     };
 
                     form.setFieldsValue(initialValues);
@@ -203,6 +204,7 @@ const AccommodationModal_Admin = ({
             allValues.city !== initialData.city ||
             allValues.codePostal !== initialData.codePostal ||
             allValues.address !== initialData.address ||
+            allValues.capacity !== initialData.capacity ||
             allValues.id_propietario !== initialData.id_propietario;
 
         setHasChanges(hasChanged);
@@ -267,6 +269,7 @@ const AccommodationModal_Admin = ({
                 latitude: markerPosition?.lat?.toString() || "",
                 longitude: markerPosition?.lng?.toString() || "",
                 id_Propietario: values.id_propietario,
+                capacity: values.capacity ?? null,
             };
 
             if (isEditing) {
@@ -301,11 +304,11 @@ const AccommodationModal_Admin = ({
     return (
         <>
             <div
-                className="fixed inset-0 bg-black opacity-50 z-50 transition-opacity"
+                className="fixed inset-0 bg-black/90 z-50 transition-opacity"
                 onClick={handleCancel}
             />
 
-            <div className="fixed inset-0 z-50 flex items-center backdrop-blur-md justify-center p-4 overflow-y-auto">
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
                 <div
                     className="bg-white dark:bg-zinc-900 rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] flex flex-col"
                     onClick={(e) => e.stopPropagation()}
@@ -427,6 +430,20 @@ const AccommodationModal_Admin = ({
                                             />
                                         </Form.Item>
                                     </div>
+
+                                    {/* Capacidad */}
+                                    <Form.Item
+                                        name="capacity"
+                                        label="Capacidad"
+                                    >
+                                        <InputNumber
+                                            placeholder="Ej: 4"
+                                            size="large"
+                                            style={{ width: "100%" }}
+                                            min={1}
+                                            precision={0}
+                                        />
+                                    </Form.Item>
 
                                     {/* Descripción */}
                                     <div className="md:col-span-2">

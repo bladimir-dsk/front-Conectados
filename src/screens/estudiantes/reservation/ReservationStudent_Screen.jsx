@@ -1,519 +1,573 @@
-import React, { useState, useEffect } from "react";
+import { useState } from "react";
+import { Tabs, Alert } from "antd";
 import {
-  Card,
-  Typography,
-  Alert,
-  Button,
-  Divider,
-  Checkbox,
-  Radio,
-  Space,
-  Input,
-  Row,
-  Col,
-  Tag,
-  Drawer,
-  Tabs,
-} from "antd";
-import {
-  XCircle,
   CheckCircle,
-  AlertCircle,
-  Calendar,
   Clock,
-  Download,
-  Printer,
+  Calendar,
   CreditCard,
-  Trash2,
-  Clock4,
+  Printer,
+  Download,
   Ban,
+  Clock4,
+  MapPin,
+  Wrench,
+  Building2,
+  BedDouble,
+  House,
+  XCircle,
+  FileText,
 } from "lucide-react";
+import { useApi } from "../../../hooks/useApi";
+import PaymentSuccessModal from "./modals/PaymentSuccessModal";
+import StripePaymentModal from "./modals/StripePaymentModal";
+import { downloadRentalContract } from "./pdfs/downloadContracts.jsx";
+import { downloadPaymentReceipt } from "./pdfs/downloadContracts.jsx";
 
-const { Title, Text, Paragraph } = Typography;
-const { TextArea } = Input;
+const STATUS_CONFIG = {
+  PENDIENTE: {
+    bg: "bg-amber-100",
+    text: "text-amber-700",
+    dot: "bg-amber-500",
+    label: "Pendientes",
+    icon: <Clock4 size={11} />,
+  },
+  ACTIVA: {
+    bg: "bg-emerald-100",
+    text: "text-emerald-700",
+    dot: "bg-emerald-500",
+    label: "Aprobados",
+    icon: <CheckCircle size={11} />,
+  },
+  FINALIZADA: {
+    bg: "bg-blue-100",
+    text: "text-blue-700",
+    dot: "bg-blue-500",
+    label: "Finalizadas",
+    icon: <Download size={11} />,
+  },
+  CANCELADA: {
+    bg: "bg-red-100",
+    text: "text-red-700",
+    dot: "bg-red-500",
+    label: "Cancelado",
+    icon: <Ban size={11} />,
+  },
+};
+
+const TIPO_CONFIG = {
+  ALOJAMIENTO_COMPLETO: {
+    label: "Alojamiento Completo",
+    icon: <Building2 size={11} />,
+    bg: "bg-violet-100",
+    text: "text-violet-700",
+  },
+  CUARTO: {
+    label: "Cuarto",
+    icon: <BedDouble size={11} />,
+    bg: "bg-sky-100",
+    text: "text-sky-700",
+  },
+  CAMA: {
+    label: "Cama",
+    icon: <House size={11} />,
+    bg: "bg-orange-100",
+    text: "text-orange-700",
+  },
+};
+
+const formatCurrency = (amount) =>
+  new Intl.NumberFormat("es-MX", {
+    style: "currency",
+    currency: "MXN",
+    minimumFractionDigits: 2,
+  }).format(Number(amount) || 0);
+
+const formatDate = (dateStr) => {
+  if (!dateStr) return "—";
+  const [year, month, day] = dateStr.split("-");
+  const months = [
+    "ene",
+    "feb",
+    "mar",
+    "abr",
+    "may",
+    "jun",
+    "jul",
+    "ago",
+    "sep",
+    "oct",
+    "nov",
+    "dic",
+  ];
+  return `${day} ${months[parseInt(month, 10) - 1]} ${year}`;
+};
+
+function StatusBadge({ estado }) {
+  const s = STATUS_CONFIG[estado] || STATUS_CONFIG.PENDIENTE;
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${s.bg} ${s.text}`}
+    >
+      <span className={`w-1.5 h-1.5 rounded-full ${s.dot}`} />
+      {s.label}
+    </span>
+  );
+}
+
+function TipoBadge({ tipo }) {
+  const t = TIPO_CONFIG[tipo];
+  if (!t) return null;
+  return (
+    <span
+      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium ${t.bg} ${t.text}`}
+    >
+      {t.icon}
+      {t.label}
+    </span>
+  );
+}
+
+function DetailRow({ label, value }) {
+  return (
+    <div className="flex items-center justify-between py-1.5">
+      <span className="text-sm text-gray-500">{label}</span>
+      <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
+        {value}
+      </span>
+    </div>
+  );
+}
+
+function ReservationCard({ reservation, onPaySuccess }) {
+  const [paying, setPaying] = useState(false);
+  const [payError, setPayError] = useState(null);
+  const [stripeModalOpen, setStripeModalOpen] = useState(false);
+
+  const { ubicacion, servicios, totales } = reservation;
+  const alojamiento = ubicacion?.alojamiento;
+  const cuarto = ubicacion?.cuarto;
+  const nombreLugar = cuarto?.nombre || alojamiento?.nombre || "Sin nombre";
+  const [loadingReceipt, setLoadingReceipt] = useState(false);
+  const [loadingContract, setLoadingContract] = useState(false);
+
+  const handleDownloadReceipt = async () => {
+    try {
+      setLoadingReceipt(true);
+      await downloadPaymentReceipt(reservation.id_pago);
+    } catch (err) {
+      setPayError("No se pudo generar el comprobante. Intenta de nuevo.");
+    } finally {
+      setLoadingReceipt(false);
+    }
+  };
+
+  const handleDownloadContract = async () => {
+    try {
+      setLoadingContract(true);
+      await downloadRentalContract(reservation.id_pago);
+    } catch (err) {
+      setPayError("No se pudo generar el contrato. Intenta de nuevo.");
+    } finally {
+      setLoadingContract(false);
+    }
+  };
+
+  const tieneServicios = servicios?.length > 0;
+  const totalServicios = totales?.total_servicios;
+  const hayMontoServicios = tieneServicios && Number(totalServicios) > 0;
+
+  return (
+    <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-md overflow-hidden flex flex-col transition-shadow hover:shadow-xl border border-gray-100 dark:border-zinc-800">
+      {/* Header */}
+      <div className="flex items-center justify-between bg-lime-600 px-4 pt-3 pb-3">
+        <div className="flex items-center gap-2">
+          <img
+            src="/LogoPrincipal-Horizontal.webp"
+            alt="Conecta-DoS"
+            className="h-6 object-contain"
+          />
+          <span className="text-xs text-gray-700 font-mono bg-white/80 px-2 py-0.5 rounded-md">
+            #{reservation.id_renta}
+          </span>
+        </div>
+        <StatusBadge estado={reservation.estado} />
+      </div>
+
+      {/* Nombre del lugar */}
+      <div className="px-4 pt-4 pb-2">
+        <div className="flex items-start gap-2">
+          <House size={18} className="text-lime-500 shrink-0 mt-0.5" />
+          <div className="flex-1 min-w-0">
+            <p className="font-bold text-gray-900 dark:text-white text-base leading-tight truncate">
+              {nombreLugar}
+            </p>
+            <div className="flex items-center gap-2 mt-1 flex-wrap">
+              <TipoBadge tipo={reservation.tipo_renta} />
+              {alojamiento && (
+                <span className="flex items-center gap-1 text-xs text-gray-400 truncate">
+                  <MapPin size={11} className="shrink-0" />
+                  <span className="truncate">
+                    {alojamiento.nombre}
+                    {alojamiento.direccion ? ` · ${alojamiento.direccion}` : ""}
+                  </span>
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Fechas */}
+      <div className="mx-4 mt-3 grid grid-cols-3 gap-2">
+        <div className="bg-gray-50 dark:bg-zinc-800 rounded-xl p-2.5 text-center">
+          <span className="text-gray-400 text-xs flex items-center justify-center gap-1 mb-1">
+            <Calendar size={10} /> Entrada
+          </span>
+          <span className="font-semibold text-gray-800 dark:text-gray-200 text-xs leading-tight">
+            {formatDate(reservation.fecha_entrada)}
+          </span>
+        </div>
+        <div className="bg-gray-50 dark:bg-zinc-800 rounded-xl p-2.5 text-center">
+          <span className="text-gray-400 text-xs flex items-center justify-center gap-1 mb-1">
+            <Clock size={10} /> Salida
+          </span>
+          <span className="block font-semibold text-gray-800 dark:text-gray-200 text-xs leading-tight">
+            {formatDate(reservation.fecha_salida)}
+          </span>
+        </div>
+        <div className="bg-lime-50 dark:bg-zinc-800 rounded-xl p-2.5 text-center">
+          <span className="block text-lime-600 text-xs mb-1">Meses</span>
+          <span className="block font-bold text-lime-700 text-xl leading-tight">
+            {reservation.meses_pagados}
+          </span>
+        </div>
+      </div>
+
+      {/* Servicios — siempre mostrar la sección */}
+      <div className="mx-4 mt-3">
+        <p className="flex items-center gap-1.5 text-xs text-gray-400 mb-2">
+          <Wrench size={12} /> Servicios incluidos
+        </p>
+        {tieneServicios ? (
+          <div className="flex flex-wrap gap-1.5">
+            {servicios.map((s) => (
+              <span
+                key={s.id_renta_servicio}
+                className="bg-lime-100 dark:bg-lime-900/40 text-slate-700 dark:text-lime-300 text-xs font-medium px-2.5 py-1 rounded-lg"
+              >
+                {s.nombre}
+                {Number(s.precio) > 0 && (
+                  <span className="ml-1 text-slate-500 dark:text-lime-400/70">
+                    {formatCurrency(s.precio)}
+                  </span>
+                )}
+              </span>
+            ))}
+          </div>
+        ) : (
+          <p className="text-xs text-gray-400 italic">
+            Esta reservación no incluye servicios adicionales
+          </p>
+        )}
+      </div>
+
+      {/* Totales */}
+      <div className="mx-4 mt-4 flex-1">
+        <div className="border-t border-dashed border-gray-200 dark:border-zinc-700 pt-3 space-y-0">
+          <DetailRow
+            label="Subtotal alojamiento"
+            value={
+              totales?.subtotal_alojamiento &&
+              Number(totales.subtotal_alojamiento) > 0
+                ? formatCurrency(totales.subtotal_alojamiento)
+                : "No incluido"
+            }
+          />
+          {/* Solo mostrar fila de servicios si tiene servicios con monto */}
+          {hayMontoServicios ? (
+            <DetailRow
+              label="Total servicios"
+              value={formatCurrency(totalServicios)}
+            />
+          ) : (
+            <DetailRow label="Total servicios" value="No incluido" />
+          )}
+          <DetailRow
+            label="Precio mensual"
+            value={`${formatCurrency(reservation.precio_mensual)}/mes`}
+          />
+        </div>
+
+        <div className="flex items-center justify-between bg-gradient-to-r from-lime-600 to-lime-700 text-white rounded-xl px-4 py-3 mt-3">
+          <span className="font-bold text-sm tracking-wide">TOTAL A PAGAR</span>
+          <span className="font-extrabold text-xl">
+            {formatCurrency(totales?.monto_total)}
+          </span>
+        </div>
+      </div>
+
+      {/* Error de pago */}
+      {payError && (
+        <div className="mx-4 mt-3">
+          <Alert
+            type="error"
+            title={payError}
+            showIcon
+            className="rounded-xl text-sm"
+          />
+        </div>
+      )}
+
+      {/* ─── Acciones por estado ─── */}
+      <div className="px-4 pb-4 pt-3 mt-auto">
+        {reservation.estado === "PENDIENTE" && (
+          <div className="flex gap-2">
+            <button
+              onClick={() => setStripeModalOpen(true)}
+              className="flex-1 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white! text-sm font-bold py-2.5 rounded-xl transition-colors"
+            >
+              <CreditCard size={15} />
+              Pagar
+            </button>
+            <button
+              disabled
+              className="flex items-center justify-center gap-2 border border-red-200 text-red-400 cursor-not-allowed text-sm font-medium px-3 py-2.5 rounded-xl"
+              title="Función próximamente"
+            >
+              <XCircle size={15} />
+              Cancelar
+            </button>
+          </div>
+        )}
+
+        {reservation.estado === "ACTIVA" && (
+          <div className="flex gap-2">
+            <button
+              onClick={handleDownloadReceipt}
+              disabled={loadingReceipt}
+              className="flex-1 flex items-center justify-center gap-2 border border-gray-200 dark:border-zinc-700 hover:border-lime-500 hover:text-lime-600 text-gray-600 dark:text-gray-400 text-sm font-medium py-2.5 rounded-xl transition-colors disabled:opacity-50"
+            >
+              {loadingReceipt ? (
+                <div className="w-3.5 h-3.5 border-2 border-lime-400 border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <Printer size={15} />
+              )}
+              Comprobante
+            </button>
+            <button
+              onClick={handleDownloadContract}
+              disabled={loadingContract}
+              className="flex-1 flex items-center justify-center gap-2 border border-gray-200 dark:border-zinc-700 hover:border-blue-500 hover:text-blue-600 text-gray-600 dark:text-gray-400 text-sm font-medium py-2.5 rounded-xl transition-colors disabled:opacity-50"
+            >
+              {loadingContract ? (
+                <div className="w-3.5 h-3.5 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <FileText size={15} />
+              )}
+              Contrato
+            </button>
+          </div>
+        )}
+
+        {reservation.estado === "FINALIZADA" && (
+          <div className="flex gap-2">
+            <button
+              onClick={handleDownloadReceipt}
+              disabled={loadingReceipt}
+              className="flex-1 flex items-center justify-center gap-2 border border-gray-200 dark:border-zinc-700 hover:border-lime-500 hover:text-lime-600 text-gray-600 dark:text-gray-400 text-sm font-medium py-2.5 rounded-xl transition-colors disabled:opacity-50"
+            >
+              {loadingReceipt ? (
+                <div className="w-3.5 h-3.5 border-2 border-lime-400 border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <Download size={15} />
+              )}
+              Comprobante
+            </button>
+            <button
+              onClick={handleDownloadContract}
+              disabled={loadingContract}
+              className="flex-1 flex items-center justify-center gap-2 border border-gray-200 dark:border-zinc-700 hover:border-blue-500 hover:text-blue-600 text-gray-600 dark:text-gray-400 text-sm font-medium py-2.5 rounded-xl transition-colors disabled:opacity-50"
+            >
+              {loadingContract ? (
+                <div className="w-3.5 h-3.5 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <FileText size={15} />
+              )}
+              Contrato
+            </button>
+          </div>
+        )}
+
+        {/* CANCELADA: sin botón */}
+        {reservation.estado === "CANCELADA" && (
+          <div className="flex items-center justify-center gap-2 bg-red-100 dark:bg-red-900/20 text-red-400 text-xs font-medium py-2.5 rounded-xl">
+            <Ban size={13} />
+            Reservación cancelada
+          </div>
+        )}
+      </div>
+
+      {/* Modal Stripe */}
+      <StripePaymentModal
+        open={stripeModalOpen}
+        onClose={() => setStripeModalOpen(false)}
+        reservation={reservation}
+        onPaySuccess={(r) => {
+          setStripeModalOpen(false);
+          onPaySuccess(r);
+        }}
+      />
+    </div>
+  );
+}
+
+function TabContent({ estado, onPaySuccess }) {
+  const { data, loading, error } = useApi(`/renta?estado=${estado}`, {}, true);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center py-20">
+        <div className="w-8 h-8 border-4 border-lime-200 border-t-lime-600 rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <Alert
+        type="error"
+        title="Error al cargar las reservaciones"
+        description={error}
+        showIcon
+        className="rounded-xl"
+      />
+    );
+  }
+
+  if (!data || data.length === 0) {
+    return (
+      <div className="py-20 flex flex-col items-center justify-center text-gray-400 gap-3">
+        <House size={40} className="text-gray-300" />
+        <p className="text-sm">
+          No tienes reservaciones {STATUS_CONFIG[estado]?.label.toLowerCase()}
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
+      {data.map((r) => (
+        <ReservationCard
+          key={r.id_renta}
+          reservation={r}
+          onPaySuccess={onPaySuccess}
+        />
+      ))}
+    </div>
+  );
+}
 
 export default function ReservationStudent_Screen() {
-  const [selectedReservation, setSelectedReservation] = useState(null);
-  const [showCancelDrawer, setShowCancelDrawer] = useState(false);
-  const [cancelReason, setCancelReason] = useState("");
-  const [customReason, setCustomReason] = useState("");
-  const [agreePolicy, setAgreePolicy] = useState(false);
-  const [reservations, setReservations] = useState([]);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [paidReservation, setPaidReservation] = useState(null);
+  const [refreshKey, setRefreshKey] = useState(0);
 
-  useEffect(() => {
-    const savedReservations = localStorage.getItem("student_reservations");
-    if (savedReservations) {
-      setReservations(JSON.parse(savedReservations));
-    }
-  }, []);
-
-  const cancelReasons = [
-    "Cambio de planes",
-    "Encontré mejor opción",
-    "Problemas con el pago",
-    "Error en la reserva",
-    "Otro",
-  ];
-
-  const handleCancelClick = (reservation) => {
-    setSelectedReservation(reservation);
-    setShowCancelDrawer(true);
+  const handleCloseModal = () => {
+    setModalOpen(false);
+    setRefreshKey((k) => k + 1);
   };
 
-  const handleCancelReservation = (reservationId) => {
-    const updatedReservations = reservations.map((res) => {
-      if (res.id === reservationId) {
-        return {
-          ...res,
-          status: "Cancelado",
-          statusColor: "error",
-          tabKey: "cancelado",
-        };
-      }
-      return res;
-    });
-    setReservations(updatedReservations);
-    localStorage.setItem(
-      "student_reservations",
-      JSON.stringify(updatedReservations),
-    );
+  const handlePaySuccess = (reservation) => {
+    setPaidReservation(reservation);
+    setModalOpen(true);
   };
-
-  const handleConfirmCancel = () => {
-    if (!agreePolicy || !selectedReservation) return;
-
-    handleCancelReservation(selectedReservation.id);
-    setShowCancelDrawer(false);
-    setCancelReason("");
-    setCustomReason("");
-    setAgreePolicy(false);
-    setSelectedReservation(null);
-  };
-
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat("es-MX", {
-      style: "currency",
-      currency: "MXN",
-      minimumFractionDigits: 2,
-    }).format(amount);
-  };
-
-  const renderReservationCard = (reservation) => (
-    <Card key={reservation.id}>
-      <Space orientation="vertical" style={{ width: "100%" }}>
-        <div style={{ marginBottom: 16 }}>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-            }}
-          >
-            <img
-              src="/LogoPrincipal-Horizontal.webp"
-              alt="Conecta-DoS"
-              style={{ height: 32 }}
-            />
-            <Space>
-              <Tag icon={<Calendar size={12} />} color="blue">
-                {reservation.date}
-              </Tag>
-              <Tag icon={<Clock size={12} />} color="purple">
-                {reservation.time}
-              </Tag>
-            </Space>
-          </div>
-          <div style={{ textAlign: "left", marginTop: 8 }}>
-            <Text type="secondary">Operación:</Text>
-            <Text code style={{ marginLeft: 4 }}>
-              {reservation.id}
-            </Text>
-          </div>
-        </div>
-
-        <Text strong style={{ fontSize: "15px" }}>
-          {reservation.room}
-        </Text>
-
-        <Divider style={{ margin: "12px 0" }} />
-
-        <div style={{ marginBottom: "16px" }}>
-          <Row justify="space-between" style={{ marginBottom: "8px" }}>
-            <Col>
-              <Text type="secondary">Cant. días:</Text>
-            </Col>
-            <Col>
-              <Text strong>{reservation.days} Días</Text>
-            </Col>
-          </Row>
-          <Row justify="space-between" style={{ marginBottom: "8px" }}>
-            <Col>
-              <Text type="secondary">Precio:</Text>
-            </Col>
-            <Col>
-              <Text>{formatCurrency(reservation.price)}</Text>
-            </Col>
-          </Row>
-          <Row justify="space-between" style={{ marginBottom: "8px" }}>
-            <Col>
-              <Text type="secondary">IGV 18%:</Text>
-            </Col>
-            <Col>
-              <Text>{formatCurrency(reservation.tax)}</Text>
-            </Col>
-          </Row>
-          <Row justify="space-between" style={{ marginBottom: "8px" }}>
-            <Col>
-              <Text type="secondary">Rec. Servicios:</Text>
-            </Col>
-            <Col>
-              <Text>{formatCurrency(reservation.serviceFee)}</Text>
-            </Col>
-          </Row>
-        </div>
-
-        <Divider style={{ margin: "12px 0" }} />
-
-        <Row
-          justify="space-between"
-          align="middle"
-          style={{ marginBottom: "16px" }}
-        >
-          <Col>
-            <Text strong>Tot. PAGO:</Text>
-            <Text strong style={{ marginLeft: "8px", fontSize: "16px" }}>
-              {formatCurrency(reservation.total)}
-            </Text>
-          </Col>
-          <Col>
-            <Tag
-              color={reservation.statusColor}
-              icon={
-                reservation.status === "Reservado" ? (
-                  <CheckCircle size={12} />
-                ) : reservation.status === "Cancelado" ? (
-                  <Ban size={12} />
-                ) : (
-                  <Clock4 size={12} />
-                )
-              }
-            >
-              {reservation.status}
-            </Tag>
-          </Col>
-        </Row>
-
-        <Row justify="space-between" style={{ marginBottom: "16px" }}>
-          <Col>
-            <Text type="secondary">Forma PAGO:</Text>
-            <Text style={{ marginLeft: "8px" }}>
-              {reservation.paymentMethod}
-            </Text>
-          </Col>
-        </Row>
-
-        <Divider style={{ margin: "16px 0" }} />
-
-        {reservation.status === "En proceso" ? (
-          <Row gutter={8}>
-            <Button
-              icon={<XCircle size={16} />}
-              block
-              danger
-              style={{ fontSize: "13px", height: "40px" }}
-              onClick={() => handleCancelClick(reservation)}
-            >
-              Cancelar
-            </Button>
-          </Row>
-        ) : reservation.status === "Reservado" ? (
-          <Row gutter={8}>
-            <Col span={12}>
-              <Button
-                icon={<CreditCard size={16} />}
-                block
-                type="primary"
-                style={{ fontSize: "13px", height: "40px" }}
-              >
-                Pagar
-              </Button>
-            </Col>
-            <Col span={12}>
-              <Button
-                icon={<Printer size={16} />}
-                block
-                type="default"
-                style={{ fontSize: "13px", height: "40px" }}
-              >
-                Imprimir
-              </Button>
-            </Col>
-          </Row>
-        ) : (
-          <Row gutter={8}>
-            <Col span={24}>
-              <Button
-                icon={<Download size={16} />}
-                block
-                type="default"
-                style={{ fontSize: "13px", height: "40px" }}
-              >
-                Descargar Comprobante
-              </Button>
-            </Col>
-          </Row>
-        )}
-      </Space>
-    </Card>
-  );
 
   const tabItems = [
     {
-      key: "enProceso",
+      key: "PENDIENTE",
       label: (
-        <Space>
-          <Clock4 size={16} />
-          EN PROCESO
-        </Space>
+        <span className="flex items-center gap-1.5 font-medium">
+          <Clock4 size={13} />
+          Pendientes
+        </span>
       ),
       children: (
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(350px, 1fr))",
-            gap: "16px",
-          }}
-        >
-          {reservations
-            .filter((r) => r.tabKey === "enProceso")
-            .map(renderReservationCard)}
-        </div>
+        <TabContent
+          key={`PENDIENTE-${refreshKey}`}
+          estado="PENDIENTE"
+          onPaySuccess={handlePaySuccess}
+        />
       ),
     },
     {
-      key: "reservado",
+      key: "ACTIVA",
       label: (
-        <Space>
-          <CheckCircle size={16} />
-          RESERVADO
-        </Space>
+        <span className="flex items-center gap-1.5 font-medium">
+          <CheckCircle size={13} />
+          Aprobados
+        </span>
       ),
       children: (
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(350px, 1fr))",
-            gap: "16px",
-          }}
-        >
-          {reservations
-            .filter((r) => r.tabKey === "reservado")
-            .map(renderReservationCard)}
-        </div>
+        <TabContent
+          key={`ACTIVA-${refreshKey}`}
+          estado="ACTIVA"
+          onPaySuccess={handlePaySuccess}
+        />
       ),
     },
     {
-      key: "cancelado",
+      key: "FINALIZADA",
       label: (
-        <Space>
-          <Ban size={16} />
-          DENEGADO O CANCELADO
-        </Space>
+        <span className="flex items-center gap-1.5 font-medium">
+          <Download size={13} />
+          Finalizados
+        </span>
       ),
       children: (
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(350px, 1fr))",
-            gap: "16px",
-          }}
-        >
-          {reservations
-            .filter((r) => r.tabKey === "cancelado")
-            .map(renderReservationCard)}
-        </div>
+        <TabContent
+          key={`FINALIZADA-${refreshKey}`}
+          estado="FINALIZADA"
+          onPaySuccess={handlePaySuccess}
+        />
+      ),
+    },
+    {
+      key: "CANCELADA",
+      label: (
+        <span className="flex items-center gap-1.5 font-medium">
+          <Ban size={13} />
+          Cancelados
+        </span>
+      ),
+      children: (
+        <TabContent
+          key={`CANCELADA-${refreshKey}`}
+          estado="CANCELADA"
+          onPaySuccess={handlePaySuccess}
+        />
       ),
     },
   ];
 
   return (
-    <div style={{ padding: "24px" }}>
-      <Title level={2} style={{ marginBottom: 24 }}>
-        Mis Reservaciones
-      </Title>
+    <div className="p-4 sm:p-6">
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold text-black dark:text-white">
+          Mis reservaciones
+        </h2>
+        <p className="text-gray-500 text-sm mt-1">
+          Consulta y gestiona todas tus reservaciones
+        </p>
+      </div>
 
-      <Tabs defaultActiveKey="enProceso" items={tabItems} />
+      <Tabs defaultActiveKey="PENDIENTE" items={tabItems} />
 
-      <Drawer
-        title={
-          <Space>
-            <AlertCircle size={20} />
-            <Text strong>¿Cancelar reserva?</Text>
-          </Space>
-        }
-        placement="right"
-        styles={{ wrapper: { width: 500 } }}
-        open={showCancelDrawer}
-        onClose={() => setShowCancelDrawer(false)}
-        footer={
-          <div style={{ display: "flex", justifyContent: "flex-end" }}>
-            <Space>
-              <Button onClick={() => setShowCancelDrawer(false)}>Volver</Button>
-              <Button
-                type="primary"
-                danger
-                icon={<Trash2 size={16} />}
-                onClick={handleConfirmCancel}
-                disabled={!agreePolicy}
-              >
-                Confirmar Cancelación
-              </Button>
-            </Space>
-          </div>
-        }
-      >
-        {selectedReservation && (
-          <Space orientation="vertical" style={{ width: "100%" }}>
-            <Paragraph style={{ fontSize: "16px", marginBottom: 24 }}>
-              Te agradecemos que hayas leído correctamente nuestras políticas
-              para cancelar tu reserva.
-              <Text strong>
-                Una vez aceptado y pagado, ya no se podrá cancelar la reserva
-              </Text>
-              , si no es el caso puedes hacerlo desde acá.
-            </Paragraph>
-
-            <Card
-              title="Reserva seleccionada"
-              size="small"
-              style={{ marginBottom: 24, backgroundColor: "#fafafa" }}
-            >
-              <Space orientation="vertical" style={{ width: "100%" }}>
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                  }}
-                >
-                  <Text strong style={{ fontSize: "16px" }}>
-                    {selectedReservation.room}{" "}
-                    <Trash2 size={16} style={{ marginLeft: 8 }} />
-                  </Text>
-                </div>
-
-                <Divider style={{ margin: "12px 0" }} />
-
-                <div>
-                  <Text strong style={{ display: "block", marginBottom: 4 }}>
-                    ID de reserva:
-                  </Text>
-                  <Paragraph
-                    type="secondary"
-                    style={{ marginBottom: 8, fontSize: "14px" }}
-                  >
-                    (El proceso es automático, pero puede verificar para mayor
-                    seguridad)
-                  </Paragraph>
-                  <Text
-                    code
-                    style={{
-                      fontSize: "16px",
-                      padding: "8px 16px",
-                      backgroundColor: "#f5f5f5",
-                      display: "block",
-                    }}
-                  >
-                    {selectedReservation.id}
-                  </Text>
-                </div>
-
-                <div style={{ marginTop: 16 }}>
-                  <Row justify="space-between" style={{ marginBottom: 8 }}>
-                    <Col>
-                      <Text type="secondary">Total a reembolsar:</Text>
-                    </Col>
-                    <Col>
-                      <Text strong>
-                        {formatCurrency(selectedReservation.total)}
-                      </Text>
-                    </Col>
-                  </Row>
-                  <Row justify="space-between">
-                    <Col>
-                      <Text type="secondary">Estado:</Text>
-                    </Col>
-                    <Col>
-                      <Tag color={selectedReservation.statusColor}>
-                        {selectedReservation.status}
-                      </Tag>
-                    </Col>
-                  </Row>
-                </div>
-              </Space>
-            </Card>
-
-            <div style={{ marginBottom: 24 }}>
-              <Title level={5} style={{ marginBottom: 16 }}>
-                Comentarios tu razón:
-                <Text
-                  type="secondary"
-                  style={{
-                    fontSize: "14px",
-                    marginLeft: 8,
-                    fontWeight: "normal",
-                  }}
-                >
-                  (puedes omitir este proceso si gustas)
-                </Text>
-              </Title>
-
-              <Radio.Group
-                onChange={(e) => setCancelReason(e.target.value)}
-                value={cancelReason}
-                style={{ marginBottom: 16, width: "100%" }}
-              >
-                <Space orientation="vertical" style={{ width: "100%" }}>
-                  {cancelReasons.map((reason) => (
-                    <Radio
-                      key={reason}
-                      value={reason}
-                      style={{ display: "block", marginBottom: 8 }}
-                    >
-                      {reason}
-                    </Radio>
-                  ))}
-                </Space>
-              </Radio.Group>
-
-              {cancelReason === "Otro" && (
-                <TextArea
-                  placeholder="Describe tu razón..."
-                  rows={3}
-                  value={customReason}
-                  onChange={(e) => setCustomReason(e.target.value)}
-                  style={{ marginTop: 8 }}
-                />
-              )}
-            </div>
-
-            <Checkbox
-              checked={agreePolicy}
-              onChange={(e) => setAgreePolicy(e.target.checked)}
-              style={{ marginBottom: 24, display: "block" }}
-            >
-              He leído y acepto las políticas de cancelación
-            </Checkbox>
-
-            <Alert
-              title="Importante"
-              description="Recuerda que la cantidad de reservas es acumulable para promociones y programas de lealtad."
-              type="info"
-              showIcon
-            />
-          </Space>
-        )}
-      </Drawer>
+      <PaymentSuccessModal
+        open={modalOpen}
+        onClose={handleCloseModal}
+        reservation={paidReservation}
+      />
     </div>
   );
 }

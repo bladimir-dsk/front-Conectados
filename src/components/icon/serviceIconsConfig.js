@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 
 // Color único para todos los iconos de servicios
-const SERVICE_ICON_COLOR = "#84cc16"; // Verde lime (puedes cambiarlo aquí)
+const SERVICE_ICON_COLOR = "#84cc16"; // Verde lime
 
 export const SERVICE_ICONS_CONFIG = {
     water: { 

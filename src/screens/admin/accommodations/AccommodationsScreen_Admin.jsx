@@ -407,6 +407,19 @@ export default function AccommodationsScreen_Admin() {
             render: (price) => formatPrice(price),
         },
         {
+            title: "Capacidad",
+            dataIndex: "capacity",
+            key: "capacity",
+            align: "center",
+            sorter: (a, b) => (a.capacity || 0) - (b.capacity || 0),
+            render: (capacity) =>
+                capacity ? (
+                    <Tag color="blue">{capacity} persona{capacity !== 1 ? "s" : ""}</Tag>
+                ) : (
+                    <span className="text-gray-400">—</span>
+                ),
+        },
+        {
             title: "Estado",
             dataIndex: "estatus",
             key: "estatus",
