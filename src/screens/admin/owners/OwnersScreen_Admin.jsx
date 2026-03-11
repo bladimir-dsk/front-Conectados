@@ -52,7 +52,7 @@ export default function OwnersScreen_Admin() {
     if (filtros.nombre) params.append("namePersonal", filtros.nombre);
     if (filtros.correo) params.append("emailPersonal", filtros.correo);
     if (filtros.estatus && filtros.estatus.length > 0) {
-      params.append("estatus", filtros.estatus.join(","));
+      filtros.estatus.forEach((e) => params.append("estatus", e));
     }
 
     return `/propietarios?${params.toString()}`;
