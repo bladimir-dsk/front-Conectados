@@ -599,14 +599,16 @@ const ReservationModal = ({ open, onClose, room, hasDocuments }) => {
             ) : (
               <>
                 {(error || apiError) && (
-                  <Alert
-                    message={error || apiError}
-                    type="error"
-                    showIcon
-                    className="mb-4"
-                    closable
-                    onClose={() => setError(null)}
-                  />
+                  <div className="mb-4">
+                    <Alert
+                      title={error || apiError}
+                      type="error"
+                      showIcon
+                      className="mb-4"
+                      closable
+                      onClose={() => setError(null)}
+                    />
+                  </div>
                 )}
                 {step === 1 && <StepDocuments hasDocuments={hasDocuments} />}
                 {step === 2 && (
