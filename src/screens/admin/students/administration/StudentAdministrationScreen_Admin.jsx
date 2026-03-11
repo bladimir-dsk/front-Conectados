@@ -23,7 +23,8 @@ export default function StudentsScreen_Admin() {
 
     const [filtros, setFiltros] = useState({
         name: "",
-        id_school: undefined,
+        id_school: [],
+        estatus: [],
     });
 
     const [paginacion, setPaginacion] = useState({
@@ -37,7 +38,8 @@ export default function StudentsScreen_Admin() {
         params.append("page", pagina.toString());
         params.append("limit", paginacion.limite.toString());
         if (filtros.name) params.append("name", filtros.name);
-        if (filtros.id_school) params.append("id_school", filtros.id_school);
+        if (filtros.id_school?.length) params.append("id_school", filtros.id_school.join(","));
+        if (filtros.estatus?.length) params.append("estatus", filtros.estatus.join(","));
         return `/users/estudiantes?${params.toString()}`;
     };
 
@@ -100,8 +102,11 @@ export default function StudentsScreen_Admin() {
     };
 
     const handleTableChange = (_, filters) => {
-        const id_school = filters.school?.[0] ?? undefined;
-        setFiltros((prev) => ({ ...prev, id_school }));
+        setFiltros((prev) => ({
+            ...prev,
+            id_school: filters.school ?? [],
+            estatus: filters.estatus ?? [],
+        }));
         setPaginacion((prev) => ({ ...prev, paginaActual: 1 }));
     };
 
@@ -210,7 +215,7 @@ export default function StudentsScreen_Admin() {
             key: "school",
             align: "center",
             filters: schoolFilters,
-            filteredValue: filtros.id_school ? [filtros.id_school] : null,
+            filteredValue: filtros.id_school?.length ? filtros.id_school : null,
             onFilter: () => true,
             render: (_, record) =>
                 record.School ? (
@@ -228,9 +233,10 @@ export default function StudentsScreen_Admin() {
             align: "center",
             filters: [
                 { text: "Activo", value: "Activo" },
-                { text: "Suspendido", value: "Suspendido" },
+                { text: "Inactivo", value: "Inactivo" },
             ],
-            onFilter: (value, record) => record.estatus === value,
+            filteredValue: filtros.estatus?.length ? filtros.estatus : null,
+            onFilter: () => true,
             render: (status) => (
                 <Tag color={getStatusColor(status)} style={{ fontSize: "13px" }}>
                     {status}
@@ -239,7 +245,7 @@ export default function StudentsScreen_Admin() {
         },
         {
             title: "# Docs",
-            dataIndex: "documentaciones", 
+            dataIndex: "documentaciones",
             key: "documentaciones",
             align: "center",
             render: (docs) => (
@@ -320,9 +326,7 @@ export default function StudentsScreen_Admin() {
                             emptyText: loadingStudents
                                 ? null
                                 : (() => {
-                                    const hayFiltros =
-                                        filtros.name ||
-                                        filtros.id_school;
+                                    const hayFiltros = filtros.name || filtros.id_school?.length || filtros.estatus?.length;
 
                                     return hayFiltros
                                         ? "No se encontraron estudiantes con los filtros aplicados."
