@@ -208,6 +208,7 @@ export default function StudentsScreen_Admin() {
         {
             title: "Escuela",
             key: "school",
+            align: "center",
             filters: schoolFilters,
             filteredValue: filtros.id_school ? [filtros.id_school] : null,
             onFilter: () => true,

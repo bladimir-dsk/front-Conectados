@@ -46,6 +46,7 @@ function CheckoutForm({ clientSecret, onSuccess, onCancel, reservation }) {
   const elements = useElements();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const isDark = document.documentElement.classList.contains("dark");
 
   const monto = reservation?.totales?.monto_total;
   const alojamiento = reservation?.ubicacion?.alojamiento;
@@ -158,7 +159,7 @@ function CheckoutForm({ clientSecret, onSuccess, onCancel, reservation }) {
                 style: {
                   base: {
                     fontSize: "15px",
-                    color: "#1f2937",
+                    color: isDark ? "#f9fafb" : "#1f2937",
                     fontFamily: "inherit",
                     "::placeholder": { color: "#9ca3af" },
                   },
@@ -170,7 +171,6 @@ function CheckoutForm({ clientSecret, onSuccess, onCancel, reservation }) {
           </div>
           <div className="flex justify-center mt-2">
             <span className="flex items-center gap-1.5 text-xs text-gray-400 mt-2">
-              <Lock size={11} /> Pago seguro procesado por Stripe
             </span>
           </div>
 

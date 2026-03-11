@@ -184,12 +184,6 @@ export default function StudentSchoolScreen_Admin() {
             dataIndex: "level",
             key: "level",
             align: "center",
-            filters: [
-                { text: "Secundaria", value: "Secundaria" },
-                { text: "Bachillerato", value: "Bachillerato" },
-                { text: "Universidad", value: "Universidad" },
-            ],
-            onFilter: (value, record) => record.level === value,
             render: (level) => (
                 <Tag color={LEVEL_COLOR[level] || "default"}>{level}</Tag>
             ),
@@ -199,11 +193,6 @@ export default function StudentSchoolScreen_Admin() {
             dataIndex: "type",
             key: "type",
             align: "center",
-            filters: [
-                { text: "Pública", value: "Publica" },
-                { text: "Privada", value: "Privada" },
-            ],
-            onFilter: (value, record) => record.type === value,
             render: (type) => (
                 <Tag color={TYPE_COLOR[type] || "default"}>
                     {type === "Publica" ? "Pública" : type}
@@ -211,16 +200,15 @@ export default function StudentSchoolScreen_Admin() {
             ),
         },
         {
-            title: "Turno",
-            dataIndex: "turn",
-            key: "turn",
+            title: "Tipo",
+            dataIndex: "type",
+            key: "type",
             align: "center",
-            filters: [
-                { text: "Matutino", value: "Matutino" },
-                { text: "Vespertino", value: "Vespertino" },
-            ],
-            onFilter: (value, record) => record.turn === value,
-            render: (turn) => <Tag color="geekblue">{turn}</Tag>,
+            render: (type) => (
+                <Tag color={TYPE_COLOR[type] || "default"}>
+                    {type === "Publica" ? "Pública" : type}
+                </Tag>
+            ),
         },
         {
             title: "Acciones",
