@@ -20,7 +20,13 @@ function ThemeApp() {
           colorPrimary: '#84cc16',
           borderRadius: 6,
         },
-      }}>
+        components: {
+          Modal: {
+            maskBg: 'rgba(0, 0, 0, 0.90) !important',
+          },
+        },
+      }}
+    >
       <AntApp>
         <LoadScript googleMapsApiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}>
           <RouteApp />
