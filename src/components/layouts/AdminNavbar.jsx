@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   User,
   LogOut,
@@ -22,9 +22,13 @@ export default function AdminNavbar({ collapsed, onToggle, isMobile }) {
 
   const userMenuItems = [
     {
-      key: "profile",
+      key: "admin/perfil",
       icon: <User size={16} />,
       label: "Perfil",
+      onClick: () => {
+        navigate("/admin/perfil");
+        setDropdownOpen(false);
+      },
     },
     {
       key: "logout",
@@ -112,11 +116,10 @@ export default function AdminNavbar({ collapsed, onToggle, isMobile }) {
                 <button
                   key={item.key}
                   onClick={item.onClick}
-                  className={`w-full flex items-center gap-3 px-4 py-2 text-sm transition-colors ${
-                    item.danger
+                  className={`w-full flex items-center gap-3 px-4 py-2 text-sm transition-colors ${item.danger
                       ? "text-red-600! hover:bg-red-200 dark:hover:bg-red-500/50"
                       : "text-gray-700 hover:bg-lime-200 dark:hover:bg-lime-500/50"
-                  }`}
+                    }`}
                 >
                   {item.icon}
                   <span>{item.label}</span>

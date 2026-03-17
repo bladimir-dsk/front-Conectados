@@ -70,11 +70,6 @@ export default function AdminSidebar({
         { key: "/admin/escuelas", label: "Escuelas" }
       ]
     },
-    {
-      key: "/admin/usuarios",
-      icon: <Users size={18} />,
-      label: "Usuarios",
-    },
   ];
 
   const handleMenuClick = ({ key }) => {
@@ -128,7 +123,7 @@ export default function AdminSidebar({
     if (bestMatch) return [bestMatch];
 
     // Default
-    return ["/admin/dashboard"];
+    return [];
   };
 
   const getOpenKeys = () => {
