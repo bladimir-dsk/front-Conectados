@@ -5,6 +5,7 @@ import {
     AreaChart, Area, PieChart, Pie, Cell,
     XAxis, YAxis, CartesianGrid, Tooltip as RechartTooltip,
     ResponsiveContainer,
+    Legend,
 } from 'recharts'
 import {
     Home, User, GraduationCap, School,
@@ -16,6 +17,13 @@ const MES_ABBR = {
     Enero: 'Ene', Febrero: 'Feb', Marzo: 'Mar', Abril: 'Abr',
     Mayo: 'May', Junio: 'Jun', Julio: 'Jul', Agosto: 'Ago',
     Septiembre: 'Sep', Octubre: 'Oct', Noviembre: 'Nov', Diciembre: 'Dic',
+}
+
+const ESTADO_RENTA_CONFIG = {
+    ACTIVA: { label: 'Activas', color: '#10b981' },
+    CANCELADA: { label: 'Canceladas', color: '#ef4444' },
+    FINALIZADA: { label: 'Finalizadas', color: '#3b82f6' },
+    PENDIENTE: { label: 'Pendientes', color: '#f59e0b' },
 }
 
 const ESTATUS_CONFIG = {
@@ -166,7 +174,12 @@ export default function DashboardScreen_Admin() {
         )
         return dataRentasMeses.map((r) => ({
             mes: MES_ABBR[r.month] ?? r.month,
-            reservaciones: (r.ACTIVA ?? 0) + (r.CANCELADA ?? 0) + (r.FINALIZADA ?? 0) + (r.PENDIENTE ?? 0),
+            // ── para la vista por estado ──
+            ACTIVA: r.ACTIVA ?? 0,
+            CANCELADA: r.CANCELADA ?? 0,
+            FINALIZADA: r.FINALIZADA ?? 0,
+            PENDIENTE: r.PENDIENTE ?? 0,
+            // ── para ingresos ──
             ingresos: gananciasByMonth[r.month] ?? 0,
         }))
     }, [dataGanancias, dataRentasMeses])
@@ -305,32 +318,69 @@ export default function DashboardScreen_Admin() {
                 >
                     {loadingChart
                         ? <ChartSkeleton height={220} />
-                        : (
-                            <ResponsiveContainer width="100%" height={220}>
-                                <AreaChart data={chartData} margin={{ top: 4, right: 4, left: -10, bottom: 0 }}>
-                                    <defs>
-                                        <linearGradient id="aGrad" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor={lineColor} stopOpacity={0.2} />
-                                            <stop offset="95%" stopColor={lineColor} stopOpacity={0} />
-                                        </linearGradient>
-                                    </defs>
-                                    <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
-                                    <XAxis dataKey="mes" tick={{ fontSize: 12, fill: tickColor }} axisLine={false} tickLine={false} />
-                                    <YAxis tick={{ fontSize: 12, fill: tickColor }} axisLine={false} tickLine={false} />
-                                    <RechartTooltip content={<CustomTooltip prefix={prefix} />} />
-                                    <Area
-                                        type="monotone"
-                                        dataKey={dataKey}
-                                        name={lineLabel}
-                                        stroke={lineColor}
-                                        strokeWidth={2.5}
-                                        fill="url(#aGrad)"
-                                        dot={{ r: 4, fill: lineColor, strokeWidth: 2, stroke: dotStroke }}
-                                        activeDot={{ r: 6 }}
-                                    />
-                                </AreaChart>
-                            </ResponsiveContainer>
-                        )
+                        : isIngresos
+                            ? (
+                                <ResponsiveContainer width="100%" height={220}>
+                                    <AreaChart data={chartData} margin={{ top: 4, right: 4, left: -10, bottom: 0 }}>
+                                        <defs>
+                                            <linearGradient id="aGrad" x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="5%" stopColor="#10b981" stopOpacity={0.2} />
+                                                <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                                            </linearGradient>
+                                        </defs>
+                                        <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
+                                        <XAxis dataKey="mes" tick={{ fontSize: 12, fill: tickColor }} axisLine={false} tickLine={false} />
+                                        <YAxis tick={{ fontSize: 12, fill: tickColor }} axisLine={false} tickLine={false} />
+                                        <RechartTooltip content={<CustomTooltip prefix="$" />} />
+                                        <Area
+                                            type="monotone"
+                                            dataKey="ingresos"
+                                            name="Ingresos (MXN)"
+                                            stroke="#10b981"
+                                            strokeWidth={2.5}
+                                            fill="url(#aGrad)"
+                                            dot={{ r: 4, fill: "#10b981", strokeWidth: 2, stroke: dotStroke }}
+                                            activeDot={{ r: 6 }}
+                                        />
+                                    </AreaChart>
+                                </ResponsiveContainer>
+                            )
+                            : (
+                                <ResponsiveContainer width="100%" height={220}>
+                                    <AreaChart data={chartData} margin={{ top: 4, right: 4, left: -10, bottom: 0 }}>
+                                        <defs>
+                                            {Object.entries(ESTADO_RENTA_CONFIG).map(([key, cfg]) => (
+                                                <linearGradient key={key} id={`grad_${key}`} x1="0" y1="0" x2="0" y2="1">
+                                                    <stop offset="5%" stopColor={cfg.color} stopOpacity={0.3} />
+                                                    <stop offset="95%" stopColor={cfg.color} stopOpacity={0.05} />
+                                                </linearGradient>
+                                            ))}
+                                        </defs>
+                                        <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
+                                        <XAxis dataKey="mes" tick={{ fontSize: 12, fill: tickColor }} axisLine={false} tickLine={false} />
+                                        <YAxis tick={{ fontSize: 12, fill: tickColor }} axisLine={false} tickLine={false} allowDecimals={false} />
+                                        <RechartTooltip content={<CustomTooltip />} />
+                                        <Legend
+                                            iconType="square"
+                                            iconSize={10}
+                                            wrapperStyle={{ fontSize: 12, paddingTop: 8 }}
+                                            formatter={(value) => ESTADO_RENTA_CONFIG[value]?.label ?? value}
+                                        />
+                                        {Object.entries(ESTADO_RENTA_CONFIG).map(([key, cfg]) => (
+                                            <Area
+                                                key={key}
+                                                type="monotone"
+                                                dataKey={key}
+                                                name={key}
+                                                stackId="a"
+                                                stroke={cfg.color}
+                                                strokeWidth={2}
+                                                fill={`url(#grad_${key})`}
+                                            />
+                                        ))}
+                                    </AreaChart>
+                                </ResponsiveContainer>
+                            )
                     }
                 </Panel>
 
