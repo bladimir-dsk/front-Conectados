@@ -372,7 +372,6 @@ export default function DashboardScreen_Admin() {
                                                 type="monotone"
                                                 dataKey={key}
                                                 name={key}
-                                                stackId="a"
                                                 stroke={cfg.color}
                                                 strokeWidth={2}
                                                 fill={`url(#grad_${key})`}
