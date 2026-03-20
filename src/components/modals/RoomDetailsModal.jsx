@@ -63,6 +63,11 @@ const ESTATUS_CONFIG = {
     dot: "bg-blue-400",
     text: "text-blue-600 dark:text-blue-400",
   },
+  LIMPIEZA: {
+    label: "En limpieza",
+    dot: "bg-purple-400",
+    text: "text-purple-600 dark:text-purple-400",
+  },
 };
 
 function EstatusTag({ estatus }) {
@@ -136,10 +141,11 @@ function PhotoCarousel({ fotos = [], mainImage }) {
             <button
               key={i}
               onClick={() => setActive(i)}
-              className={`shrink-0 w-14 h-11 rounded-md overflow-hidden border-2 transition-all ${i === active
+              className={`shrink-0 w-14 h-11 rounded-md overflow-hidden border-2 transition-all ${
+                i === active
                   ? "border-lime-500"
                   : "border-transparent opacity-50 hover:opacity-80"
-                }`}
+              }`}
             >
               <img
                 src={img.url}
@@ -367,7 +373,7 @@ const RoomDetailsModal = ({
                       Servicios incluidos
                     </p>
                     <div className="flex flex-wrap gap-2">
-                      {(room.services).map((s) => {
+                      {room.services.map((s) => {
                         const { icon: IconComponent, color } = getServiceIcon(
                           s.icon,
                         );

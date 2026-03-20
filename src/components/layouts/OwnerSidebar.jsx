@@ -6,6 +6,8 @@ import {
     File,
     Moon,
     Sun,
+    House,
+    Building2,
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useTheme } from "../../hooks/useTheme";
@@ -72,9 +74,8 @@ export default function OwnerSidebar({ collapsed, onCollapse, isMobile, open, on
 
     const menuItems = [
         { key: "/propietario/dashboard", icon: <LayoutDashboard size={18} />, label: "Dashboard" },
-        { key: "/propietario/alojamientos", icon: <Home size={18} />, label: "Mis alojamientos" },
-        { key: "/propietario/pagos", icon: <DollarSign size={18} />, label: "Pagos" },
-        { key: "/propietario/reportes", icon: <File size={18} />, label: "Reportes" },
+        { key: "/propietario/alojamientos", icon: <Building2 size={18} />, label: "Mis alojamientos" },
+        { key: "/propietario/rentas", icon: <House size={18} />, label: "Mis Rentas" }
     ];
 
     const handleMenuClick = ({ key }) => {

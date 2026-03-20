@@ -1,9 +1,11 @@
 import React, { useState } from "react";
 import { Form, Button, Grid } from "antd";
-import { UserPlus } from "lucide-react";
+import { Building2, Home, Phone, UserPlus } from "lucide-react";
 import { useNotification } from "../../components/notification/NotificationProvider";
 import FormInput from "../../components/inputs/FormInput";
 import { useNavigate, Link } from "react-router-dom";
+import image from '/login.webp';
+import logo from '/LogoPrincipal-Horizontal.webp'
 
 const { useBreakpoint } = Grid;
 
@@ -195,7 +197,7 @@ export default function RegisterScreen() {
                   placeholder="••••••••"
                   rules={[
                     { required: true, message: "Ingresa tu contraseña" },
-                    { min: 6, message: "Mínimo 6 caracteres" },
+                    { min: 8, message: "Mínimo 8 caracteres" },
                   ]}
                   inputProps={{ type: "password" }}
                 />
@@ -243,12 +245,40 @@ export default function RegisterScreen() {
 
         {/* Imagen */}
         {md && (
-          <div className="flex-[1.1] relative">
-            <img
-              src="https://th.bing.com/th/id/OIG1.1S9SKh9A4xQsCUjoHW5M?pid=ImgDetMain&o=7&rm=3"
-              alt="Registro visual"
-              className="absolute inset-0 w-full h-full object-cover"
-            />
+          <div className="flex-[1.1] relative flex items-center justify-center 
+    bg-gradient-to-br from-lime-400 via-lime-500 to-green-600 overflow-hidden">
+
+            <Home className="absolute top-10 left-10 w-16 h-16 text-white/10" />
+            <Phone className="absolute bottom-10 right-10 w-16 h-16 text-white/10" />
+            <Building2 className="absolute top-1/2 left-20 w-20 h-20 text-white/10" />
+
+            <div className="absolute w-72 h-72 bg-white/10 blur-3xl rounded-full" />
+
+            <div className="relative flex flex-col items-center text-center px-6">
+
+              <img
+                src={logo}
+                alt="Logo"
+                className="w-56 mb-5 drop-shadow-[0_5px_15px_rgba(0,0,0,0.4)]"
+              />
+
+              <img
+                src={image}
+                alt="Registro visual"
+                className="max-w-[100%] object-contain 
+        drop-shadow-[0_25px_50px_rgba(0,0,0,0.35)] mb-5"
+              />
+
+              <h2 className="text-white text-xl font-bold mb-2">
+                Únete a la plataforma
+              </h2>
+
+              <p className="text-white/80 text-sm max-w-xs">
+                Regístrate y encuentra alojamientos ideales para estudiantes,
+                cerca de tu universidad y con todas las comodidades.
+              </p>
+
+            </div>
           </div>
         )}
       </div>

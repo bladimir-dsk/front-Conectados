@@ -22,6 +22,8 @@ import PaymentSuccessModal from "./modals/PaymentSuccessModal";
 import StripePaymentModal from "./modals/StripePaymentModal";
 import { downloadRentalContract } from "./pdfs/downloadContracts.jsx";
 import { downloadPaymentReceipt } from "./pdfs/downloadContracts.jsx";
+import api from "../../../api/axiosConfig.js";
+import { useCancelConfirmation } from "../../../hooks/useCancelConfirmation.js";
 
 const STATUS_CONFIG = {
   PENDIENTE: {
@@ -86,18 +88,8 @@ const formatDate = (dateStr) => {
   if (!dateStr) return "—";
   const [year, month, day] = dateStr.split("-");
   const months = [
-    "ene",
-    "feb",
-    "mar",
-    "abr",
-    "may",
-    "jun",
-    "jul",
-    "ago",
-    "sep",
-    "oct",
-    "nov",
-    "dic",
+    "ene", "feb", "mar", "abr", "may", "jun",
+    "jul", "ago", "sep", "oct", "nov", "dic",
   ];
   return `${day} ${months[parseInt(month, 10) - 1]} ${year}`;
 };
@@ -138,17 +130,26 @@ function DetailRow({ label, value }) {
   );
 }
 
-function ReservationCard({ reservation, onPaySuccess }) {
-  const [paying, setPaying] = useState(false);
+function ReservationCard({ reservation, onPaySuccess, onRefresh }) {
   const [payError, setPayError] = useState(null);
   const [stripeModalOpen, setStripeModalOpen] = useState(false);
+  const [loadingReceipt, setLoadingReceipt] = useState(false);
+  const [loadingContract, setLoadingContract] = useState(false);
 
   const { ubicacion, servicios, totales } = reservation;
   const alojamiento = ubicacion?.alojamiento;
   const cuarto = ubicacion?.cuarto;
   const nombreLugar = cuarto?.nombre || alojamiento?.nombre || "Sin nombre";
-  const [loadingReceipt, setLoadingReceipt] = useState(false);
-  const [loadingContract, setLoadingContract] = useState(false);
+
+  const showCancelConfirm = useCancelConfirmation({
+    onCancel: async () => {
+      await api.patch("/renta/EstadoRenta", {
+        id_renta: reservation.id_renta,
+        estado: "CANCELADA",
+      });
+    },
+    onSuccess: () => onRefresh(),
+  });
 
   const handleDownloadReceipt = async () => {
     try {
@@ -243,7 +244,7 @@ function ReservationCard({ reservation, onPaySuccess }) {
         </div>
       </div>
 
-      {/* Servicios — siempre mostrar la sección */}
+      {/* Servicios */}
       <div className="mx-4 mt-3">
         <p className="flex items-center gap-1.5 text-xs text-gray-400 mb-2">
           <Wrench size={12} /> Servicios incluidos
@@ -283,7 +284,6 @@ function ReservationCard({ reservation, onPaySuccess }) {
                 : "No incluido"
             }
           />
-          {/* Solo mostrar fila de servicios si tiene servicios con monto */}
           {hayMontoServicios ? (
             <DetailRow
               label="Total servicios"
@@ -306,7 +306,7 @@ function ReservationCard({ reservation, onPaySuccess }) {
         </div>
       </div>
 
-      {/* Error de pago */}
+      {/* Error */}
       {payError && (
         <div className="mx-4 mt-3">
           <Alert
@@ -318,7 +318,7 @@ function ReservationCard({ reservation, onPaySuccess }) {
         </div>
       )}
 
-      {/* ─── Acciones por estado ─── */}
+      {/* Acciones por estado */}
       <div className="px-4 pb-4 pt-3 mt-auto">
         {reservation.estado === "PENDIENTE" && (
           <div className="flex gap-2">
@@ -330,9 +330,8 @@ function ReservationCard({ reservation, onPaySuccess }) {
               Pagar
             </button>
             <button
-              disabled
-              className="flex items-center justify-center gap-2 border border-red-200 text-red-400 cursor-not-allowed text-sm font-medium px-3 py-2.5 rounded-xl"
-              title="Función próximamente"
+              onClick={() => showCancelConfirm({})}
+              className="flex items-center justify-center gap-2 border border-red-200 hover:border-red-400 hover:text-red-600 text-red-400 text-sm font-medium px-3 py-2.5 rounded-xl transition-colors"
             >
               <XCircle size={15} />
               Cancelar
@@ -398,7 +397,6 @@ function ReservationCard({ reservation, onPaySuccess }) {
           </div>
         )}
 
-        {/* CANCELADA: sin botón */}
         {reservation.estado === "CANCELADA" && (
           <div className="flex items-center justify-center gap-2 bg-red-100 dark:bg-red-900/20 text-red-400 text-xs font-medium py-2.5 rounded-xl">
             <Ban size={13} />
@@ -421,7 +419,7 @@ function ReservationCard({ reservation, onPaySuccess }) {
   );
 }
 
-function TabContent({ estado, onPaySuccess }) {
+function TabContent({ estado, onPaySuccess, onRefresh }) {
   const { data, loading, error } = useApi(`/renta?estado=${estado}`, {}, true);
 
   if (loading) {
@@ -462,6 +460,7 @@ function TabContent({ estado, onPaySuccess }) {
           key={r.id_renta}
           reservation={r}
           onPaySuccess={onPaySuccess}
+          onRefresh={onRefresh}
         />
       ))}
     </div>
@@ -483,6 +482,10 @@ export default function ReservationStudent_Screen() {
     setModalOpen(true);
   };
 
+  const handleRefresh = () => {
+    setRefreshKey((k) => k + 1);
+  };
+
   const tabItems = [
     {
       key: "PENDIENTE",
@@ -497,6 +500,7 @@ export default function ReservationStudent_Screen() {
           key={`PENDIENTE-${refreshKey}`}
           estado="PENDIENTE"
           onPaySuccess={handlePaySuccess}
+          onRefresh={handleRefresh}
         />
       ),
     },
@@ -513,6 +517,7 @@ export default function ReservationStudent_Screen() {
           key={`ACTIVA-${refreshKey}`}
           estado="ACTIVA"
           onPaySuccess={handlePaySuccess}
+          onRefresh={handleRefresh}
         />
       ),
     },
@@ -529,6 +534,7 @@ export default function ReservationStudent_Screen() {
           key={`FINALIZADA-${refreshKey}`}
           estado="FINALIZADA"
           onPaySuccess={handlePaySuccess}
+          onRefresh={handleRefresh}
         />
       ),
     },
@@ -545,6 +551,7 @@ export default function ReservationStudent_Screen() {
           key={`CANCELADA-${refreshKey}`}
           estado="CANCELADA"
           onPaySuccess={handlePaySuccess}
+          onRefresh={handleRefresh}
         />
       ),
     },

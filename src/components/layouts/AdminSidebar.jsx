@@ -10,6 +10,7 @@ import {
   UserRoundPen,
   Tag,
   Wrench,
+  House,
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useTheme } from "../../hooks/useTheme";
@@ -71,9 +72,9 @@ export default function AdminSidebar({
       ]
     },
     {
-      key: "/admin/usuarios",
-      icon: <Users size={18} />,
-      label: "Usuarios",
+      key: "/admin/rentas",
+      icon: <House size={18} />,
+      label: "Rentas",
     },
   ];
 
@@ -128,7 +129,7 @@ export default function AdminSidebar({
     if (bestMatch) return [bestMatch];
 
     // Default
-    return ["/admin/dashboard"];
+    return [];
   };
 
   const getOpenKeys = () => {
