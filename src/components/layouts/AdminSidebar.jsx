@@ -10,6 +10,7 @@ import {
   UserRoundPen,
   Tag,
   Wrench,
+  House,
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useTheme } from "../../hooks/useTheme";
@@ -69,6 +70,11 @@ export default function AdminSidebar({
         { key: "/admin/estudiantes/documentacion", label: "Documentación" },
         { key: "/admin/escuelas", label: "Escuelas" }
       ]
+    },
+    {
+      key: "/admin/rentas",
+      icon: <House size={18} />,
+      label: "Rentas",
     },
   ];
 
