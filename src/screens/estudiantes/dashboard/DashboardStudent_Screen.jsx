@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { useApi } from "../../../hooks/useApi";
 import {
   Button,
-  Select,
   Input,
   ConfigProvider,
   Pagination,
@@ -16,6 +15,7 @@ import {
   Badge,
   Row,
   Col,
+  notification,
 } from "antd";
 import esES from "antd/locale/es_ES";
 import {
@@ -28,7 +28,6 @@ import {
   X,
   SlidersHorizontal,
   Users,
-  Sparkles,
   Filter,
   LayoutGrid,
   House,
@@ -42,6 +41,7 @@ import {
 import RoomDetailsModal from "../../../components/modals/RoomDetailsModal";
 import ReservationModal from "../../../components/modals/ReservationModal";
 import HeroBanner from "./HeroBanner";
+import api from "../../../api/axiosConfig";
 
 const ESTATUS_CONFIG = {
   ACTIVO: {
@@ -214,8 +214,7 @@ function RoomCard({ room, isFav, onToggleFavorite, onViewDetails, onViewMap }) {
         <div className="mt-1 flex gap-2">
           <button
             onClick={() => onViewDetails(room.id)}
-            className="flex-1 py-2 rounded-lg bg-lime-500 hover:bg-lime-600 text-black! text-sm font-semibold transition-colors"
-          >
+            className="flex-1 py-2 rounded-lg bg-lime-500 hover:bg-lime-600 text-black! text-sm font-semibold transition-colors">
             Ver detalles
           </button>
           <Tooltip title="Ver en el mapa" placement="top" color="#ef4444">
@@ -319,8 +318,8 @@ function SidebarFilters({ filters, setFilters, onSearch, onClear, hasActive, loa
               key={String(opt.value)}
               onClick={() => setFilters((p) => ({ ...p, typeProperty: opt.value }))}
               className={`w-full text-left px-3 py-2 rounded-xl text-sm transition-all font-medium flex items-center gap-2 ${filters.typeProperty === opt.value
-                  ? "bg-lime-500 text-black shadow-sm"
-                  : "bg-gray-50 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 hover:bg-lime-50 dark:hover:bg-zinc-700"
+                ? "bg-lime-500 text-black shadow-sm"
+                : "bg-gray-50 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 hover:bg-lime-50 dark:hover:bg-zinc-700"
                 }`}
             >
               {opt.icon}
@@ -343,8 +342,8 @@ function SidebarFilters({ filters, setFilters, onSearch, onClear, hasActive, loa
               key={String(opt.value)}
               onClick={() => setFilters((p) => ({ ...p, gender: opt.value }))}
               className={`w-full text-left px-3 py-2 rounded-xl text-sm transition-all font-medium flex items-center gap-2 ${filters.gender === opt.value
-                  ? "bg-lime-500 text-black shadow-sm"
-                  : "bg-gray-50 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 hover:bg-lime-50 dark:hover:bg-zinc-700"
+                ? "bg-lime-500 text-black shadow-sm"
+                : "bg-gray-50 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 hover:bg-lime-50 dark:hover:bg-zinc-700"
                 }`}
             >
               {opt.icon}
@@ -366,8 +365,8 @@ function SidebarFilters({ filters, setFilters, onSearch, onClear, hasActive, loa
               key={String(opt.value)}
               onClick={() => setFilters((p) => ({ ...p, typeIncome: opt.value }))}
               className={`w-full text-left px-3 py-2 rounded-xl text-sm transition-all font-medium flex items-center gap-2 ${filters.typeIncome === opt.value
-                  ? "bg-lime-500 text-black shadow-sm"
-                  : "bg-gray-50 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 hover:bg-lime-50 dark:hover:bg-zinc-700"
+                ? "bg-lime-500 text-black shadow-sm"
+                : "bg-gray-50 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 hover:bg-lime-50 dark:hover:bg-zinc-700"
                 }`}
             >
               {opt.icon}
@@ -392,13 +391,15 @@ function SidebarFilters({ filters, setFilters, onSearch, onClear, hasActive, loa
   );
 }
 
-
 export default function DashboardStudent_Screen() {
   const navigate = useNavigate();
   const [page, setPage] = useState(1);
-  const [favorites, setFavorites] = useState([]);
+  const [favorites, setFavorites] = useState(() =>
+    []
+  );
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [isDesktop, setIsDesktop] = useState(() => window.innerWidth >= 1024);
+  const [notifApi, notifContextHolder] = notification.useNotification();
 
   useEffect(() => {
     const handleResize = () => {
@@ -447,6 +448,17 @@ export default function DashboardStudent_Screen() {
 
   const accommodations = data?.data ?? [];
   const meta = data?.meta ?? {};
+
+  useEffect(() => {
+    if (accommodations.length > 0) {
+      setFavorites((prev) => {
+        const fromApi = accommodations
+          .filter((a) => a.isFavorito)
+          .map((a) => a.id_alojamiento);
+        return [...new Set([...prev, ...fromApi])];
+      });
+    }
+  }, [data]);
 
   useEffect(() => {
     setEndpoint(construirURL(page, appliedFilters));
@@ -580,14 +592,47 @@ export default function DashboardStudent_Screen() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const toggleFavorite = (id) => {
+  const toggleFavorite = async (id) => {
+    const isCurrentlyFav = favorites.includes(id);
+
     setFavorites((prev) =>
-      prev.includes(id) ? prev.filter((f) => f !== id) : [...prev, id],
+      isCurrentlyFav ? prev.filter((f) => f !== id) : [...prev, id]
     );
+
+    try {
+      if (isCurrentlyFav) {
+        await api.delete(`/favorito/${id}`);
+        notifApi.success({
+          title: "Eliminado de favoritos",
+          description: "El alojamiento fue removido de tus favoritos.",
+          placement: "topRight",
+          duration: 3,
+        });
+      } else {
+        await api.post(`/favorito/${id}`);
+        notifApi.success({
+          title: "Agregado a favoritos",
+          description: "El alojamiento fue guardado en tus favoritos.",
+          placement: "topRight",
+          duration: 3,
+        });
+      }
+    } catch {
+      setFavorites((prev) =>
+        isCurrentlyFav ? [...prev, id] : prev.filter((f) => f !== id)
+      );
+      notifApi.error({
+        title: "Error",
+        description: "No se pudo actualizar el favorito. Intenta de nuevo.",
+        placement: "topRight",
+        duration: 3,
+      });
+    }
   };
 
   return (
     <ConfigProvider locale={esES}>
+      {notifContextHolder}
       <div className="min-h-screen w-full">
         <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
 

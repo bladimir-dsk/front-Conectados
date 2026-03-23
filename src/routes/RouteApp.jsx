@@ -22,6 +22,7 @@ import {
   AdminProfile,
   OwnersRentsScreen,
   AdminRents,
+  FavoritesStudent,
 } from "./lazyRoutes.js";
 import { ProtectedRoute } from "./ProtectedRoute";
 import AdminLayout from "../components/layouts/AdminLayout";
@@ -86,6 +87,7 @@ export default function RouteApp() {
           {/* <Route path="buscar" element={<BuscarHabitaciones />} />*/}
 
           <Route path="profile" element={<ProfileStudent />} />
+          <Route path="favoritos" element={<FavoritesStudent />} />
 
           <Route path="reservas" element={<ReservationStudent />} />
 
