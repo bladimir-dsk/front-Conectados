@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Form, Button, Grid } from "antd";
 import { Building2, Home, LogIn, Phone } from "lucide-react";
 import { useNotification } from "../../components/notification/NotificationProvider";
@@ -8,6 +8,7 @@ import { useAuth } from "../../hooks/useAuth";
 import { useApi } from "../../hooks/useApi";
 import image from '/login.webp';
 import logo from '/LogoPrincipal-Horizontal.webp'
+import PrivacyPolicyModal from "./modals/PrivacyPolicyModal";
 
 const { useBreakpoint } = Grid;
 
@@ -18,6 +19,7 @@ export default function LoginScreen() {
   const { notify } = useNotification();
   const navigate = useNavigate();
   const { login } = useAuth();
+  const [privacyModalOpen, setPrivacyModalOpen] = useState(false);
 
   // Hook useApi para el endpoint de login
   const { postData } = useApi("/auth/login", {}, false);
@@ -28,8 +30,6 @@ export default function LoginScreen() {
     try {
       const data = await postData(values, false);
 
-      console.log("Respuesta completa del API:", data);
-
       const userData = {
         id: data.id,
         name: data.name,
@@ -37,8 +37,6 @@ export default function LoginScreen() {
         role: data.role,
         id_empresa: data.id_empresa,
       };
-
-      console.log("userData construido:", userData);
 
       // Primero hacer login
       login(userData, data.token);
@@ -60,7 +58,6 @@ export default function LoginScreen() {
         navigate(roleRoutes[userData.role] || "/login");
       });
     } catch (error) {
-      console.error("Error:", error);
       notify({
         type: "error",
         title: "Error al iniciar sesión",
@@ -78,7 +75,7 @@ export default function LoginScreen() {
           ${isMobile ? "max-w-full flex-col" : "max-w-250 flex-row min-h-150"}`}>
         {md && (
           <div className="flex-[1.2] relative flex items-center justify-center 
-  bg-gradient-to-br from-lime-400 via-lime-500 to-green-600 overflow-hidden">
+  bg-linear-to-br from-lime-400 via-lime-500 to-green-600 overflow-hidden">
 
             <Home className="absolute top-10 left-10 w-16 h-16 text-white/10" />
             <Phone className="absolute bottom-10 right-10 w-16 h-16 text-white/10" />
@@ -172,10 +169,22 @@ export default function LoginScreen() {
                   Regístrate
                 </Link>
               </p>
+              <p className="m-0 mt-2">
+                <button
+                  type="button"
+                  onClick={() => setPrivacyModalOpen(true)}
+                  className="text-slate-400 dark:text-gray-500 text-xs hover:text-lime-600! dark:hover:text-lime-400! underline underline-offset-2 transition-colors cursor-pointer bg-transparent border-none p-0">
+                  Política de privacidad
+                </button>
+              </p>
             </div>
           </Form>
         </div>
       </div>
+      <PrivacyPolicyModal
+        visible={privacyModalOpen}
+        onClose={() => setPrivacyModalOpen(false)}
+      />
     </div>
   );
 }
