@@ -203,7 +203,7 @@ function FavCard({ room, onRemoveFavorite, onViewDetails, onViewMap }) {
                     )}
                 </div>
 
-                {/* Rating */}
+                {/* Rating
                 <div className="flex items-center gap-1.5 mt-auto pt-1">
                     <Star
                         size={13}
@@ -218,7 +218,7 @@ function FavCard({ room, onRemoveFavorite, onViewDetails, onViewMap }) {
                             ? Number(room.calificacion).toFixed(1)
                             : "Sin calificación"}
                     </span>
-                </div>
+                </div> */}
 
                 {/* Botones */}
                 <div className="mt-1 flex gap-2">
