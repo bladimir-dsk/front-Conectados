@@ -131,8 +131,8 @@ function StepRentType({
 
   const camasDelCuarto = selectedCuarto
     ? (
-        cuartosVisibles.find((c) => c.id_cuarto === selectedCuarto)?.camas ?? []
-      ).filter((b) => !ESTATUS_OCULTO.includes(b.estatus))
+      cuartosVisibles.find((c) => c.id_cuarto === selectedCuarto)?.camas ?? []
+    ).filter((b) => !ESTATUS_OCULTO.includes(b.estatus))
     : [];
 
   const StatusBadge = ({ estatus }) => {
@@ -215,12 +215,11 @@ function StepRentType({
                         }
                       }}
                       className={`w-full flex items-center justify-between p-3 rounded-lg border-2 text-left transition-colors
-                        ${
-                          disabled
-                            ? "border-gray-100 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-800/50 cursor-not-allowed opacity-60"
-                            : selected
-                              ? "border-lime-500 bg-lime-50 dark:bg-lime-900/20"
-                              : "border-gray-200 dark:border-zinc-700 hover:border-gray-300"
+                        ${disabled
+                          ? "border-gray-100 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-800/50 cursor-not-allowed opacity-60"
+                          : selected
+                            ? "border-lime-500 bg-lime-50 dark:bg-lime-900/20"
+                            : "border-gray-200 dark:border-zinc-700 hover:border-gray-300"
                         }`}
                     >
                       <div className="flex items-center gap-2 min-w-0">
@@ -274,13 +273,12 @@ function StepRentType({
                           onSelectedCamaChange(selected ? null : cama.id_cama);
                       }}
                       className={`w-full flex items-center justify-between p-3 rounded-lg border-2 text-left transition-colors
-                      ${
-                        disabled
+                      ${disabled
                           ? "border-gray-100 dark:border-zinc-800 bg-gray-50 dark:bg-zinc-800/50 cursor-not-allowed opacity-60"
                           : selected
                             ? "border-lime-500 bg-lime-50 dark:bg-lime-900/20"
                             : "border-gray-200 dark:border-zinc-700 hover:border-gray-300"
-                      }`}
+                        }`}
                     >
                       <div className="flex items-center gap-2 min-w-0">
                         <BedDouble
@@ -385,10 +383,9 @@ function StepServices({ room, selectedServices, onSelectedServicesChange }) {
               key={s.id}
               onClick={() => toggle(s.id)}
               className={`w-full flex items-center justify-between p-3 rounded-lg border-2 transition-colors
-                ${
-                  checked
-                    ? "border-lime-500 bg-lime-50 dark:bg-lime-900/20"
-                    : "border-gray-200 dark:border-zinc-700 hover:border-gray-300 dark:hover:border-zinc-600"
+                ${checked
+                  ? "border-lime-500 bg-lime-50 dark:bg-lime-900/20"
+                  : "border-gray-200 dark:border-zinc-700 hover:border-gray-300 dark:hover:border-zinc-600"
                 }`}
             >
               <div className="flex items-center gap-2.5">
@@ -631,6 +628,10 @@ const ReservationModal = ({ open, onClose, room, hasDocuments }) => {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
 
+  useEffect(() => {
+    if (apiError && open) setError(apiError);
+  }, [apiError, open]);
+
   // Reset al abrir
   useEffect(() => {
     if (open) {
@@ -700,8 +701,8 @@ const ReservationModal = ({ open, onClose, room, hasDocuments }) => {
     } catch (err) {
       setError(
         err.response?.data?.message ??
-          err.message ??
-          "Error al procesar la reservación",
+        err.message ??
+        "Error al procesar la reservación",
       );
     }
   };
@@ -766,15 +767,14 @@ const ReservationModal = ({ open, onClose, room, hasDocuments }) => {
               </div>
             ) : (
               <>
-                {(error || apiError) && (
+                {error && (
                   <div className="mb-4">
                     <Alert
-                      title={error || apiError}
+                      title={error}
                       type="error"
                       showIcon
                       className="mb-4"
-                      closable
-                      onClose={() => setError(null)}
+                      closable={{ onClose: () => setError(null) }}
                     />
                   </div>
                 )}
@@ -829,10 +829,9 @@ const ReservationModal = ({ open, onClose, room, hasDocuments }) => {
               onClick={handleNext}
               disabled={!ok || loading}
               className={`px-6 py-2 rounded-lg text-sm font-semibold transition-colors
-                ${
-                  ok && !loading
-                    ? "bg-lime-600 hover:bg-lime-700 active:bg-lime-800 text-white"
-                    : "bg-gray-100 dark:bg-zinc-700 text-gray-400 dark:text-zinc-500 cursor-not-allowed"
+                ${ok && !loading
+                  ? "bg-lime-600 hover:bg-lime-700 active:bg-lime-800 text-white"
+                  : "bg-gray-100 dark:bg-zinc-700 text-gray-400 dark:text-zinc-500 cursor-not-allowed"
                 }`}
             >
               {loading
