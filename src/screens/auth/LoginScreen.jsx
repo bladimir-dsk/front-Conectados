@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Form, Button, Grid } from "antd";
 import { Building2, Home, LogIn, Phone } from "lucide-react";
 import { useNotification } from "../../components/notification/NotificationProvider";
@@ -6,8 +6,9 @@ import FormInput from "../../components/inputs/FormInput";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 import { useApi } from "../../hooks/useApi";
-import image from '/login.webp';
-import logo from '/LogoPrincipal-Horizontal.webp'
+import image from "/login.webp";
+import logo from "/LogoPrincipal-Horizontal.webp";
+import PrivacyPolicyModal from "./modals/PrivacyPolicyModal";
 
 const { useBreakpoint } = Grid;
 
@@ -18,6 +19,7 @@ export default function LoginScreen() {
   const { notify } = useNotification();
   const navigate = useNavigate();
   const { login } = useAuth();
+  const [privacyModalOpen, setPrivacyModalOpen] = useState(false);
 
   // Hook useApi para el endpoint de login
   const { postData } = useApi("/auth/login", {}, false);
@@ -28,8 +30,6 @@ export default function LoginScreen() {
     try {
       const data = await postData(values, false);
 
-      console.log("Respuesta completa del API:", data);
-
       const userData = {
         id: data.id,
         name: data.name,
@@ -37,8 +37,6 @@ export default function LoginScreen() {
         role: data.role,
         id_empresa: data.id_empresa,
       };
-
-      console.log("userData construido:", userData);
 
       // Primero hacer login
       login(userData, data.token);
@@ -52,7 +50,7 @@ export default function LoginScreen() {
       // Luego redirigir según el rol
       const roleRoutes = {
         admin: "/admin/dashboard",
-        propietario: "/propietario/dashboard",
+        propietario: "/propietario/alojamientos",
         estudiante: "/estudiante/dashboard",
       };
 
@@ -60,7 +58,6 @@ export default function LoginScreen() {
         navigate(roleRoutes[userData.role] || "/login");
       });
     } catch (error) {
-      console.error("Error:", error);
       notify({
         type: "error",
         title: "Error al iniciar sesión",
@@ -75,11 +72,13 @@ export default function LoginScreen() {
     <div className="min-h-screen bg-gray-100 dark:bg-zinc-800 p-4 md:p-6 flex items-center justify-center">
       <div
         className={`w-full dark:bg-zinc-900 bg-white rounded-2xl overflow-hidden shadow-xl flex min-h-0
-          ${isMobile ? "max-w-full flex-col" : "max-w-250 flex-row min-h-150"}`}>
+          ${isMobile ? "max-w-full flex-col" : "max-w-250 flex-row min-h-150"}`}
+      >
         {md && (
-          <div className="flex-[1.2] relative flex items-center justify-center 
-  bg-gradient-to-br from-lime-400 via-lime-500 to-green-600 overflow-hidden">
-
+          <div
+            className="flex-[1.2] relative flex items-center justify-center
+  bg-linear-to-br from-lime-400 via-lime-500 to-green-600 overflow-hidden"
+          >
             <Home className="absolute top-10 left-10 w-16 h-16 text-white/10" />
             <Phone className="absolute bottom-10 right-10 w-16 h-16 text-white/10" />
             <Building2 className="absolute top-1/2 left-20 w-20 h-20 text-white/10" />
@@ -87,16 +86,11 @@ export default function LoginScreen() {
             <div className="absolute w-72 h-72 bg-white/10 blur-3xl rounded-full" />
 
             <div className="relative flex flex-col items-center text-center px-6">
-
-              <img
-                src={logo}
-                alt="Logo"
-                className="w-56 mb-6 drop-shadow-md"
-              />
+              <img src={logo} alt="Logo" className="w-56 mb-6 drop-shadow-md" />
 
               <img
                 src={image}
-                className="max-w-[95%] object-contain 
+                className="max-w-[95%] object-contain
     drop-shadow-[0_25px_50px_rgba(0,0,0,0.35)] mb-6"
               />
 
@@ -108,16 +102,17 @@ export default function LoginScreen() {
                 Plataforma diseñada para estudiantes que buscan un lugar cómodo,
                 seguro y cercano a su universidad.
               </p>
-
             </div>
           </div>
         )}
 
         <div
-          className={`flex-1 flex flex-col justify-center ${isMobile ? "p-8" : "p-12"}`}>
+          className={`flex-1 flex flex-col justify-center ${isMobile ? "p-8" : "p-12"}`}
+        >
           <div className="text-center mb-8">
             <h1
-              className={`font-bold text-black dark:text-white mb-2 ${isMobile ? "text-2xl" : "text-3xl"}`}>
+              className={`font-bold text-black dark:text-white mb-2 ${isMobile ? "text-2xl" : "text-3xl"}`}
+            >
               Inicio de sesión
             </h1>
             <p className="text-slate-500 dark:text-gray-300">
@@ -159,7 +154,8 @@ export default function LoginScreen() {
                 block
                 size="large"
                 icon={<LogIn size={18} />}
-                className="bg-lime-500! border-none! h-12! font-semibold! hover:bg-lime-600!">
+                className="bg-lime-500! border-none! h-12! font-semibold! hover:bg-lime-600!"
+              >
                 Ingresar
               </Button>
             </Form.Item>
@@ -168,14 +164,28 @@ export default function LoginScreen() {
                 ¿No tienes una cuenta?{" "}
                 <Link
                   to="/register"
-                  className="text-lime-600! font-semibold! hover:text-lime-700!">
+                  className="text-lime-600! font-semibold! hover:text-lime-700!"
+                >
                   Regístrate
                 </Link>
+              </p>
+              <p className="m-0 mt-2">
+                <button
+                  type="button"
+                  onClick={() => setPrivacyModalOpen(true)}
+                  className="text-slate-400 dark:text-gray-500 text-xs hover:text-lime-600! dark:hover:text-lime-400! underline underline-offset-2 transition-colors cursor-pointer bg-transparent border-none p-0"
+                >
+                  Política de privacidad
+                </button>
               </p>
             </div>
           </Form>
         </div>
       </div>
+      <PrivacyPolicyModal
+        visible={privacyModalOpen}
+        onClose={() => setPrivacyModalOpen(false)}
+      />
     </div>
   );
 }

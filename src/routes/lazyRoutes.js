@@ -28,6 +28,8 @@ export const SearchStudent = lazy(
   () => import("../screens/estudiantes/search/SearchStudent_Screen"),
 );
 
+export const FavoritesStudent = lazy(() => import("../screens/estudiantes/favorites/FavoritosStudent_Screen"))
+
 // Componentes privados (necesitan autenticacion) ADMIN
 
 export const AdminDashboard = lazy(

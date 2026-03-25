@@ -22,6 +22,7 @@ import {
   AdminProfile,
   OwnersRentsScreen,
   AdminRents,
+  FavoritesStudent,
 } from "./lazyRoutes.js";
 import { ProtectedRoute } from "./ProtectedRoute";
 import AdminLayout from "../components/layouts/AdminLayout";
@@ -43,13 +44,23 @@ export default function RouteApp() {
             <ProtectedRoute requiredRole="admin">
               <AdminLayout />
             </ProtectedRoute>
-          }>
+          }
+        >
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<AdminDashboard />} />
           <Route path="propietarios" element={<AdminOwners />} />
-          <Route path="propietarios/:ownerId/propiedades" element={<AdminOwnersProperties />} />
-          <Route path="estudiantes/administracion" element={<AdminStudentAdministration />} />
-          <Route path="estudiantes/documentacion" element={<AdminStudentDocumentation />} />
+          <Route
+            path="propietarios/:ownerId/propiedades"
+            element={<AdminOwnersProperties />}
+          />
+          <Route
+            path="estudiantes/administracion"
+            element={<AdminStudentAdministration />}
+          />
+          <Route
+            path="estudiantes/documentacion"
+            element={<AdminStudentDocumentation />}
+          />
           <Route path="servicios-alojamiento" element={<AdminServices />} />
           <Route path="alojamientos" element={<AdminAccommodationsScreen />} />
           <Route path="escuelas" element={<AdminStudentSchool />} />
@@ -66,9 +77,10 @@ export default function RouteApp() {
             <ProtectedRoute requiredRole="propietario">
               <OwnerLayout />
             </ProtectedRoute>
-          }>
-          <Route index element={<Navigate to="dashboard" replace />} />
-          <Route path="dashboard" element={<DashboardOwners />} />
+          }
+        >
+          <Route index element={<Navigate to="alojamientos" replace />} />
+          {/* <Route path="dashboard" element={<DashboardOwners />} /> */}
           <Route path="alojamientos" element={<OwnersAccommodationsScreen />} />
           <Route path="rentas" element={<OwnersRentsScreen />} />
         </Route>
@@ -80,12 +92,14 @@ export default function RouteApp() {
             <ProtectedRoute requiredRole="estudiante">
               <StudentLayout />
             </ProtectedRoute>
-          }>
+          }
+        >
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<DashboardStudent />} />
           {/* <Route path="buscar" element={<BuscarHabitaciones />} />*/}
 
           <Route path="profile" element={<ProfileStudent />} />
+          <Route path="favoritos" element={<FavoritesStudent />} />
 
           <Route path="reservas" element={<ReservationStudent />} />
 

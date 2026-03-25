@@ -3,17 +3,13 @@ import {
     User,
     LogOut,
     ChevronDown,
-    DollarSign,
-    Star,
-    Users,
-    RotateCcw,
-    SlidersHorizontal,
     Moon,
     Sun,
     LayoutDashboard,
     Search,
     CalendarCheck,
     FileText,
+    Heart,
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
@@ -22,6 +18,7 @@ import { useTheme } from "../../hooks/useTheme";
 const navigationItems = [
     { key: "/estudiante/dashboard", icon: LayoutDashboard, label: "Inicio" },
     { key: "/estudiante/search", icon: Search, label: "Buscar" },
+    { key: "/estudiante/favoritos", icon: Heart, label: "Favoritos" },
     { key: "/estudiante/reservas", icon: CalendarCheck, label: "Mis reservas" },
     { key: "/estudiante/documentation", icon: FileText, label: "Mi documentación" },
 ];
@@ -151,8 +148,8 @@ export default function StudentNavbar({ selectedFilterKeys, setSelectedFilterKey
                                         <button
                                             onClick={item.onClick}
                                             className={`w-full flex items-center gap-3 px-4 py-2 text-sm transition-colors ${item.danger
-                                                    ? "text-red-600 hover:bg-red-100 dark:hover:bg-red-500/50"
-                                                    : "text-gray-700 dark:text-gray-200 hover:bg-lime-100 dark:hover:bg-lime-500/50"
+                                                ? "text-red-600 hover:bg-red-100 dark:hover:bg-red-500/50"
+                                                : "text-gray-700 dark:text-gray-200 hover:bg-lime-100 dark:hover:bg-lime-500/50"
                                                 }`}
                                         >
                                             {item.icon}
@@ -173,8 +170,7 @@ export default function StudentNavbar({ selectedFilterKeys, setSelectedFilterKey
                     height: "64px",
                     backgroundColor: "#84cc16",
                     boxShadow: "0 -2px 8px rgba(0,0,0,0.1)",
-                }}
-            >
+                }}>
                 {navigationItems.map(({ key, icon: Icon, label }) => {
                     const active = isActive(key);
                     return (
@@ -184,7 +180,6 @@ export default function StudentNavbar({ selectedFilterKeys, setSelectedFilterKey
                             className="flex-1 flex flex-col items-center justify-center gap-1 h-full transition-all relative"
                             style={{ color: active ? "black" : "rgba(0,0,0,0.5)" }}
                         >
-                            {/* Pill indicator */}
                             {active && (
                                 <span
                                     className="absolute top-0 left-1/2 -translate-x-1/2 w-10 h-1.5 rounded-b-full"
@@ -192,7 +187,8 @@ export default function StudentNavbar({ selectedFilterKeys, setSelectedFilterKey
                                 />
                             )}
                             <Icon size={active ? 22 : 20} />
-                            <span className="text-xs leading-none">{label}</span>
+                            {/* Solo muestra el label en sm+ */}
+                            <span className="hidden sm:block text-xs leading-none">{label}</span>
                         </button>
                     );
                 })}
