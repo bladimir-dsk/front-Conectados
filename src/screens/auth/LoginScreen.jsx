@@ -58,10 +58,12 @@ export default function LoginScreen() {
         navigate(roleRoutes[userData.role] || "/login");
       });
     } catch (error) {
+      const backendMessage =
+        error.response?.data?.message || "Credenciales incorrectas";
+
       notify({
         type: "error",
-        title: "Error al iniciar sesión",
-        description: error.message || "Credenciales incorrectas",
+        description: backendMessage,
       });
     } finally {
       setLoading(false);
