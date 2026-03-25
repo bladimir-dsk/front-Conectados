@@ -78,6 +78,8 @@ export default function ProfileStudent_Screen() {
           email: data.email,
           codigo: data.code,
           telefono: data.phone,
+          escuela: data.School?.name || "",
+          matricula: data.School?.cct || "",
         });
       } catch (error) {
         notify(
