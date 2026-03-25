@@ -1,6 +1,7 @@
 import { Button, Form, App, Select, Upload, Input } from "antd";
 import { useEffect, useState } from "react";
-import { X, Upload as UploadIcon } from "lucide-react";
+import { X } from "lucide-react";
+import { UploadOutlined } from "@ant-design/icons";
 import { useApi } from "../../../../../hooks/useApi";
 import axios from "axios";
 
@@ -208,12 +209,12 @@ const StudentDocumentationModal_Admin = ({
             }
 
             setFileList([file]);
-            checkForChanges(null, form.getFieldsValues());
+            checkForChanges(null, form.getFieldsValue());
             return false;
         },
         onRemove: () => {
             setFileList([]);
-            checkForChanges(null, form.getFieldsValues());
+            checkForChanges(null, form.getFieldsValue());
         },
         fileList,
         maxCount: 1,
@@ -294,28 +295,25 @@ const StudentDocumentationModal_Admin = ({
                                     allowClear
                                 />
                             </Form.Item>
+                            <div className="pb-5">
+                                <Form.Item
+                                    label="Archivo"
+                                    required={!isEditing}
+                                    help={
+                                        isEditing
+                                            ? "PDF, JPG, JPEG o PNG, máx. 5MB (opcional, solo si deseas cambiar el archivo)"
+                                            : "PDF, JPG, JPEG o PNG, máximo 5MB"
+                                    }>
+                                    <Upload
+                                        {...uploadProps}
+                                        listType="picture">
+                                        <Button icon={<UploadOutlined />} size="large" type="primary" style={{ width: "100%" }}>
+                                            {fileList.length > 0 ? "Cambiar archivo" : "Seleccionar archivo"}
+                                        </Button>
 
-                            <Form.Item
-                                label="Archivo"
-                                required={!isEditing}
-                                help={
-                                    isEditing
-                                        ? "PDF, JPG, JPEG o PNG, máx. 5MB (opcional, solo si deseas cambiar el archivo)"
-                                        : "PDF, JPG, JPEG o PNG, máximo 5MB"
-                                }
-                            >
-                                <Upload.Dragger {...uploadProps}>
-                                    <p className="ant-upload-drag-icon">
-                                        <UploadIcon className="mx-auto" size={48} />
-                                    </p>
-                                    <p className="ant-upload-text">
-                                        Haz clic o arrastra el archivo aquí
-                                    </p>
-                                    <p className="ant-upload-hint">
-                                        PDF, JPG, JPEG o PNG (máx. 5MB)
-                                    </p>
-                                </Upload.Dragger>
-                            </Form.Item>
+                                    </Upload>
+                                </Form.Item>
+                            </div>
 
                             <Form.Item
                                 name="status"
