@@ -18,43 +18,70 @@ export default function StudentDocumentationScreen_Admin() {
     const [searchText, setSearchText] = useState("");
     const [searchedColumn, setSearchedColumn] = useState("");
     const searchInput = useRef(null);
-    const { message, modal } = App.useApp();
+    const { message } = App.useApp();
     const [modalState, setModalState] = useState({ add: false, edit: false });
     const [selectedDocument, setSelectedDocument] = useState(null);
     const [selectedStudent, setSelectedStudent] = useState(null);
+    const [isChangingPage, setIsChangingPage] = useState(false);
 
-    // Consumir API
+    const [filtros, setFiltros] = useState({ name: "" });
+
+    const [paginacion, setPaginacion] = useState({
+        paginaActual: 1,
+        limite: 10,
+        totalRegistros: 0,
+        totalPaginas: 0,
+    });
+
+    const construirURL = (pagina = 1) => {
+        const params = new URLSearchParams();
+        params.append("page", pagina.toString());
+        params.append("limit", paginacion.limite.toString());
+        if (filtros.name) params.append("name", filtros.name);
+        return `/documentacion/grouped?${params.toString()}`;
+    };
+
+    const [endpointPaginacion, setEndpointPaginacion] = useState(() => construirURL(1));
+
     const {
         data: documentsResponse,
         loading: loadingDocuments,
         fetchData: fetchDocuments,
         deleteData: deleteDocument,
-    } = useApi("/documentacion", {}, true);
+    } = useApi(endpointPaginacion, {}, false);
 
-    const documentsData = documentsResponse || [];
+    useEffect(() => {
+        const url = construirURL(paginacion.paginaActual);
+        setEndpointPaginacion(url);
+    }, [filtros, paginacion.paginaActual]);
 
-    // Agrupar documentos por estudiante
-    const groupedByStudent = documentsData.reduce((acc, doc) => {
-        const email = doc.userEmail;
-        if (!acc[email]) {
-            acc[email] = {
-                key: email,
-                studentId: doc.user?.id,
-                email: email,
-                name: doc.user?.name || "N/A",
-                code: doc.user?.code || "N/A",
-                phone: doc.user?.phone || "N/A",
-                documents: [],
-            };
+    useEffect(() => {
+        if (endpointPaginacion) {
+            fetchDocuments();
         }
-        acc[email].documents.push({
-            key: doc.id_documentacion,
-            ...doc,
-        });
-        return acc;
-    }, {});
+    }, [endpointPaginacion]);
 
-    const studentsData = Object.values(groupedByStudent);
+    useEffect(() => {
+        if (documentsResponse?.total !== undefined) {
+            setPaginacion((prev) => ({
+                ...prev,
+                totalRegistros: documentsResponse.total,
+                totalPaginas: Math.ceil(documentsResponse.total / prev.limite),
+                paginaActual: documentsResponse.page,
+            }));
+            setIsChangingPage(false);
+        }
+    }, [documentsResponse]);
+
+    const studentsData = (documentsResponse?.data || []).map((item) => ({
+        key: item.user.email,
+        studentId: item.user.id,
+        email: item.user.email,
+        name: item.user.name,
+        code: item.user.code,
+        phone: item.user.phone,
+        documents: item.documentos.map((doc) => ({ key: doc.id_documentacion, ...doc })),
+    }));
 
     const openModal = (type, document = null, student = null) => {
         setModalState({ add: false, edit: false, [type]: true });
@@ -70,13 +97,11 @@ export default function StudentDocumentationScreen_Admin() {
 
     const handleSaveDocument = async () => {
         await fetchDocuments();
-        closeModal("add");  
+        closeModal("add");
         closeModal("edit");
     };
 
-    const showDeleteConfirm = useDeleteConfirmation({
-        onDelete: deleteDocument,
-    });
+    const showDeleteConfirm = useDeleteConfirmation({ onDelete: deleteDocument });
 
     const handleDelete = (record) => {
         showDeleteConfirm({
@@ -89,9 +114,7 @@ export default function StudentDocumentationScreen_Admin() {
         });
     };
 
-    const handleViewDocument = (documentUrl) => {
-        window.open(documentUrl, "_blank");
-    };
+    const handleViewDocument = (documentUrl) => window.open(documentUrl, "_blank");
 
     const handleDownload = async (documentUrl, fileName) => {
         try {
@@ -105,38 +128,40 @@ export default function StudentDocumentationScreen_Admin() {
             link.click();
             document.body.removeChild(link);
             window.URL.revokeObjectURL(url);
-        } catch (error) {
+        } catch {
             message.error("Error al descargar el documento");
         }
     };
 
+    const handlePageChange = (page) => {
+        setIsChangingPage(true);
+        setPaginacion((prev) => ({ ...prev, paginaActual: page }));
+    };
+
     const handleSearch = (selectedKeys, confirm, dataIndex) => {
         confirm();
-        setSearchText(selectedKeys[0]);
+        const value = selectedKeys[0] || "";
+        setFiltros((prev) => ({ ...prev, [dataIndex]: value }));
+        setPaginacion((prev) => ({ ...prev, paginaActual: 1 }));
+        setSearchText(value);
         setSearchedColumn(dataIndex);
     };
 
-    const handleReset = (clearFilters) => {
+    const handleReset = (clearFilters, dataIndex) => {
         clearFilters();
         setSearchText("");
+        setFiltros((prev) => ({ ...prev, [dataIndex]: "" }));
+        setPaginacion((prev) => ({ ...prev, paginaActual: 1 }));
     };
 
     const getColumnSearchProps = (dataIndex) => ({
-        filterDropdown: ({
-            setSelectedKeys,
-            selectedKeys,
-            confirm,
-            clearFilters,
-            close,
-        }) => (
+        filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters, close }) => (
             <div style={{ padding: 8 }} onKeyDown={(e) => e.stopPropagation()}>
                 <Input
                     ref={searchInput}
-                    placeholder={`Buscar...`}
-                    value={selectedKeys[0]}
-                    onChange={(e) =>
-                        setSelectedKeys(e.target.value ? [e.target.value] : [])
-                    }
+                    placeholder="Buscar..."
+                    value={selectedKeys[0] || ""}
+                    onChange={(e) => setSelectedKeys(e.target.value ? [e.target.value] : [])}
                     onPressEnter={() => handleSearch(selectedKeys, confirm, dataIndex)}
                     style={{ marginBottom: 8, display: "block" }}
                 />
@@ -153,7 +178,7 @@ export default function StudentDocumentationScreen_Admin() {
                     </Button>
                     <Button
                         className="btn-limpiar"
-                        onClick={() => clearFilters && handleReset(clearFilters)}
+                        onClick={() => clearFilters && handleReset(clearFilters, dataIndex)}
                         size="small"
                         style={{ width: 90 }}
                     >
@@ -176,23 +201,14 @@ export default function StudentDocumentationScreen_Admin() {
                 </Space>
             </div>
         ),
-        filterIcon: (filtered) => (
-            <SearchOutlined style={{ color: filtered ? "#0B733E" : undefined }} />
+        filterIcon: () => (
+            <SearchOutlined style={{ color: filtros[dataIndex] ? "#0B733E" : undefined }} />
         ),
-        onFilter: (value, record) => {
-            const nestedValue = dataIndex.includes(".")
-                ? dataIndex.split(".").reduce((obj, key) => obj?.[key], record)
-                : record[dataIndex];
-            return nestedValue
-                ?.toString()
-                .toLowerCase()
-                .includes(value.toLowerCase());
-        },
+        filteredValue: filtros[dataIndex] ? [filtros[dataIndex]] : null,
+        onFilter: () => true,
         filterDropdownProps: {
             onOpenChange(open) {
-                if (open) {
-                    setTimeout(() => searchInput.current?.select(), 100);
-                }
+                if (open) setTimeout(() => searchInput.current?.select(), 100);
             },
         },
         render: (text) =>
@@ -209,29 +225,13 @@ export default function StudentDocumentationScreen_Admin() {
     });
 
     const getStatusColor = (status) => {
-        switch (status) {
-            case "aprobado":
-                return "green";
-            case "pendiente":
-                return "orange";
-            case "rechazado":
-                return "red";
-            default:
-                return "default";
-        }
+        const map = { aprobado: "green", pendiente: "orange", rechazado: "red" };
+        return map[status] || "default";
     };
 
     const getStatusLabel = (status) => {
-        switch (status) {
-            case "aprobado":
-                return "Aprobado";
-            case "pendiente":
-                return "Pendiente";
-            case "rechazado":
-                return "Rechazado";
-            default:
-                return status;
-        }
+        const map = { aprobado: "Aprobado", pendiente: "Pendiente", rechazado: "Rechazado" };
+        return map[status] || status;
     };
 
     const getDocumentTypeLabel = (type) => {
@@ -249,7 +249,6 @@ export default function StudentDocumentationScreen_Admin() {
         return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
     };
 
-    // Columnas para documentos (tabla expandible)
     const documentColumns = [
         {
             title: "Tipo de documento",
@@ -287,7 +286,7 @@ export default function StudentDocumentationScreen_Admin() {
             dataIndex: "observation",
             key: "observation",
             align: "center",
-            render: (observation) => observation || "-",
+            render: (obs) => obs || "-",
         },
         {
             title: "Acciones",
@@ -333,21 +332,19 @@ export default function StudentDocumentationScreen_Admin() {
         },
     ];
 
-    // Columnas principales (estudiantes)
     const studentColumns = [
         {
             title: "Nombre del estudiante",
-            key: "studentName",
+            dataIndex: "name",
+            key: "name",
             ...getColumnSearchProps("name"),
-            sorter: (a, b) => a.name.localeCompare(b.name),
-            render: (_, record) => record.name,
+            sorter: false,
         },
         {
             title: "Correo",
             dataIndex: "email",
             key: "email",
             align: "center",
-            ...getColumnSearchProps("email"),
         },
         {
             title: "Teléfono",
@@ -361,7 +358,6 @@ export default function StudentDocumentationScreen_Admin() {
             dataIndex: "documents",
             key: "documentsCount",
             align: "center",
-            sorter: (a, b) => a.documents.length - b.documents.length,
             render: (documents) => (
                 <Tag color={documents.length > 0 ? "blue" : "default"}>
                     {documents.length}
@@ -413,12 +409,15 @@ export default function StudentDocumentationScreen_Admin() {
                     <Table
                         columns={studentColumns}
                         dataSource={studentsData}
-                        loading={loadingDocuments}
+                        loading={loadingDocuments || isChangingPage}
                         scroll={{ x: "max-content" }}
                         pagination={{
-                            pageSize: 10,
+                            current: paginacion.paginaActual,
+                            pageSize: paginacion.limite,
+                            total: paginacion.totalRegistros,
                             showTotal: (total) => `Total ${total} estudiantes`,
                             showSizeChanger: false,
+                            onChange: handlePageChange,
                         }}
                         expandable={{
                             expandedRowRender: (record) => (
