@@ -88,7 +88,7 @@ export default function OwnerSidebar({
     {
       key: "/propietario/rentas",
       icon: <House size={18} />,
-      label: "Mis Rentas",
+      label: "Mis rentas",
     },
   ];
 
