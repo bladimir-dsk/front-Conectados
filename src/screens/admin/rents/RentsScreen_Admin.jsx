@@ -22,16 +22,24 @@ export default function RentsScreen_Admin() {
         tipo_renta: null,
     });
 
+    const [paginacion, setPaginacion] = useState({
+        paginaActual: 1,
+        limite: 10,
+        totalRegistros: 0,
+        totalPaginas: 0,
+    });
+
     // Construir URL — sin id de propietario, ve todas las rentas
-    const construirURL = () => {
+    const construirURL = (pagina = paginacion.paginaActual) => {
         const params = new URLSearchParams();
+        params.append("page", pagina.toString());
+        params.append("limit", paginacion.limite.toString());
         if (filtros.fechaDesde) params.append("fechaDesde", filtros.fechaDesde);
         if (filtros.fechaHasta) params.append("fechaHasta", filtros.fechaHasta);
         if (filtros.estado) params.append("estado", filtros.estado);
         if (filtros.estadoPago) params.append("estadoPago", filtros.estadoPago);
         if (filtros.tipo_renta) params.append("tipo_renta", filtros.tipo_renta);
-        const qs = params.toString();
-        return `/renta/control-financiero${qs ? `?${qs}` : ""}`;
+        return `/renta/control-financiero?${params.toString()}`;
     };
 
     const [endpoint, setEndpoint] = useState(construirURL());
@@ -40,8 +48,27 @@ export default function RentsScreen_Admin() {
         useApi(endpoint, {}, false);
 
     useEffect(() => {
-        setEndpoint(construirURL());
+        setEndpoint(construirURL(1));
+        setPaginacion(prev => ({ ...prev, paginaActual: 1 }));
     }, [filtros]);
+
+    useEffect(() => {
+        if (reporteData?.paginacion) {
+            setPaginacion(prev => ({
+                ...prev,
+                paginaActual: reporteData.paginacion.page,
+                limite: reporteData.paginacion.limit,
+                totalRegistros: reporteData.paginacion.total,
+                totalPaginas: reporteData.paginacion.totalPages,
+            }));
+        }
+    }, [reporteData]);
+
+    // Handler para cambio de página
+    const handlePageChange = (page) => {
+        setPaginacion(prev => ({ ...prev, paginaActual: page }));
+        setEndpoint(construirURL(page));
+    };
 
     useEffect(() => {
         if (endpoint) fetchRentas();
@@ -60,7 +87,7 @@ export default function RentsScreen_Admin() {
     const getEstadoRentaColor = (e) => ({ ACTIVA: "green", FINALIZADA: "blue", CANCELADA: "red", PENDIENTE: "gold" }[e] || "default");
     const getTipoRentaColor = (t) => ({ ALOJAMIENTO_COMPLETO: "purple", CUARTO: "cyan", CAMA: "geekblue", ESPACIO: "magenta" }[t] || "default");
     const getTipoRentaLabel = (t) => ({ ALOJAMIENTO_COMPLETO: "Alojamiento completo", CUARTO: "Cuarto", CAMA: "Cama", ESPACIO: "Espacio" }[t] || t);
-    const getEstadoPagoColor = (e) => ({ COMPLETADO: "green", PENDIENTE: "gold", FALLIDO: "red", CANCELADO: "default", PROCESANDO: "blue" }[e] || "default");
+    const getEstadoPagoColor = (e) => ({ COMPLETADO: "green", PENDIENTE: "gold", FALLIDO: "red", CANCELADO: "red", PROCESANDO: "blue" }[e] || "default");
 
     const resumenCards = [
         { label: "Total rentas", value: resumen.total_rentas, color: "text-gray-800 dark:text-gray-100" },
@@ -73,6 +100,18 @@ export default function RentsScreen_Admin() {
         { label: "Ing. servicios", value: formatPrice(resumen.ingresos_servicios_adicionales), color: "text-purple-600 dark:text-purple-400" },
         { label: "Pendiente cobrar", value: formatPrice(resumen.montos_pendientes_por_cobrar), color: "text-amber-600 dark:text-amber-400" },
     ];
+
+    // Helper para derivar estado de pago
+    const getEstadoPago = (financiero) => {
+        if (!financiero) return null;
+        if (financiero.pago_completado) return "COMPLETADO";
+        if (financiero.pago_pendiente) return "PENDIENTE";
+        if (financiero.pago_cancelado) return "CANCELADO";
+        // Si tienes estos campos en el futuro:
+        // if (financiero.pago_fallido)    return "FALLIDO";
+        // if (financiero.pago_procesando) return "PROCESANDO";
+        return null;
+    };
 
     const columns = [
         {
@@ -157,7 +196,7 @@ export default function RentsScreen_Admin() {
             key: "pago",
             align: "center",
             render: (_, r) => {
-                const estado = r.financiero?.pago_completado ? "COMPLETADO" : r.financiero?.pago_pendiente ? "PENDIENTE" : null;
+                const estado = getEstadoPago(r.financiero);
                 return estado
                     ? <Tag color={getEstadoPagoColor(estado)} style={{ fontSize: 11 }}>{estado}</Tag>
                     : <span className="text-gray-400">—</span>;
@@ -325,7 +364,14 @@ export default function RentsScreen_Admin() {
                         dataSource={rentas.map((r) => ({ key: r.id_renta, ...r }))}
                         loading={loadingRentas}
                         scroll={{ x: "max-content" }}
-                        pagination={{ showTotal: (t) => `Total ${t} rentas`, showSizeChanger: false, pageSize: 10 }}
+                        pagination={{
+                            current: paginacion.paginaActual,
+                            pageSize: paginacion.limite,
+                            total: paginacion.totalRegistros,
+                            showTotal: (t) => `Total ${t} rentas`,
+                            showSizeChanger: false,
+                            onChange: handlePageChange,
+                        }}
                         locale={{ emptyText: loadingRentas ? null : "No se encontraron rentas con los filtros aplicados." }}
                     />
                 </div>
