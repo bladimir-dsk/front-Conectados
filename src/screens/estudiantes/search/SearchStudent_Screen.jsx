@@ -360,6 +360,8 @@ export default function SearchStudent_Screen() {
         address: `${data.address}, ${data.city}, ${data.country}`,
         available: data.estatus === "ACTIVO",
         cuartos: data.cuartos || [],
+        lat: parseFloat(String(data.latitude ?? "").replace(/[^\d.-]/g, "")) || null,
+        lng: parseFloat(String(data.longitude ?? "").replace(/[^\d.-]/g, "")) || null,
         owner: {
           namePersonal: data.propietario?.namePersonal,
           lastName: data.propietario?.lastName,
@@ -374,7 +376,7 @@ export default function SearchStudent_Screen() {
         })),
         mainImage: data.fotos?.find((f) => f.esPrincipal)?.url || data.fotos?.[0]?.url || IMAGE_URL,
         services: (data.servicios || []).map((s) => ({
-          id: s.id, 
+          id: s.id,
           name: s.servicio.name,
           icon: s.servicio.icon,
           price: Number(s.costo),
@@ -507,7 +509,6 @@ export default function SearchStudent_Screen() {
                 }}
                 onClick={async () => {
                   await fetchRoomDetails(room.id);
-                  setSelectedRoom((prev) => ({ ...prev, lat: room.lat, lng: room.lng }));
                   setOpenDetails(true);
                 }}
               />
